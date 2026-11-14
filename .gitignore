@@ -1,0 +1,35 @@
+# Секрети
+.env
+*.env
+!.env.example
+*credentials*.json
+*service-account*.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Великі растри і сирі знімки не в Git
+*.h5
+*.hdf5
+*.tif
+*.tiff
+*.nc
+data/raw/
+data/cache/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
