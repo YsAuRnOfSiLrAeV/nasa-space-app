@@ -1,0 +1,21 @@
+/* Scroll entrance: a short fade-up, transform and opacity only, so long
+   chart-heavy pages stay smooth and readers are not kept waiting. */
+.reveal {
+  opacity: 0;
+  transform: translateY(1rem);
+  transition:
+    opacity 520ms cubic-bezier(0.25, 1, 0.5, 1) var(--reveal-delay, 0ms),
+    transform 640ms cubic-bezier(0.25, 1, 0.5, 1) var(--reveal-delay, 0ms);
+}
+.reveal[data-shown] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce), print {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

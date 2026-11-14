@@ -1,0 +1,20 @@
+[
+  {
+    "id": "bc_2003_490",
+    "name": {
+      "uk": "Британська Колумбія",
+      "en": "British Columbia"
+    },
+    "year": 2003,
+    "area_ha": 27137,
+    "summer": 2026,
+    "center_lonlat": [
+      -120.201,
+      51.145
+    ],
+    "recovery_today_avg": 0.36,
+    "area_recovered_80pct": 0.0,
+    "year_80pct": 2044,
+    "result": "bc_2003_490/result.json"
+  }
+]

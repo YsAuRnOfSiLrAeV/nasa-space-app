@@ -1,0 +1,142 @@
+/*
+ * Forest Recovery page details. Shared primitives (labels, sections, register)
+ * come from components/shell/primitives.module.css; colours from theme variables only.
+ */
+
+/* Group picker: fire-year chips. */
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  font: 500 0.6875rem/1 var(--font-label);
+  letter-spacing: 0.12em;
+  color: var(--muted-foreground);
+  transition:
+    border-color 200ms var(--ease-out-soft),
+    color 200ms var(--ease-out-soft);
+}
+.chip:hover {
+  border-color: var(--foreground);
+  color: var(--foreground);
+}
+.chip[aria-current='page'],
+.chip[aria-pressed='true'] {
+  border-color: var(--select);
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--select) 14%, transparent);
+}
+.chip:focus-visible,
+.link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+/* Inline text link (to the page, to sources). */
+.link {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-decoration-color: var(--select);
+  text-underline-offset: 3px;
+}
+
+/* Horizontal share bar (pre-fire land cover). */
+.bar {
+  height: 6px;
+  background: var(--rule);
+}
+.bar > span {
+  display: block;
+  height: 100%;
+  background: var(--foreground);
+  opacity: 0.75;
+}
+
+/* Imagery placeholder: an empty frame that says why it is empty. */
+.empty {
+  display: grid;
+  place-items: center;
+  min-height: 13rem;
+  padding: 1.5rem;
+  border: 1px dashed var(--input);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+/* Observation timeline. */
+.lane {
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  min-height: 2.75rem;
+  border-top: 1px solid var(--rule);
+}
+@media (max-width: 640px) {
+  .lane {
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+    gap: 0.625rem;
+  }
+}
+.track {
+  position: relative;
+  height: 2.75rem;
+}
+.track::before {
+  content: '';
+  position: absolute;
+  inset: 50% 0 auto;
+  border-top: 1px dotted var(--input);
+}
+.marker {
+  position: absolute;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border-radius: 9999px;
+  background: var(--foreground);
+}
+.markerFire {
+  width: 11px;
+  height: 11px;
+  margin: -5.5px 0 0 -5.5px;
+  border-radius: 1px;
+  transform: rotate(45deg);
+  background: var(--burn);
+}
+.markerLabel {
+  position: absolute;
+  top: calc(50% + 8px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font: 500 0.5625rem/1 var(--font-coord);
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+}
+.fireRule {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--burn);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.afterFire {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  background: color-mix(in srgb, var(--burn) 5%, transparent);
+  pointer-events: none;
+}
+
+/* Touch screens: links get the same 44px minimum target as buttons (global.css). */
+@media (pointer: coarse) {
+  .chip {
+    min-height: 44px;
+  }
+}
