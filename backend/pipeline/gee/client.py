@@ -18,13 +18,21 @@ TILE = 1024
 
 @lru_cache(maxsize=1)
 def session():
-    """Initialised ``ee`` module. Needs GEE_PROJECT and `earthengine authenticate` (see README)."""
+    """Initialised ``ee`` module."""
     import ee
     from dotenv import load_dotenv
 
     load_dotenv()
-    ee.Initialize(project=os.environ["GEE_PROJECT"])
+    project = os.environ.get("GEE_PROJECT")
+    if not project:
+        raise RuntimeError("GEE_PROJECT is not set. See 'Credentials' in backend/README.md.")
+    ee.Initialize(project=project)
     return ee
+
+
+def region(grid: Grid):
+    """Grid rectangle as an ee.Geometry, to keep only the scenes that touch it."""
+    return session().Geometry.Rectangle(list(grid.bounds), grid.crs, False)
 
 
 def fetch(image, grid: Grid, bands: list[str]) -> dict[str, np.ndarray]:
