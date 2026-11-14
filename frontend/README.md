@@ -1,5 +1,7 @@
 # frontend
 
+Design and maintenance: [Frontend design guide](docs/design-guide.md).
+
 Власниця: Катя. React + TypeScript + Vite, MapLibre GL, Tailwind. Хостинг Vercel.
 
 Сторінки: головна з глобусом (`#/`), пожежа (`#/fire/<fire_id>`), "Як ми дослідили" (`#/research`),
