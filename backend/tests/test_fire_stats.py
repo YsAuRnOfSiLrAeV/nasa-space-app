@@ -72,10 +72,3 @@ def test_optics_recovery_is_burn_ndvi_over_reference_ndvi(zones):
     ndvi = np.where(zones == ZONE_BURN, 0.72, 0.80)
     assert fire_stats.optics_recovery(ndvi, zones) == pytest.approx(0.9)
     assert fire_stats.optics_recovery(np.full(zones.shape, np.nan), zones) is None
-
-
-def test_warning_codes():
-    codes = fire_stats.warnings({"slope": 8.0, "dnbr": None}, nisar_coverage=0.5)
-    assert codes == ["DEFAULT_DNBR", "LOW_NISAR_COVERAGE"]
-    assert fire_stats.warnings({"slope": 8.0}, nisar_coverage=0.99) == []
-

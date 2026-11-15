@@ -8,8 +8,7 @@ was trained on. Cells missing any of the five values are skipped. The model
 returns one value per row, and ``CellTable.to_grid`` puts each value back into
 its cell, so the result is a map again.
 
-``input_report`` compares the five values with the ranges seen in training. If
-the model output looks wrong, this shows whether the inputs are the cause.
+The input check against the training ranges is done by the model library (model.check_inputs).
 """
 from __future__ import annotations
 
@@ -69,22 +68,3 @@ def build_table(
         keep &= where
     rows, cols = np.nonzero(keep)
     return CellTable(tuple(features), stack[rows, cols], rows, cols, shape)
-
-
-def input_report(table: CellTable, ranges: Mapping[str, tuple[float, float]]) -> dict[str, dict]:
-    """Per feature: median, 5th and 95th percentile, and the share of cells outside the training range.
-
-    ``ranges`` maps feature name -> (low, high) seen in training. Features without a range get no share.
-    """
-    report = {}
-    for name in table.names:
-        x = table.column(name)
-        entry = {"cells": len(x), "median": None, "p5": None, "p95": None, "outside_share": None}
-        if len(x):
-            p5, median, p95 = np.percentile(x, [5, 50, 95])
-            entry.update(median=round(float(median), 3), p5=round(float(p5), 3), p95=round(float(p95), 3))
-            if name in ranges:
-                low, high = ranges[name]
-                entry["outside_share"] = round(float(((x < low) | (x > high)).mean()), 4)
-        report[name] = entry
-    return report

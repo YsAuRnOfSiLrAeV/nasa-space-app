@@ -33,7 +33,7 @@ def result_for(grid, factor):
         "satellite_images": {"summer": 2026},
         "map_grid": export.map_grid(grid, factor),
         "neighbour_forest": {"height_m": 19.1, "source": "gedi"},
-        "model_result": {"recovery_today_avg": 0.36, "area_recovered_80pct": 0.0},
+        "model_result": {"recovery_today_avg": 0.36, "excluded_share": 0.05},
         "growth_forecast": None,
         "comparison": {"optics": 0.95, "model": 0.36, "lidar": None, "lidar_points_in_fire": 0},
         "lidar_points": [],

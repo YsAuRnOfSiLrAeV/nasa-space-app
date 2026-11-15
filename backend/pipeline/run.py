@@ -1,40 +1,218 @@
-"""End-to-end: fire polygon + summer -> result files.
+"""One pipeline run: fire perimeter + summer -> result files.
 
-    python -m pipeline.run --fire <nbac_id> --summer 2026 --out ../data/fires
+    python -m pipeline.run --polygon path/to/fire.geojson --summer 2026 --out ../data/fires
 
-Steps of one run (each step works on maps on the same fire grid):
+``run`` does the steps below. Every map lies on the same fire grid.
 
-    grid    = make_grid(polygon)                                   grid.py
-    nisar   = nisar_layers(grid, summer)                           nisar.py
-    s1      = sentinel1(grid, summer)                              gee/layers.py
-    nd      = ndvi(grid, summer)                                   gee/layers.py
-    m       = masks(grid, summer)                                  gee/layers.py
-    zones   = make_zones(polygon, grid, m)                         gee/zones.py
-    ref     = reference_height(polygon, grid, zones)               gee/gedi.py
-    cells   = build_table({**nisar.layers, **s1, **nd})            cell_features.py
-    state   = state model on cells.values -> cells.to_grid(...)    model.py
-    numbers = covariates, stage_share, coverage, optics_recovery   fire_stats.py
-    future  = forecast model on fire year + numbers + ref          model.py
-    write_fire(...), update_index(...)                             export.py
+    1. grid      make_grid(perimeter), regional model for the fire centre   grid.py, model.py
+    2. data      in parallel threads:                                       nisar.py, gee/
+                   NISAR HH, HV
+                   Sentinel-1 VH, VV
+                   NDVI
+                   masks -> zones -> neighbour forest height
+                   scene counts for result.json
+    3. state     cell table -> input check -> state model -> maps            cell_features.py, model.py
+    4. numbers   distance to edge, covariates, stage shares, coverage,      fire_stats.py
+                 optics
+    5. forecast  fire recovery and growth forecast                          model.py
+    6. files     result.json, cells.json, index.json                        export.py
+
+The API calls ``run`` too, and passes ``on_step`` to show the user which step is running.
 """
-
 from __future__ import annotations
 
 import argparse
+import json
+import logging
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Callable
+
+import numpy as np
+from shapely.geometry import mapping, shape
+
+from . import export, fire_stats, model
+from .cell_features import build_table
+from .contract import NDVI, NISAR_HV
+from .gee import client, gedi, layers, zones as zone_maps
+from .grid import Grid, make_grid
+from .nisar import nisar_layers
+
+log = logging.getLogger(__name__)
+STEPS = ("grid", "data", "state", "numbers", "forecast", "files")
+MAX_EXCLUDED_SHARE = 0.15  # above this share of the burn without a model value, the average is likely too high
 
 
-def run(polygon, summer: int, out_dir) -> None:
-    raise NotImplementedError
+@dataclass(frozen=True)
+class Fire:
+    """A fire to compute: catalog entry or user perimeter."""
+    id: str
+    name: dict                 # {"en": "..."}
+    year: int                  # year of the fire
+    perimeter: dict            # GeoJSON geometry, lon/lat
+    area_ha: float
+    extra_warnings: list[str] = field(default_factory=list)
+
+
+def run(fire: Fire, summer: int, out_dir: Path | str, on_step: Callable[[str], None] | None = None) -> Path:
+    """Compute one fire for one summer and write its files to <out_dir>/<fire id>/. Returns that folder."""
+    step = on_step or (lambda name: None)
+
+    step("grid")
+    grid = make_grid(fire.perimeter)
+    centre = shape(fire.perimeter).centroid
+    place = model.place(centre.x, centre.y)  # fails here, before any download, where no model applies
+
+    step("data")
+    data = _fetch_data(fire, grid, summer)
+    zones = data["zones"]
+
+    step("state")
+    table = build_table({**data["nisar"].layers, **data["s1"], **data["ndvi"]}, where=np.isfinite(zones))
+    input_issues = model.check_inputs(table, place.model)
+    for issue in input_issues:
+        log.warning("model input: %s", issue)
+    state = model.state(table, place.model)
+    stage = table.to_grid(state.stage)
+    p_forest = table.to_grid(state.p_forest_gt5)
+    height = table.to_grid(state.height_m)
+
+    step("numbers")
+    inside = fire_stats.fire_mask(fire.perimeter, grid)
+    covariates = fire_stats.covariates({fire_stats.DIST_EDGE: fire_stats.distance_to_edge(inside)}, zones)
+    nisar_coverage = fire_stats.coverage(data["nisar"].layers[NISAR_HV], zones)
+    ndvi = data["ndvi"][NDVI]
+
+    step("forecast")
+    reference_m = data["reference"]["height_m"]
+    recovery = model.fire_recovery(height, zones, reference_m)
+    factors = {**covariates, "ref_rh98_med": reference_m, "fire_size_log": fire_stats.fire_size_log(fire.area_ha)}
+    growth, forecast_warnings = model.forecast(fire.year, summer, factors, centre.x, centre.y)
+
+    step("files")
+    factor = export.display_factor(grid)
+    result = {
+        "fire": {"id": fire.id, "name": fire.name, "year": fire.year, "area_ha": round(fire.area_ha), "perimeter": fire.perimeter},
+        "satellite_images": {
+            "summer": summer,
+            "nisar": {
+                "date": data["nisar"].main_day.isoformat() if data["nisar"].main_day else None,
+                "fire_covered": nisar_coverage,
+            },
+            **data["images"],
+        },
+        "map_grid": export.map_grid(grid, factor),
+        "neighbour_forest": {"height_m": reference_m, "source": data["reference"]["source"]},
+        "model_result": {
+            "model_version": model.MODEL_VERSION,
+            "region": place.model,
+            "recovery_today_avg": recovery["recovery_today_avg"],
+            "excluded_share": recovery["excluded_share"],
+            "stage_share": fire_stats.stage_share(stage, zones),
+            "accuracy": model.accuracy(place.model),
+        },
+        "growth_forecast": growth,
+        "comparison": {
+            "optics": fire_stats.optics_recovery(ndvi, zones),
+            "model": recovery["recovery_today_avg"],
+            "lidar": None,
+            "lidar_points_in_fire": 0,
+        },
+        "lidar_points": [],
+        "warnings": _warnings(place, input_issues, nisar_coverage, recovery, data["reference"], forecast_warnings, fire),
+    }
+    cells = export.cells_json(
+        {
+            ("model", "stage"): stage,
+            ("model", "p_forest_gt5"): p_forest,
+            ("map", "zone"): zones,
+            ("optics", "ndvi"): ndvi,
+        },
+        factor,
+    )
+    folder = export.write_fire(out_dir, result, cells)
+    export.update_index(out_dir, result)
+    return folder
+
+
+def _fetch_data(fire: Fire, grid: Grid, summer: int) -> dict:
+    """All satellite data for the fire. The five downloads do not depend on each other and run at once."""
+    client.session()  # log in to Earth Engine once, before the threads start
+
+    def zones_and_reference():
+        masks = layers.masks(grid, summer)
+        z = zone_maps.make_zones(fire.perimeter, grid, masks)
+        return z, gedi.reference_height(fire.perimeter, grid, z)
+
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        nisar = pool.submit(nisar_layers, grid, summer)
+        s1 = pool.submit(layers.sentinel1, grid, summer)
+        ndvi = pool.submit(layers.ndvi, grid, summer)
+        zones_ref = pool.submit(zones_and_reference)
+        images = pool.submit(layers.satellite_images, grid, summer)
+        z, reference = zones_ref.result()
+        return {
+            "nisar": nisar.result(),
+            "s1": s1.result(),
+            "ndvi": ndvi.result(),
+            "zones": z,
+            "reference": reference,
+            "images": images.result(),
+        }
+
+
+def _warnings(
+    place: model.Place,
+    input_issues: list[str],
+    nisar_coverage: float,
+    recovery: dict,
+    reference: dict,
+    forecast_warnings: list[str],
+    fire: Fire,
+) -> list[str]:
+    """Warning codes for result.json. The texts live in the frontend."""
+    codes = list(fire.extra_warnings)
+    if place.extrapolated:
+        codes.append("REGION_EXTRAPOLATED")
+    if input_issues:
+        codes.append("MODEL_INPUT_CHECK_FAILED")
+    if nisar_coverage < fire_stats.MIN_NISAR_COVERAGE:
+        codes.append("LOW_NISAR_COVERAGE")
+    if (recovery["excluded_share"] or 0) >= MAX_EXCLUDED_SHARE:
+        codes.append("MANY_CELLS_EXCLUDED")
+    if reference["source"] != "gedi":
+        codes.append("ACCURACY_NOT_VALIDATED_WITHOUT_GEDI")  # validation used fires with GEDI only
+    return codes + [code for code in forecast_warnings if code not in codes]
+
+
+def fire_from_geojson(path: Path | str) -> Fire:
+    """Fire from a GeoJSON Feature file. Properties: id, year, optional name (English) and area_ha."""
+    feature = json.loads(Path(path).read_text(encoding="utf-8"))
+    props = feature.get("properties") or {}
+    geometry = feature["geometry"]
+    area_ha = props.get("area_ha")
+    if area_ha is None:
+        grid = make_grid(geometry)
+        area_ha = grid.to_grid_crs(shape(geometry)).area / 10_000
+    return Fire(
+        id=props["id"],
+        name={"en": props.get("name") or f"Fire {props['year']}"},
+        year=int(props["year"]),
+        perimeter=mapping(shape(geometry)),
+        area_ha=float(area_ha),
+    )
 
 
 def main() -> None:
-    p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--fire", help="NBAC fire id")
-    p.add_argument("--polygon", help="GeoJSON file with the fire polygon")
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--polygon", required=True, help="GeoJSON Feature: fire perimeter with id and year in properties")
     p.add_argument("--summer", type=int, required=True, help="summer of the satellite images, e.g. 2026")
-    p.add_argument("--out", required=True)
-    p.parse_args()
-    raise NotImplementedError
+    p.add_argument("--out", required=True, help="folder for index.json and the fire folders")
+    args = p.parse_args()
+    logging.basicConfig(level=logging.WARNING, format="%(message)s")  # warnings only: libraries log every download at INFO
+    folder = run(fire_from_geojson(args.polygon), args.summer, args.out, on_step=lambda s: print(f"[{s}]", flush=True))
+    print(f"written to {folder}")
 
 
 if __name__ == "__main__":

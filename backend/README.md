@@ -1,68 +1,110 @@
-# Forest Recovery with NISAR
+# Backend
 
-NASA Space Apps Challenge 2026, challenge "Dancing with the SARs". Team Sentinellae Silvae.
+The pipeline turns a fire perimeter into the result files the frontend draws. One run takes a
+fire polygon and a summer, reads the satellite data for that summer onto a common grid, runs the
+models and writes `result.json`, `cells.json` and the shared `index.json`.
 
-After a wildfire, satellite images usually show the burn turning green again within a few years.
-Optical indices such as NDVI see that green, but they cannot tell young shrubs from a forest that
-has grown back. This project uses the L-band radar of the NASA-ISRO NISAR mission, which is
-sensitive to trunks and branches, to show how far a burned forest has actually come back and
-when it is likely to be a forest again.
+## How the pipeline works
 
-## What the app does
+Every layer is a 2D array on the same 30 m grid, so cell `[row, col]` is the same patch of
+ground in every layer.
 
-- Shows fires that are already computed on a globe. For each fire it shows the forest height
-  stage of every cell (under 5 m, 5-10 m, over 10 m), how recovered the fire is today compared
-  with the unburned forest around it, and a forecast of when it reaches 80% of that height.
-- Compares three views of the same fire: what optics suggests, what our NISAR model says, and
-  what GEDI lidar measured.
-- Lets a user find a fire in the catalog or draw an area, and runs the same pipeline for it.
+| Step | Module | What it does |
+|---|---|---|
+| 1 | `grid.py` | Lays a 30 m grid in the fire's UTM zone over the fire and a 6 km ring around it |
+| 2 | `nisar.py` | Finds NISAR GCOV granules for the summer and reads HH and HV at every cell centre |
+| 3 | `gee/layers.py` | Sentinel-1 VH and VV, Sentinel-2 NDVI, and land cover, forest loss and fire history masks from Google Earth Engine |
+| 4 | `gee/zones.py` | Marks each cell as burn, neighbour forest (1.5-6 km ring, undisturbed) or excluded |
+| 5 | `gee/gedi.py` | Height of the neighbour forest from GEDI lidar, which counts as 100% recovery |
+| 6 | `cell_features.py` | Turns the five input maps into one row per cell for the state model, and puts its output back on the grid |
+| 7 | `model.py` | The only module that calls the `forestrecovery` library: regional model, input check, state model, fire recovery, forecast |
+| 8 | `fire_stats.py` | Fire-level numbers: forecast inputs (median of each factor over the burn) and the totals in `result.json` |
+| 9 | `export.py` | Merges cells into display cells (90 m or larger) and writes the result files |
+| | `run.py` | Runs the steps above for one fire |
 
-For now the model is calibrated and checked for Canada only. The map shows where it can be
-trusted elsewhere.
+Steps 2, 3 and 4-5 do not depend on each other and run in parallel. The input values match the
+ones the model was trained on: same products, same date windows, same processing.
 
-## How it works
+`contract.py` holds the names of the input layers and the zone codes that all modules share.
+The result format is described in the team deliverables (tab 1).
 
-1. The fire perimeter comes from the Canadian National Burned Area Composite (NBAC).
-2. A 30 m grid is laid over the fire and the forest around it.
-3. NISAR GCOV backscatter (HH, HV), Sentinel-1 backscatter (VH, VV) and Sentinel-2 NDVI from the
-   same summer are read onto that grid.
-4. The state model turns these five values into a forest height stage for every cell.
-5. The unburned forest 1.5-6 km around the fire, measured by GEDI lidar, sets "100% recovery".
-6. The forecast model uses the fire age and a few site factors (slope, elevation, soil, burn
-   severity) to estimate the year the fire reaches 80% of the neighbour forest height.
-7. The result is written as a small set of JSON files that the frontend draws.
+## Requirements
 
-At fire level the model's recovery estimate differs from GEDI lidar by about 12% on fires it
-did not see in training.
+- Python 3.10 or newer (3.11 or 3.12 recommended)
+- Git
 
-## Data
+## Setup
 
-| Source | Used for |
-|---|---|
-| NISAR L2 GCOV (NASA Earthdata) | radar backscatter, the main input |
-| Sentinel-1 GRD | radar backscatter at C-band |
-| Sentinel-2 surface reflectance | NDVI, the optical view |
-| GEDI L2A | forest height for training and for the neighbour forest |
-| NBAC | fire perimeters and fire history in Canada |
-| ESA WorldCover, Hansen Global Forest Change, MODIS MCD64A1 | water, forest, logging and older fires around the burn |
+Run these once, from the repository root.
 
-## Repository
-
-```
-frontend/   web app (React, TypeScript, Vite, MapLibre, Three.js, Tailwind)
-backend/    pipeline "fire polygon -> satellite layers -> model -> result files" and the API
-models/     forestrecovery, the model library
-fires/      fire catalog and model confidence zones
-data/       small training data and computed demo fires
-docs/       research notes and methodology
+**Windows (cmd)**
+```cmd
+cd backend
+python -m venv .venv
+.venv\Scripts\activate.bat
+pip install -e ".[dev]"
 ```
 
-How to set up and run each part is in its own README: [backend](backend/README.md),
-[frontend](frontend/README.md), [models](models/README.md).
+**Windows (PowerShell)**
+```powershell
+cd backend
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -e ".[dev]"
+```
+If PowerShell blocks the script, run once: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
 
-## Working rules
+**macOS / Linux**
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
 
-- Keys and tokens live only in `.env` (template in `.env.example`) and are never committed.
-- Large rasters stay out of Git.
-- `main` always works.
-- The result format and the feature names change only after the team agrees.
+You should see `(.venv)` at the start of the prompt. To leave the environment, run `deactivate`.
+
+### Model library
+
+The models live in `models/` (the `forestrecovery` library). Install it into the same environment:
+```bash
+pip install -e ../models
+```
+
+### Editor
+
+Point your editor to the interpreter in `backend/.venv`, otherwise imports show as missing.
+- **VS Code:** `Ctrl+Shift+P` -> *Python: Select Interpreter* -> `backend/.venv`
+- **PyCharm:** Settings -> Project -> Python Interpreter -> Add Interpreter -> Existing -> `backend/.venv`
+
+## Credentials
+
+Needed only to run the pipeline on real data, not for the tests.
+
+- **NASA Earthdata** (NISAR): create an account at https://urs.earthdata.nasa.gov and set
+  `EARTHDATA_USERNAME` and `EARTHDATA_PASSWORD` in `backend/.env`.
+- **Google Earth Engine** (Sentinel-1, Sentinel-2, WorldCover, Hansen, MODIS, GEDI): get access to the
+  team Cloud project, then run once:
+  ```bash
+  earthengine authenticate
+  ```
+  and set `GEE_PROJECT` in `backend/.env`.
+
+`.env` is in `.gitignore`. Never commit credentials.
+
+## Run
+
+**Tests**
+```bash
+python -m pytest
+```
+
+**Pipeline for one fire**
+```bash
+python -m pipeline.run --polygon path/to/fire.geojson --summer 2026 --out ../data/fires
+```
+
+## Adding a dependency
+
+Add it to `dependencies` in `pyproject.toml`, then run `pip install -e ".[dev]"` again.
+Everyone else re-runs the same command after pulling.

@@ -1,13 +1,20 @@
-[project]
-name = "forestrecovery"
-version = "0.1.0"
-description = "Forest state and recovery models (NISAR, Sentinel-1, NDVI)"
-requires-python = ">=3.10"
-dependencies = ["numpy", "scikit-learn"]
-
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.packages.find]
-include = ["forestrecovery*"]
+[project]
+name = "forestrecovery"
+version = "0.14.1"
+description = "Forest recovery after wildfire from NISAR, Sentinel-1 and NDVI: stage now, growth over time, 3D scene. Data for 80 fires included."
+readme = "forestrecovery/README.md"
+requires-python = ">=3.10"
+dependencies = ["numpy", "pandas", "pyproj"]
+
+[project.optional-dependencies]
+geo = ["rasterio"]            # лише якщо читаєте власні GeoTIFF (load_demo_rasters)
+
+[tool.setuptools]
+packages = ["forestrecovery"]
+
+[tool.setuptools.package-data]
+forestrecovery = ["model.json", "growth.json", "README.md", "assets/*.json", "assets/*.html", "data/*", "regions.json", "growth_mediterranean.json", "scenario_*.json", "FEATURES.md", "BUNDLE_FORMAT.md", "territory_grid.npz", "territory_display.geojson", "growth_zone.geojson", "ukraine_zone.geojson", "growth_covariates.json", "accuracy.json", "models/*.json"]
