@@ -94,7 +94,7 @@ def shots_every(grid, zones, step):
 
 
 def test_reference_height_from_gedi(grid, zones, monkeypatch):
-    monkeypatch.setattr(gedi, "_gedi_rh98", lambda g: shots_every(g, zones, step=5))
+    monkeypatch.setattr(gedi, "_gedi_rh98", lambda g, **kw: shots_every(g, zones, step=5))
 
     result = gedi.reference_height(FIRE, grid, zones)
 
@@ -104,7 +104,7 @@ def test_reference_height_from_gedi(grid, zones, monkeypatch):
 
 
 def test_reference_height_falls_back_to_eth(grid, zones, monkeypatch):
-    monkeypatch.setattr(gedi, "_gedi_rh98", lambda g: shots_every(g, zones, step=200))  # too few shots
+    monkeypatch.setattr(gedi, "_gedi_rh98", lambda g, **kw: shots_every(g, zones, step=200))  # too few shots
     monkeypatch.setattr(gedi, "_eth_height", lambda g: np.full(g.shape, 17.0))
 
     result = gedi.reference_height(FIRE, grid, zones)
@@ -118,7 +118,7 @@ def test_reference_height_north_of_gedi_coverage(monkeypatch):
     grid = make_grid(fire)
     forest = {WORLDCOVER: np.full(grid.shape, 10.0), FOREST_LOSS: np.zeros(grid.shape), BURNED: np.zeros(grid.shape)}
     zones = make_zones(fire, grid, forest)
-    monkeypatch.setattr(gedi, "_gedi_rh98", lambda g: pytest.fail("GEDI has no data this far north"))
+    monkeypatch.setattr(gedi, "_gedi_rh98", lambda g, **kw: pytest.fail("GEDI has no data this far north"))
     monkeypatch.setattr(gedi, "_eth_height", lambda g: np.full(g.shape, 12.0))
 
     assert gedi.reference_height(fire, grid, zones) == {"height_m": 12.0, "source": "eth", "shots": 0}
@@ -130,7 +130,7 @@ def test_reference_height_needs_reference_forest(grid):
 
 
 def test_reference_height_fails_when_no_source_has_data(grid, zones, monkeypatch):
-    monkeypatch.setattr(gedi, "_gedi_rh98", lambda g: np.full(g.shape, np.nan))
+    monkeypatch.setattr(gedi, "_gedi_rh98", lambda g, **kw: np.full(g.shape, np.nan))
     monkeypatch.setattr(gedi, "_eth_height", lambda g: np.full(g.shape, np.nan))
 
     with pytest.raises(ValueError, match="no canopy height"):
@@ -222,7 +222,7 @@ def test_earth_engine_pixels_land_on_grid_cells(grid):
 
 
 def test_reference_height_uses_given_shots_without_downloading(grid, zones, monkeypatch):
-    monkeypatch.setattr(gedi, "_gedi_rh98", lambda g: pytest.fail("shots were given, nothing to download"))
+    monkeypatch.setattr(gedi, "_gedi_rh98", lambda g, **kw: pytest.fail("shots were given, nothing to download"))
     heights = np.where(zones == REFERENCE, 20.0, np.nan)
     assert gedi.reference_height(FIRE, grid, zones, heights=heights)["height_m"] == 20.0
 
@@ -230,10 +230,15 @@ def test_reference_height_uses_given_shots_without_downloading(grid, zones, monk
 
 def test_shots_after_fire(grid, monkeypatch):
     starts = []
-    monkeypatch.setattr(gedi, "_gedi_rh98", lambda g, start: starts.append(start) or np.zeros(g.shape))
+    monkeypatch.setattr(gedi, "_gedi_rh98", lambda g, start, max_rh98: starts.append(start) or np.zeros(g.shape))
     every = np.ones(grid.shape)
     assert gedi.shots_after_fire(FIRE, grid, 2010, every) is every       # all shots already after the fire
     assert gedi.shots_after_fire(FIRE, grid, 2010, None) is None          # north of GEDI coverage
     gedi.shots_after_fire(FIRE, grid, 2020, every)
     assert starts == ["2021-01-01"]
     assert np.isnan(gedi.shots_after_fire(FIRE, grid, 2023, every)).all()  # GEDI ended in March 2023
+
+
+def test_tall_shot_limit_follows_the_training_scripts():
+    assert gedi._max_rh98(FIRE) == 35                              # British Columbia
+    assert gedi._max_rh98(box(29.6, 51.3, 29.7, 51.4)) == 45      # Ukraine
