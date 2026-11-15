@@ -1,0 +1,110 @@
+import { mapHref, type MapState } from '@/app/route';
+import { fireLabel } from '@/domain/fire/fireLabel';
+import { config } from '@/config';
+import type { DemoFire } from '@/data/fireSchema';
+import type { FireCatalog } from '@/hooks/useFireCatalog';
+import { useState, type ReactNode, type RefObject } from 'react';
+import { MapSidePanel } from '../MapSidePanel';
+import { FindYourFireNotice } from './FindYourFireNotice';
+import { FireCatalogList } from './FireCatalogList';
+import styles from './MapShell.module.css';
+
+export function InvestigationPanel({
+  state,
+  catalog,
+  onFireSelect,
+  onPlanet,
+  headingRef,
+  fireDetail,
+  search,
+  children,
+  scientificContext,
+}: {
+  state: MapState;
+  catalog: FireCatalog;
+  onFireSelect: (fire: DemoFire) => void;
+  onPlanet: () => void;
+  headingRef: RefObject<HTMLHeadingElement | null>;
+  /** The selected example fire, shown above the fire list. */
+  fireDetail?: ReactNode;
+  search?: ReactNode;
+  children?: ReactNode;
+  scientificContext?: ReactNode;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [toolsRequested, setToolsRequested] = useState(false);
+  return (
+    <MapSidePanel
+      label="Fire investigation"
+      className={`${styles.panel} ${collapsed ? styles.collapsed : ''}`}
+      pinned={
+        <div className={styles.panelHead}>
+          <h2 ref={headingRef} tabIndex={-1}>
+            {state.mode === 'examples' ? 'Example fires' : 'Find Your Fire'}
+          </h2>
+          <button
+            type="button"
+            aria-expanded={!collapsed}
+            aria-controls="investigation-body"
+            onClick={() => setCollapsed((value) => !value)}
+          >
+            {collapsed ? 'Expand panel' : 'Collapse panel'}
+          </button>
+        </div>
+      }
+    >
+      <div id="investigation-body" hidden={collapsed} className={styles.panelBody}>
+        <nav aria-label="Where you are" className={styles.crumbs}>
+          <button type="button" onClick={onPlanet}>
+            Globe
+          </button>
+          <span aria-hidden="true">›</span>
+          {state.mode === 'examples' && state.fireId ? (
+            <>
+              <a href={mapHref({ mode: 'examples', presentation: 'explore', fireId: null })}>
+                Fires
+              </a>
+              <span aria-hidden="true">›</span>
+              <span aria-current="page">{fireLabel(state.fireId)}</span>
+            </>
+          ) : (
+            <span aria-current="page">
+              {state.mode === 'examples' ? 'Fires' : 'Find Your Fire'}
+            </span>
+          )}
+        </nav>
+        {scientificContext}
+        {state.mode === 'examples' ? (
+          <>
+            {fireDetail}
+            {!state.fireId && (
+              <p>
+                {config.fireDataIsExample
+                  ? 'Supplied fire catalog. Spatial datasets and perimeter-only summaries are labelled separately. Ranking scores and modeled estimates are distinct from measured observations.'
+                  : 'Published, precomputed fire results.'}
+              </p>
+            )}
+            {state.fireId && <h3 className={styles.listHead}>Switch fire</h3>}
+            <FireCatalogList catalog={catalog} selectedId={state.fireId} onSelect={onFireSelect} />
+          </>
+        ) : (
+          <>
+            {search ?? <FindYourFireNotice />}
+            {fireDetail}
+          </>
+        )}
+        {children && (
+          <details
+            className={styles.studyDetails}
+            onToggle={(event) => {
+              if (event.currentTarget.open) setToolsRequested(true);
+            }}
+          >
+            <summary>Existing Ontario study tools</summary>
+            {toolsRequested && children}
+          </details>
+        )}
+      </div>
+    </MapSidePanel>
+  );
+}

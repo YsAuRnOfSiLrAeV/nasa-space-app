@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "fire": {
+    "id": "quebec_2010_fixture",
+    "name": {
+      "en": "Quebec (dev fixture)",
+      "uk": ""
+    },
+    "year": 2010,
+    "area_ha": null,
+    "perimeter": null
+  },
+  "satellite_images": {
+    "summer": 2026
+  },
+  "map_grid": {
+    "columns": 60,
+    "rows": 60,
+    "cell_size_m": 360,
+    "corners_lonlat": [
+      [
+        -70.15517,
+        51.39767
+      ],
+      [
+        -69.84483,
+        51.39767
+      ],
+      [
+        -69.84483,
+        51.20233
+      ],
+      [
+        -70.15517,
+        51.20233
+      ]
+    ]
+  },
+  "neighbour_forest": null,
+  "model_result": {
+    "model_version": "development fixture (no model)",
+    "region": "not applicable",
+    "recovery_today_avg": null,
+    "area_recovered_80pct": null,
+    "stage_share": null,
+    "error_vs_lidar_pct": null
+  },
+  "lidar_points": [],
+  "files": {
+    "cells": "cells.json",
+    "optical_image": null
+  },
+  "warnings": [
+    "DEVELOPMENT_FIXTURE"
+  ]
+}

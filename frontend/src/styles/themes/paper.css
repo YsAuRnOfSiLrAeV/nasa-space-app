@@ -1,0 +1,125 @@
+/*
+ * Paper: black stays the main colour, white is where you read (as on nasa.gov).
+ * The document pages (Research, Forest Recovery, a fire, Your Own Fire) open on
+ * a full-width black band (the navigation and the page intro), and their
+ * reading sections sit on white below it. The Explore globe stays fully dark.
+ *
+ * Same token names as the dark theme, so components and canvas charts (which
+ * read tokens through cssVar) follow without changes. Hex values: the canvas
+ * alpha helper and MapLibre parse hex. Contrast on #ffffff noted beside each.
+ * Burgundy, never red; flat fills only.
+ */
+.nasa-page {
+  color-scheme: light;
+
+  --background: #ffffff;
+  --foreground: #0d0d0d; /* 19.6:1 */
+  --card: #ffffff;
+  --card-foreground: #0d0d0d;
+  --popover: #ffffff;
+  --popover-foreground: #0d0d0d;
+  --primary: #145fa8; /* 6.6:1 */
+  --primary-foreground: #ffffff;
+  --secondary: #f3f3f3;
+  --secondary-foreground: #0d0d0d;
+  --muted: #f0f0f0;
+  --muted-foreground: #4d4d4d; /* 8.6:1 */
+  --accent: #f0f0f0;
+  --accent-foreground: #0d0d0d;
+  --destructive: #8f2a45; /* burgundy, 8.4:1 */
+  --border: rgb(13 13 13 / 0.14);
+  --input: rgb(13 13 13 / 0.28);
+  --ring: #145fa8;
+
+  --signal: #145fa8;
+  --select: #145fa8;
+  --highlight: #145fa8;
+  --satellite: #145fa8;
+  --amber: #8a5300; /* 6.4:1 */
+  --navy: #f3f3f3;
+  --silver: #5c5c5c;
+  --faint: #666666; /* 5.7:1 */
+  --rule: rgb(13 13 13 / 0.13);
+  --rule-strong: rgb(13 13 13 / 0.3);
+
+  --forest: #2e7d32;
+  --mint: #2e7d32;
+  --burn: #a8385a; /* marks 5.9:1 */
+  --burn-text: #8f2a45;
+  --stage-0: #1b5e20;
+  --stage-1: #388e3c;
+  --stage-2: #81c784;
+  /* Research figures on white: optical, model, and GEDI as the ink reference. */
+  --evidence-optical: #2e7d32; /* 5.1:1 */
+  --evidence-model: #145fa8; /* 6.6:1 */
+  --evidence-gedi: #0d0d0d;
+
+  --panel-bg: rgb(255 255 255 / 0.94);
+  --chart-reference: rgb(13 13 13 / 0.35);
+  --map-control-icon-filter: none;
+
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/*
+ * Ink band: the navigation and the page's opening block return to the dark
+ * Earth Intelligence tokens (the same values as themes/earth-intelligence.css).
+ * The intro band bleeds to the full window width with a flat spread shadow,
+ * clipped at the sides of the band only (no gradient).
+ */
+.nasa-page > header,
+.nasa-page .nasa-page-header,
+.nasa-page [data-band='ink'] {
+  color-scheme: dark;
+  --background: #060606;
+  --foreground: #f3f0ea;
+  --card: #0d0d0d;
+  --card-foreground: #f3f0ea;
+  --popover: #121212;
+  --popover-foreground: #f3f0ea;
+  --primary: #60b4ec;
+  --primary-foreground: #060606;
+  --secondary: #151515;
+  --secondary-foreground: #f3f0ea;
+  --muted: #1e1e1e;
+  --muted-foreground: #b0b0b0;
+  --accent: #161616;
+  --accent-foreground: #f3f0ea;
+  --destructive: #d37487;
+  --border: rgb(243 240 234 / 0.14);
+  --input: rgb(243 240 234 / 0.2);
+  --ring: #60b4ec;
+  --signal: #60b4ec;
+  --select: #60b4ec;
+  --highlight: #60b4ec;
+  --satellite: #60b4ec;
+  --amber: #f7b755;
+  --navy: #161616;
+  --silver: #bdbdbd;
+  --faint: #858585;
+  --rule: rgb(243 240 234 / 0.12);
+  --rule-strong: rgb(243 240 234 / 0.24);
+  --mint: #4caf50;
+  --burn: #b53e5d;
+  --burn-text: #d37487;
+  --panel-bg: rgb(6 6 6 / 0.86);
+  --chart-reference: rgb(243 240 234 / 0.3);
+  --evidence-optical: #66bb6a;
+  --evidence-model: #60b4ec;
+  --evidence-gedi: #f3f0ea;
+  color: var(--foreground);
+}
+.nasa-page .nasa-page-header,
+.nasa-page [data-band='ink'] {
+  max-width: none;
+  background: var(--background);
+  box-shadow: 0 0 0 100vmax var(--background);
+  clip-path: inset(0 -100vmax);
+  border-bottom: 0;
+}
+/* The navigation over white content: a solid black bar, not translucent. */
+.nasa-page > header [data-fade] {
+  background: var(--background);
+  border-bottom-color: var(--background);
+}

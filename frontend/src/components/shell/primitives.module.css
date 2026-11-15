@@ -1,0 +1,145 @@
+/*
+ * Shared presentation primitives for every page (explorer and Recovery):
+ * section headings, technical labels, outline controls and the tabular register.
+ * Colours from theme variables only. A composition may reuse them through
+ * `composes`, so pages never import a composition's styles.
+ */
+
+/* Numbered section heading: "01 Canopy height". */
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding-bottom: 0.625rem;
+  margin-bottom: 0.875rem;
+  border-bottom: 1px solid var(--rule);
+  font: 500 0.9375rem/1.2 var(--font-section);
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+.sectionHead > span:first-child {
+  font: 500 0.625rem/1 var(--font-label);
+  letter-spacing: 0.18em;
+  /* Neutral, like the nav numerals: green means living forest in the data. */
+  color: var(--faint);
+}
+
+/* Small technical label. */
+.micro {
+  font: 500 0.625rem/1.4 var(--font-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+/* Small outline control. */
+.ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font: 500 0.625rem/1 var(--font-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--foreground);
+  transition: border-color 200ms var(--ease-out-soft);
+}
+.ghost:hover {
+  border-color: var(--select);
+}
+.ghost:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+/* Register: a tabular log with mono numerals. */
+.register {
+  width: 100%;
+  border-collapse: collapse;
+  font: 400 0.6875rem/1.2 var(--font-data);
+  font-variant-numeric: tabular-nums;
+  color: var(--foreground);
+}
+.register thead th {
+  padding: 0 0 0.375rem;
+  font: 500 0.5625rem/1 var(--font-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: right;
+  color: var(--muted-foreground);
+  border-bottom: 1px solid var(--rule);
+}
+.register thead th:first-child,
+.register tbody th {
+  text-align: left;
+}
+.register td,
+.register tbody th {
+  padding: 0;
+  border-bottom: 1px solid var(--rule);
+  text-align: right;
+  font-weight: 400;
+}
+.register td {
+  padding: 0.4375rem 0 0.4375rem 0.5rem;
+  color: var(--muted-foreground);
+}
+.register button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4375rem 0;
+  font: inherit;
+  font-weight: 500;
+  color: inherit;
+  text-align: left;
+  transition: color 200ms var(--ease-out-soft);
+}
+.register button:hover {
+  color: var(--select);
+}
+.register button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.registerRing {
+  width: 0.5625rem;
+  height: 0.5625rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  border: 1.5px solid var(--burn);
+  transition: background-color 200ms var(--ease-out-soft);
+}
+.registerActive {
+  background: color-mix(in srgb, var(--select) 16%, transparent);
+}
+.registerActive td {
+  color: var(--foreground);
+}
+.registerActive .registerRing {
+  background: var(--burn);
+}
+
+/* Image plate: the picture in a square instrument frame, a hairline with a thin
+   gap, like a scene in a viewer. Only for pictures (satellite scenes, the
+   illustration), not for text or data. */
+.bezel {
+  padding: 0.25rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 0;
+}
+.bezelCore {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0;
+}
+
+/* Touch screens: links styled as controls get the 44px minimum target buttons have. */
+@media (pointer: coarse) {
+  a.ghost {
+    min-height: 44px;
+  }
+}

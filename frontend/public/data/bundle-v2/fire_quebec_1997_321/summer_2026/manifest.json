@@ -1,0 +1,1 @@
+{"bundle_format":2,"library_version":"0.14.0","fire_id":"quebec_1997_321","summer":2026,"files":["manifest.json","result.json","polygon.geojson"],"roles":{"manifest.json":"this list","result.json":"numbers for the panel: model 1 summary, model 2 forecast with interval, reliability notes","polygon.geojson":"fire contour"}}

@@ -1,0 +1,128 @@
+/* Forest growth in 3D: the fire and year controls around one or two viewers. */
+.explorer > * + *,
+.player > * + * {
+  margin-top: 1.25rem;
+}
+.picker,
+.compare {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  font: 500 0.75rem/1.4 var(--font-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.picker select,
+.compare select {
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--input);
+  background: var(--background);
+  color: var(--foreground);
+  font: 400 0.875rem/1 var(--font-ui);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.controls {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 46rem;
+}
+.readout {
+  display: grid;
+  gap: 0.2rem;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+.readout b {
+  color: var(--foreground);
+  font-weight: 500;
+}
+.kicker {
+  font: var(--eyebrow-weight) var(--eyebrow-size) / 1.4 var(--eyebrow-font);
+  letter-spacing: var(--eyebrow-tracking);
+  text-transform: var(--eyebrow-transform);
+}
+/* The year shown: the largest thing in the controls. */
+.year {
+  font: 400 3rem/1 var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+.transport {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+}
+.transport button {
+  min-height: 44px;
+  color: var(--foreground);
+  font: 500 0.75rem/1 var(--font-label);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.transport button:disabled {
+  opacity: 0.4;
+  text-decoration: none;
+  cursor: default;
+}
+.transport button[aria-pressed='true'] {
+  color: var(--signal);
+}
+.controls input[type='range'] {
+  width: 100%;
+  min-height: 28px;
+  accent-color: var(--signal);
+}
+.range {
+  display: flex;
+  justify-content: space-between;
+  font: 400 0.6875rem/1 var(--font-data);
+  color: var(--muted-foreground);
+}
+/* Before and after, side by side; stacked on narrow screens. */
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+@media (max-width: 900px) {
+  .pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.method {
+  max-width: 52rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+.method summary {
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--foreground);
+  font-weight: 500;
+}
+.method table {
+  width: 100%;
+  margin: 0.5rem 0 1rem;
+  border-collapse: collapse;
+}
+.method th,
+.method td {
+  padding: 0.5rem 0.75rem 0.5rem 0;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  vertical-align: top;
+}
+.method thead th {
+  font: 500 0.6875rem/1.4 var(--font-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.method tbody th {
+  color: var(--foreground);
+  font-weight: 500;
+}

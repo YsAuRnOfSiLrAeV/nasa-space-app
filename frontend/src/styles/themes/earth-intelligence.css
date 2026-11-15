@@ -1,0 +1,157 @@
+/*
+ * Theme: Earth Intelligence — "Mission Control × Earth Observatory".
+ *
+ * An instrument read in a dim room: a near-black neutral ground (black, like
+ * NASA's own imagery pages), off-white ink, and signal colours that each mean one thing.
+ *   signal blue  instrument state: the action, selection, focus, coverage limits
+ *   amber        the study region (outline, key, burned sample sites)
+ * Everything else is a true neutral grey (no blue tint). Not NASA's brand colours: this is an
+ * independent project and must not read as an official NASA application.
+ *
+ * Values are designed in OKLCH (noted beside each) and stored as hex, because
+ * the canvas renderers (`withAlpha`) and MapLibre parse hex.
+ *
+ * Typography, three voices:
+ *   editorial   Geist, light, tight tracking         --font-display / --font-section
+ *   label       Geist, medium, small caps tracking   --font-label / --eyebrow-*
+ *   readout     JetBrains Mono, tabular numerals     --font-coord / --font-data
+ *
+ * Data-encoding colours (burn, forest, mint, stages, charts) are unchanged in
+ * this pass: they carry meaning on the Research and Recovery charts, which have
+ * not been redesigned yet.
+ */
+:root[data-theme='earth-intelligence'] {
+  color-scheme: dark;
+
+  /* Surfaces & text */
+  --background: #060606; /* near-black, neutral (NASA-style black, never #000) */
+  --foreground: #f3f0ea; /* oklch(0.955 0.008 85) off-white */
+  --card: #0d0d0d;
+  --card-foreground: #f3f0ea;
+  --popover: #121212;
+  --popover-foreground: #f3f0ea;
+  --primary: #60b4ec; /* signal blue */
+  --primary-foreground: #060606;
+  --secondary: #151515;
+  --secondary-foreground: #f3f0ea;
+  --muted: #1e1e1e;
+  --muted-foreground: #b0b0b0; /* 9.3:1 on background */
+  --accent: #161616; /* hover and pressed surfaces */
+  --accent-foreground: #f3f0ea;
+  --destructive: #d37487; /* burgundy, text-legible */
+  --border: rgb(243 240 234 / 0.14);
+  --input: rgb(243 240 234 / 0.2);
+  --ring: #60b4ec;
+
+  /* Identity colours (new) */
+  --signal: #60b4ec; /* oklch(0.74 0.115 240): 8.5:1 on background */
+  --amber: #f7b755; /* oklch(0.82 0.135 75): 10.9:1 on background */
+  --navy: #161616; /* name kept for the token API; neutral since the move to black */
+  --rule-strong: rgb(243 240 234 / 0.24);
+
+  /* Domain colours */
+  --forest: #2e7d32;
+  --mint: #4caf50;
+  /* Burgundy, never red (project rule): marks/fills 3.5:1, text 6.1:1 on background */
+  --burn: #b53e5d; /* oklch(0.54 0.155 8) */
+  --burn-text: #d37487; /* oklch(0.67 0.12 8) */
+  --select: #60b4ec;
+  --silver: #bdbdbd;
+  --highlight: #60b4ec;
+  --faint: #858585; /* 5.5:1 on background */
+  --rule: rgb(243 240 234 / 0.12);
+  --satellite: #60b4ec;
+  /* Canopy height stages: green ramp from dark to light */
+  --stage-0: #1b5e20;
+  --stage-1: #2e7d32;
+  --stage-2: #66bb6a;
+  /*
+   * Fire grid categories on the map (read by src/components/fire). Ordered bands as
+   * lightness ramps, distinct hues per layer, no red-green pair (project rule).
+   */
+  --grid-stage-0: #5c6bc0; /* below 5 m */
+  --grid-stage-1: #26a69a; /* 5-10 m */
+  --grid-stage-2: #d4e157; /* above 10 m */
+  --grid-prob-0: #3d6fa8; /* low probability above 5 m */
+  --grid-prob-1: #6aa8dc;
+  --grid-prob-2: #c4e3fb;
+  --grid-outside: #6b6b6b; /* outside the model's geographic domain */
+  --grid-zone: #f3f0ea; /* neighbouring-forest wash and outline */
+  /* Research figures: three readings of recovery. GEDI is the neutral reference. */
+  --evidence-optical: #66bb6a;
+  --evidence-model: #60b4ec;
+  --evidence-gedi: #f3f0ea;
+  --chart-1: #2e7d32;
+  --chart-2: #0b3d91;
+  --chart-3: #1976d2;
+  --chart-4: #b53e5d;
+  --chart-5: #f57c00;
+
+  /* Typography */
+  --font-ui: 'Geist Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Geist Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-section: 'Geist Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-label: 'Geist Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-numeric: 'Geist Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-coord: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --font-data: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --font-prose: 'Geist Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Editorial display: light and tight, not bold */
+  --display-size: clamp(2.5rem, min(6vw, 11vh), 6rem);
+  --display-weight: 300;
+  --display-tracking: -0.035em;
+  --display-leading: 1.02;
+  --display-transform: none;
+  --eyebrow-font: var(--font-label);
+  --eyebrow-weight: 500;
+  --eyebrow-tracking: 0.16em;
+  --eyebrow-transform: uppercase;
+  --eyebrow-style: normal;
+  --eyebrow-size: 0.6875rem;
+  --figure-size: 3rem;
+  --figure-weight: 300;
+  --figure-tracking: -0.03em;
+
+  /* Shape & layout: square corners, hairlines */
+  --radius: 0px;
+  --panel-width: 360px;
+  --panel-bg: rgb(6 6 6 / 0.86);
+  --panel-shadow: none;
+  --section-gap: 2.5rem;
+  --chart-height: 160px;
+  --chart-grid-dash: 3 5;
+  --chart-reference: rgb(243 240 234 / 0.3);
+  --chart-point-opacity: 1;
+
+  /* Atmosphere: a flat ground, no ambient glow */
+  /* Flat page colour comes from --background; no backdrop image (no gradients). */
+  --app-backdrop: none;
+  /* No vignette (project rule: no gradients). */
+  --map-overlay: none;
+
+  /* Map: satellite imagery with a neutral, slightly cool grade */
+  --map-background: #060606;
+  /* Local muted land under the imagery: the basemap when GIBS or vector tiles fail. */
+  --map-land: #1a1b1e;
+  --map-land-line: #3a3c42;
+  --map-water: #0a1d3a;
+  --map-water-opacity: 0.65;
+  --map-waterway: #1a3a52;
+  --map-road: #3d3d3d;
+  --map-road-opacity: 0.35;
+  --map-boundary: #555761;
+  --map-label: #bdbdbd;
+  --map-water-label: #60b4ec;
+  --map-label-halo: #060606;
+  --map-imagery-opacity: 1;
+  --map-imagery-saturation: -0.5;
+  --map-imagery-brightness: 0.88;
+  --map-imagery-contrast: 0.12;
+  --map-hillshade-exaggeration: 0;
+  --map-hillshade-shadow: #000000;
+  --map-hillshade-highlight: #ffffff;
+  --map-water-label-italic: 0;
+  --map-point-stroke: #060606;
+  --map-point-scale: 1;
+  --map-control-icon-filter: invert(1) opacity(0.8);
+}

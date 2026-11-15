@@ -1,0 +1,268 @@
+.panel {
+  top: 76px;
+  right: 20px;
+  bottom: 20px;
+  width: var(--panel-width);
+  background: var(--panel-bg);
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  z-index: 25;
+}
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--rule);
+}
+.panelHead h2 {
+  font: 500 0.8rem/1.3 var(--font-section);
+}
+.panel button,
+.panel a {
+  min-height: 44px;
+}
+.panel button,
+.action {
+  display: inline-flex;
+  align-items: center;
+  font: 500 0.6875rem/1.5 var(--font-label);
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.panel button:focus-visible,
+.panel a:focus-visible,
+.panel summary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+.panelBody {
+  padding: 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+.panelBody > * + * {
+  margin-top: 1rem;
+}
+.panelBody p {
+  color: var(--muted-foreground);
+}
+.panelBody[hidden] {
+  display: none;
+}
+.fireList li {
+  border-block-start: 1px solid var(--rule);
+}
+.fireList a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1rem 0.5rem;
+}
+.fireList a:hover,
+.fireList a[aria-current] {
+  background: var(--accent);
+}
+.fireList small {
+  color: var(--muted-foreground);
+  font: 400 0.6875rem/1.5 var(--font-data);
+}
+.note {
+  border: 1px solid var(--rule);
+  padding: 0.75rem;
+}
+.studyDetails {
+  border-top: 1px solid var(--rule);
+  padding-top: 1rem;
+}
+.studyDetails summary {
+  cursor: pointer;
+  min-height: 44px;
+}
+.studyDetails > * + * {
+  margin-top: 1.5rem;
+}
+.collapsed {
+  bottom: auto;
+}
+.collapsed > div:last-child {
+  display: none;
+}
+.fire > * + * {
+  margin-top: 1rem;
+}
+.eyebrow {
+  font: var(--eyebrow-weight) var(--eyebrow-size) / 1.4 var(--eyebrow-font);
+  letter-spacing: var(--eyebrow-tracking);
+  text-transform: var(--eyebrow-transform);
+}
+.fireTitle {
+  margin-top: 0.25rem;
+  font: 400 1.25rem/1.25 var(--font-section);
+  color: var(--foreground);
+}
+.fixture {
+  border: 1px solid var(--amber);
+  padding: 0.75rem;
+}
+.fixture > * + *,
+.note > * + * {
+  margin-top: 0.4rem;
+}
+.controls {
+  display: grid;
+  gap: 0.15rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 0.75rem;
+}
+.controls legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 0.25rem;
+  font: 500 0.75rem/1.4 var(--font-section);
+  color: var(--foreground);
+}
+.controls label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 36px;
+  cursor: pointer;
+}
+.controls label[data-disabled] {
+  cursor: not-allowed;
+  color: var(--faint);
+}
+.controls input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--signal);
+}
+.controls small {
+  color: var(--muted-foreground);
+}
+.facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.3rem 1rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 0.75rem;
+}
+.facts dt {
+  color: var(--muted-foreground);
+}
+.facts dd {
+  font: 400 0.75rem/1.6 var(--font-data);
+}
+.listHead {
+  border-top: 1px solid var(--rule);
+  padding-top: 1rem;
+  font: 500 0.75rem/1.4 var(--font-section);
+}
+@media (max-width: 767.98px) {
+  .panel {
+    width: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    top: 55%;
+  }
+  .collapsed {
+    top: auto;
+  }
+}
+.search {
+  display: grid;
+  gap: 0.75rem;
+}
+.search label {
+  display: grid;
+  gap: 0.25rem;
+}
+.search input:not([type='checkbox']),
+.search select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem;
+  color: var(--foreground);
+  background: var(--background);
+  border: 1px solid var(--rule);
+}
+.atlas {
+  display: grid;
+  gap: 0.75rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 1rem;
+}
+.atlasFilters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+.atlas progress {
+  width: 100%;
+}
+.search fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: baseline;
+}
+.search fieldset p {
+  flex-basis: 100%;
+}
+.search :focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.mapLegend {
+  position: absolute;
+  right: calc(var(--panel-width) + 36px);
+  /* Above the forecast year bar and the region footer (each ends about 125px up),
+     so the legend never covers the slider or its label. */
+  bottom: 140px;
+  z-index: 26;
+  max-width: min(290px, 40vw);
+  max-height: 38vh;
+  overflow: auto;
+  padding: 0.65rem;
+  background: var(--panel-bg);
+  border: 1px solid var(--rule);
+  font-size: 0.7rem;
+}
+@media (max-width: 700px) {
+  .mapLegend {
+    right: 16px;
+    top: auto;
+    bottom: calc(45dvh + 12px);
+    max-height: 18vh;
+    max-width: min(290px, 65vw);
+  }
+}
+
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  font: 500 0.6875rem/1.5 var(--font-label);
+}
+.crumbs a {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.crumbs [aria-current='page'] {
+  color: var(--muted-foreground);
+}
+.groupHead {
+  padding: 1rem 0.5rem 0.25rem;
+  color: var(--muted-foreground);
+  font: 500 0.6875rem/1.5 var(--font-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

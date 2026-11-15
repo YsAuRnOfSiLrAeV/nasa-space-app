@@ -13,3 +13,7 @@
       optical.png
   ```
   Формат описано у вкладці 1 документа DELIVERABLES.
+
+- `regions/`: екорегіони, де працює модель (RESOLVE Ecoregions 2017): `ecoregions_covered.geojson` (рівень A, перевірено) і `ecoregions_extended.geojson` (рівень B, екстраполяція). Їх читає API.
+- `gfa/`: каталог пожеж Global Fire Atlas для API, файли `gfa_<рік>.parquet` (разом 400 МБ). **Не в Git: кожен кладе їх сюди сам.** Як зібрати з нуля, описано в `backend/README.md`, розділ "Fire catalog".
+- `fires/`: результати, пораховані через API. Не в Git.

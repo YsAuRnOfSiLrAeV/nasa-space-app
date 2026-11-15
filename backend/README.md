@@ -119,3 +119,57 @@ python -m pipeline.batch --summer 2026 --out ../data/demo --ids bc_2003_490 queb
 
 Add it to `dependencies` in `pyproject.toml`, then run `pip install -e ".[dev]"` again.
 Everyone else re-runs the same command after pulling.
+
+## API
+
+REST API for the "Find your fire" page: search the fire catalog under a drawn polygon, then run the pipeline for the chosen fire.
+
+```bash
+pip install -e ".[dev,api]"
+uvicorn api.main:app --reload
+```
+
+Interactive docs: http://127.0.0.1:8000/docs. The frontend dev server proxies `/api` to it.
+
+| Request | Answer |
+| --- | --- |
+| `GET /health` | `{"status": "ok"}` |
+| `POST /fires/search` | fires under a polygon. Body: `polygon` (GeoJSON), optional `year_from`, `year_to`, `min_area_ha`, `limit` (100, at most 500) |
+| `GET /fires/{fire_id}` | one fire with its perimeter |
+| `GET /summers?fire_id=` | summers the fire can be analysed for |
+| `POST /runs` | start the analysis. Body: `fire_id`, `summer` |
+| `GET /runs/{run_id}` | `pending` with step and progress, `complete` with the address of `result.json`, or `failed` with a code |
+| `GET /results/{fire_id}/{file}` | `result.json`, `cells.json`, `optical.png` |
+
+A search answers with `status`:
+
+- `outside_regions`: the polygon touches no model region, nothing can be analysed there
+- `no_fires`: it is inside a region, but the catalog has no fire there with these filters
+- `ok`: the fires, largest first, each with `overlap`, the share of the fire inside the polygon
+
+`regions` gives the share of the polygon in tier A (verified) and tier B (extrapolated) regions. Errors are `{"code": "...", "message": "..."}`.
+
+A run takes minutes, so it works in the background, one at a time, and the client polls. A fire computed before is answered from its files. Running needs the pipeline credentials above and `pip install -e ../models`; without them a run fails with `NOT_CONFIGURED`, while search still works.
+
+| Variable | Default | What |
+| --- | --- | --- |
+| `FIRE_CATALOG_DIR` | `../data/gfa` | packed fire files |
+| `FIRE_REGIONS_DIR` | `../data/regions` | model regions, GeoJSON with a `tier` property |
+| `FIRE_RESULTS_DIR` | `../data/fires` | where runs write their results |
+| `API_ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | sites allowed to call the API from a browser |
+| `API_PUBLIC_URL` | address of the request | address the browser reaches the API at, when behind a proxy |
+
+## Fire catalog
+
+The catalog is the Global Fire Atlas: about 12.6 million fire perimeters, 2002-2026, already limited to the model regions. It is 400 MB, so it is not in Git: **put the `gfa_<year>.parquet` files into `data/gfa/` yourself** (ask Misha for them). The API builds `index.npz` next to them on first start (under a minute) and reuses it afterwards.
+
+The files are packed (`catalog/packed.py`): every perimeter vertex sits on the MODIS 463 m pixel grid, so vertices are stored as whole pixel steps. That is lossless and about four times smaller than the atlas zip.
+
+To rebuild the files from the atlas download (`SHP_perimeters.zip`, 3 GB; about 20 minutes):
+
+```bash
+pip install -e ".[catalog]"
+python -m catalog.pack path/to/SHP_perimeters.zip ../data/gfa --regions ../data/regions/ecoregions_covered.geojson ../data/regions/ecoregions_extended.geojson
+```
+
+Only fires whose perimeter overlaps a model region are kept, each with its `tier`.

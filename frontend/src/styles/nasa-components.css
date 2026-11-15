@@ -1,0 +1,15 @@
+@media (prefers-reduced-motion: reduce) {
+  button,
+  [role='button'] {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+@media (pointer: coarse) {
+  button,
+  [role='button'] {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}

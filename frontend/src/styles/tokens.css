@@ -1,0 +1,73 @@
+/*
+ * Shared design tokens → Tailwind utilities.
+ *
+ * Maps the semantic CSS variables (defined per theme in ./themes/*.css) to
+ * Tailwind's theme namespace, so components use `bg-card`, `text-highlight`,
+ * `bg-stage-2`, `font-mono`, `rounded-lg`… and automatically follow the active theme.
+ * `inline` makes utilities reference the variables at use-site (theme-switchable).
+ *
+ * No color or font values here: those belong to the theme files.
+ */
+@theme inline {
+  /* Typography */
+  --font-sans: var(--font-ui);
+  --font-heading: var(--font-display);
+  --font-mono: var(--font-data);
+  --font-serif: var(--font-prose);
+
+  /* shadcn/ui semantic colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Domain colors */
+  --color-highlight: var(--highlight);
+  --color-faint: var(--faint);
+  --color-rule: var(--rule);
+  --color-forest: var(--forest);
+  --color-satellite: var(--satellite);
+  --color-burn: var(--burn);
+  --color-burn-text: var(--burn-text);
+  --color-select: var(--select);
+  --color-mint: var(--mint);
+  --color-silver: var(--silver);
+  /* Identity: instrument signal, study region, navy plate */
+  --color-signal: var(--signal);
+  --color-amber: var(--amber);
+  --color-navy: var(--navy);
+  --color-rule-strong: var(--rule-strong);
+  /* Forest-height stages: 0 = <5 m, 1 = 5–10 m, 2 = >=10 m */
+  --color-stage-0: var(--stage-0);
+  --color-stage-1: var(--stage-1);
+  --color-stage-2: var(--stage-2);
+
+  /* Radius scale derived from each theme's base radius */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+
+  /* Motion (shared) */
+  --ease-out-soft: cubic-bezier(0.32, 0.72, 0, 1);
+}

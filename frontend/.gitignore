@@ -1,0 +1,33 @@
+node_modules
+dist
+*.local
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+
+# Local build caches, logs and test output.
+/.vite/
+/.cache/
+/coverage/
+/playwright-report/
+/test-results/
+*.log
+
+# Local screenshots and review captures, not application assets.
+/artifacts/
+
+# Downloaded source data and extraction caches.
+# Keep public/data/ and data/reference/ eligible for commit.
+/data/raw/
+/data/cache/
+
+# Kateryna's personal planning notes: kept on disk, not in the team repo.
+plan_documentation/
+first_project_level_instruction.md
+ARCHITECTURE_REVIEW_RESULTS.md
+STYLING_IMPLEMENTATION_SUMMARY.md
