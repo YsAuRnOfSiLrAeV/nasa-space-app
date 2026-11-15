@@ -12,7 +12,10 @@ large fires. Before writing, cells are merged into display cells of FACTOR x FAC
 grid cells, growing FACTOR until the display grid has at most MAX_DISPLAY_CELLS.
 Categories (stage, zone) take the most common value in the block, continuous values
 (probability, NDVI) take the median. A display cell gets a value only if at least
-MIN_VALID_SHARE of its grid cells have one.
+MIN_VALID_SHARE of its grid cells have one. When the zone layer is given, a display
+cell on the fire edge takes its zone from the majority of its grid cells, and every
+other layer in that display cell uses only the grid cells of that zone, so burn and
+neighbour forest values are not mixed.
 
 ``run_pipeline`` builds the result dict and the 30 m layers, then calls
 ``write_fire`` and ``update_index``.
@@ -21,6 +24,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import warnings
 from pathlib import Path
 from typing import Any, Mapping
@@ -37,6 +41,7 @@ MAX_DISPLAY_CELLS = 500_000   # keeps cells.json at a few MB per layer for the l
 MIN_VALID_SHARE = 0.5         # a display cell needs values in at least half of its grid cells
 
 MODE, MEDIAN = "mode", "median"
+ZONE_LAYER = ("map", "zone")
 
 # Every layer cells.json may hold: (group, name) -> (how blocks are merged, multiplier before rounding).
 # Inputs are fractions (0..1) or NDVI (-1..1). cells.json stores percent (x 100) as integers.
@@ -88,9 +93,14 @@ def map_grid(grid: Grid, factor: int) -> dict:
     }
 
 
-def coarsen(layer: np.ndarray, factor: int, how: str) -> np.ndarray:
-    """Merge factor x factor blocks of a (rows, cols) layer into one value each (NaN = no value)."""
+def coarsen(layer: np.ndarray, factor: int, how: str, keep: np.ndarray | None = None) -> np.ndarray:
+    """Merge factor x factor blocks of a (rows, cols) layer into one value each (NaN = no value).
+
+    ``keep`` (blocks shape, see _blocks) limits each block to some of its grid cells.
+    """
     blocks = _blocks(np.asarray(layer, dtype=np.float32), factor)
+    if keep is not None:
+        blocks = np.where(keep, blocks, np.nan)
     valid = np.isfinite(blocks)
     enough = valid.sum(axis=-1) >= MIN_VALID_SHARE * factor * factor
     if how == MEDIAN:
@@ -109,12 +119,14 @@ def cells_json(layers: Mapping[tuple[str, str], np.ndarray], factor: int) -> dic
 
     Only the layers given are written, so a fire without a layer (say, no per-cell recovery) simply lacks that key.
     """
+    unknown = [key for key in layers if key not in CELL_LAYERS]
+    if unknown:
+        raise KeyError(f"unknown cells.json layers: {unknown}")
+    keep = _majority_zone_cells(layers[ZONE_LAYER], factor) if ZONE_LAYER in layers else None
     out: dict[str, dict[str, list]] = {}
     for key, layer in layers.items():
-        if key not in CELL_LAYERS:
-            raise KeyError(f"unknown cells.json layer: {key}")
         how, multiplier = CELL_LAYERS[key]
-        merged = coarsen(layer, factor, how)
+        merged = coarsen(layer, factor, how, keep=None if key == ZONE_LAYER else keep)
         group, name = key
         out.setdefault(group, {})[name] = _to_json_list(merged * multiplier)
     return out
@@ -148,9 +160,13 @@ def write_fire(
 
 
 def update_index(out_dir: Path | str, result: dict) -> list[dict]:
-    """Add or replace this fire in <out_dir>/index.json. Returns the new index."""
+    """Add or replace this fire in <out_dir>/index.json. Returns the new index.
+
+    The file is replaced in one step, so a reader never sees half a file. Two runs
+    finishing at the same moment can still lose one entry: one writer at a time is assumed.
+    """
     path = Path(out_dir) / "index.json"
-    index = json.loads(path.read_text()) if path.exists() else []
+    index = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
     entry = index_entry(result)
     index = [e for e in index if e["id"] != entry["id"]] + [entry]
     index.sort(key=lambda e: e["id"])
@@ -206,6 +222,17 @@ def _to_json_list(values: np.ndarray) -> list[int | None]:
     return [int(v) if ok else None for v, ok in zip(rounded.tolist(), finite.tolist())]
 
 
+def _majority_zone_cells(zones: np.ndarray, factor: int) -> np.ndarray:
+    """Blocks mask: grid cells that belong to their block's majority zone. Blocks with no zone keep every cell."""
+    blocks = _blocks(np.asarray(zones, dtype=np.float32), factor)
+    majority = _mode(blocks, np.isfinite(blocks))[..., None]
+    return (blocks == majority) | np.isnan(majority)
+
+
 def _write_json(path: Path, data: Any, indent: int | None = None) -> None:
+    """UTF-8 JSON (names contain Cyrillic), written to a temporary file and then moved into place."""
     separators = None if indent else (",", ":")
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=indent, separators=separators))
+    text = json.dumps(data, ensure_ascii=False, indent=indent, separators=separators)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)

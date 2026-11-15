@@ -157,3 +157,36 @@ def test_order_keeps_ascending_passes_closest_to_target_first():
     ordered = nisar._order_granules(items, 2026)
     assert [g.result for g in ordered] == ["close", "early", "late"]
     assert ordered[0].day == date(2026, 7, 16)
+
+
+def test_dark_cells_count_as_imaged_and_stop_the_search(grid, tmp_path, monkeypatch):
+    """Cells under MIN_DB (say, water) are not retried in later granules, and those granules are not opened."""
+    left, _, right, _ = grid.bounds
+    mid_x = (left + right) / 2
+    dark_east = lambda xx, yy: np.where(xx > mid_x, 10 ** (-3.0), 0.01)  # -30 dB east of the middle
+    first = write_granule(tmp_path / "first.h5", grid, hh=const(0.05), hv=dark_east)
+    second = write_granule(tmp_path / "second.h5", grid, hh=const(0.05), hv=const(0.02))
+    granules = use_files(monkeypatch, [first, second])
+    opened = []
+    open_file = nisar._open
+    monkeypatch.setattr(nisar, "_open", lambda g: opened.append(g.name) or open_file(g))
+
+    result = nisar._read_to_grid(granules, grid)
+    xs, _ = grid.cell_centers()
+    away = np.abs(xs - mid_x) > 60
+    assert opened == ["g0"]
+    assert np.isnan(result.layers[NISAR_HV][(xs > mid_x) & away]).all()
+    assert result.below_floor[(xs > mid_x) & away].all()
+    assert not result.below_floor[(xs < mid_x) & away].any()
+
+
+def test_mean_of_a_large_window_stays_light():
+    """The 3x3 mean of a 2000 x 2000 window needs a few float32 copies, not nine float64 ones."""
+    import tracemalloc
+
+    window = np.random.default_rng(0).random((2000, 2000), dtype=np.float32) + 0.01
+    tracemalloc.start()
+    nisar._mean3x3(window)
+    _, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    assert peak < 6 * window.nbytes

@@ -18,10 +18,10 @@ from typing import Mapping
 
 import numpy as np
 
-from .contract import NDVI, NISAR_HH, NISAR_HV, S1_VH, S1_VV
+from .contract import FEATURE_COLUMNS
 
-# Model input order. To be replaced by the order from the model library's feature_spec() once it is available.
-FEATURES = (NISAR_HV, NISAR_HH, S1_VH, S1_VV, NDVI)
+# State model input order, as defined in the contract.
+FEATURES = tuple(FEATURE_COLUMNS)
 
 
 @dataclass(frozen=True)

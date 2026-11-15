@@ -105,11 +105,11 @@ def test_write_fire_and_index(grid, tmp_path):
     cells = export.cells_json({("map", "zone"): np.ones(grid.shape, dtype=np.float32)}, factor)
     folder = export.write_fire(tmp_path, result, cells, optical_png=b"\x89PNG")
 
-    written = json.loads((folder / "result.json").read_text())
+    written = json.loads((folder / "result.json").read_text(encoding="utf-8"))
     assert written["schema_version"] == export.SCHEMA_VERSION
     assert written["files"] == {"cells": "cells.json", "optical_image": "optical.png"}
     assert written["fire"]["name"]["uk"] == "Тест"
-    assert json.loads((folder / "cells.json").read_text()) == cells
+    assert json.loads((folder / "cells.json").read_text(encoding="utf-8")) == cells
     assert (folder / "optical.png").read_bytes() == b"\x89PNG"
 
     export.update_index(tmp_path, result)
@@ -125,3 +125,30 @@ def test_write_fire_checks_sections_and_lengths(grid, tmp_path):
         export.write_fire(tmp_path, {k: v for k, v in result.items() if k != "warnings"}, {})
     with pytest.raises(ValueError, match="map_grid needs"):
         export.write_fire(tmp_path, result, {"map": {"zone": [1, 2, 3]}})
+
+
+def test_edge_cell_values_come_from_its_majority_zone():
+    """A display cell with 5 burn and 4 neighbour forest cells is burn, and its median uses only the burn cells."""
+    zone = np.array([[1, 1, 1], [1, 1, 0], [0, 0, 0]], dtype=np.float32)
+    prob = np.array([[0.5, 0.6, 0.7], [0.8, 0.9, 0.0], [0.0, 0.0, 0.0]], dtype=np.float32)
+    cells = export.cells_json({("map", "zone"): zone, ("model", "p_forest_gt5"): prob}, factor=3)
+    assert cells["map"]["zone"] == [1]
+    assert cells["model"]["p_forest_gt5"] == [70]       # median of the burn cells, not 50 for all nine
+
+
+def test_files_are_written_as_utf8(grid, tmp_path, monkeypatch):
+    """Windows defaults to a non-UTF-8 encoding, so every text write must name UTF-8 explicitly."""
+    from pathlib import Path
+
+    write_text = Path.write_text
+
+    def strict_write_text(self, data, encoding=None, **kwargs):
+        assert encoding == "utf-8", f"{self.name} written without encoding='utf-8'"
+        return write_text(self, data, encoding=encoding, **kwargs)
+
+    monkeypatch.setattr(Path, "write_text", strict_write_text)
+    result = result_for(grid, 3)
+    folder = export.write_fire(tmp_path, result, {})
+    export.update_index(tmp_path, result)
+    assert "Тест" in (folder / "result.json").read_bytes().decode("utf-8")
+    assert not list(tmp_path.rglob("*.tmp"))

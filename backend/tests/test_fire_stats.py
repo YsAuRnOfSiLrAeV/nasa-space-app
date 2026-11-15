@@ -78,3 +78,4 @@ def test_warning_codes():
     codes = fire_stats.warnings({"slope": 8.0, "dnbr": None}, nisar_coverage=0.5)
     assert codes == ["DEFAULT_DNBR", "LOW_NISAR_COVERAGE"]
     assert fire_stats.warnings({"slope": 8.0}, nisar_coverage=0.99) == []
+

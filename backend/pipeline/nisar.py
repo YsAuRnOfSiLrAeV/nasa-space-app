@@ -5,7 +5,7 @@ reads the same values at the centre of every grid cell, with the same processing
 so the model sees inputs of the same kind:
 
     1. search granules over the grid for the summer, ascending passes only
-    2. use the granule closest to TARGET_DAY first, the next ones only fill gaps
+    2. use the granule closest to TARGET_DAY first, the next ones only fill cells it did not image
     3. for each cell take the nearest NISAR pixel to the cell centre
     4. mean of the 3x3 window around it in linear units, then dB
     5. drop values below MIN_DB (granule edge or no data)
@@ -28,6 +28,7 @@ from typing import IO, TYPE_CHECKING, Iterator
 import h5py
 import numpy as np
 from pyproj import Transformer
+from scipy.ndimage import uniform_filter
 
 from .contract import NISAR_HH, NISAR_HV
 from .grid import Grid
@@ -72,6 +73,7 @@ class UsedGranule:
 class NisarLayers:
     layers: dict[str, np.ndarray]  # {NISAR_HH: (rows, cols), NISAR_HV: (rows, cols)}, dB, NaN = no value
     granules: list[UsedGranule]    # in the order they were used
+    below_floor: np.ndarray        # (rows, cols) bool: imaged, but too dark (under MIN_DB), so NaN in layers
 
     @property
     def main_day(self) -> date | None:
@@ -121,34 +123,44 @@ def _order_granules(items: list[tuple[str, DataGranule]], summer: int) -> list[G
 
 
 def _read_to_grid(granules: list[Granule], grid: Grid) -> NisarLayers:
-    """Fill the grid from the granules in order. Each granule only fills cells that are still empty."""
+    """Fill the grid from the granules in order.
+
+    A cell is done once a granule has imaged it, even if the value is too dark to use:
+    a later granule from another day would not make it brighter. So the loop stops as
+    soon as every cell is imaged, which for most fires is after the first granule.
+    """
     if not granules:
         raise NisarUnavailable("no ascending NISAR granules over the fire for this summer")
     hh, hv = grid.empty(), grid.empty()
+    imaged = np.zeros(grid.shape, dtype=bool)
     xs, ys = grid.cell_centers()
     used = []
     for granule in granules:
-        todo = np.isnan(hv)
+        todo = ~imaged
         if not todo.any():
             break
         with _open_scene(granule) as scene:
             if scene is None:
                 continue
-            hh_values, hv_values = _sample(scene, xs[todo], ys[todo], grid.crs)
-        filled = np.isfinite(hv_values)
-        if not filled.any():
-            continue
+            hh_values, hv_values, seen = _sample(scene, xs[todo], ys[todo], grid.crs)
         rows, cols = np.nonzero(todo)
-        hh[rows[filled], cols[filled]] = hh_values[filled]
-        hv[rows[filled], cols[filled]] = hv_values[filled]
-        used.append(UsedGranule(granule.name, granule.day, int(filled.sum())))
+        imaged[rows[seen], cols[seen]] = True
+        filled = np.isfinite(hv_values)
+        if filled.any():
+            hh[rows[filled], cols[filled]] = hh_values[filled]
+            hv[rows[filled], cols[filled]] = hv_values[filled]
+            used.append(UsedGranule(granule.name, granule.day, int(filled.sum())))
     if not used:
         raise NisarUnavailable("NISAR granules found, but none has valid pixels over the fire")
-    return NisarLayers({NISAR_HH: hh, NISAR_HV: hv}, used)
+    return NisarLayers({NISAR_HH: hh, NISAR_HV: hv}, used, below_floor=imaged & np.isnan(hv))
 
 
-def _sample(scene: Scene, xs: np.ndarray, ys: np.ndarray, crs: str) -> tuple[np.ndarray, np.ndarray]:
-    """HH and HV in dB at points (grid metres), NaN where the granule has no valid value."""
+def _sample(scene: Scene, xs: np.ndarray, ys: np.ndarray, crs: str) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """HH and HV in dB at points (grid metres), and which points the granule imaged.
+
+    HH and HV are NaN where there is no usable value. ``imaged`` is True where the
+    granule has data around the point, including values too dark to use.
+    """
     to_scene = Transformer.from_crs(crs, f"EPSG:{scene.epsg}", always_xy=True)
     px, py = to_scene.transform(xs, ys)
     cols = np.round((px - scene.x[0]) / (scene.x[1] - scene.x[0])).astype(np.int64)
@@ -156,10 +168,11 @@ def _sample(scene: Scene, xs: np.ndarray, ys: np.ndarray, crs: str) -> tuple[np.
 
     hh = np.full(xs.shape, np.nan, dtype=np.float32)
     hv = np.full(xs.shape, np.nan, dtype=np.float32)
+    imaged = np.zeros(xs.shape, dtype=bool)
     # One pixel of margin, so the 3x3 window of every sampled pixel lies inside the granule.
     inside = (rows >= 1) & (rows < len(scene.y) - 1) & (cols >= 1) & (cols < len(scene.x) - 1)
     if not inside.any():
-        return hh, hv
+        return hh, hv, imaged
 
     # Read only the window that covers the points, not the whole granule.
     r0, r1 = rows[inside].min() - 1, rows[inside].max() + 2
@@ -167,25 +180,28 @@ def _sample(scene: Scene, xs: np.ndarray, ys: np.ndarray, crs: str) -> tuple[np.
     r, c = rows[inside] - r0, cols[inside] - c0
     hh_db = _db(_mean3x3(scene.hh[r0:r1, c0:c1])[r, c])
     hv_db = _db(_mean3x3(scene.hv[r0:r1, c0:c1])[r, c])
+    imaged[inside] = np.isfinite(hh_db) & np.isfinite(hv_db)
 
     # Same rule as in training: HV below MIN_DB is dropped, HH must be above it.
     ok = (hv_db >= MIN_DB) & (hh_db > MIN_DB)
     hh[inside] = np.where(ok, hh_db, np.nan)
     hv[inside] = np.where(ok, hv_db, np.nan)
-    return hh, hv
+    return hh, hv, imaged
 
 
 def _mean3x3(window: np.ndarray) -> np.ndarray:
-    """Mean of each 3x3 neighbourhood in linear units, ignoring zeros and NaN (no data)."""
-    a = np.asarray(window, dtype=np.float64)
-    a = np.where((a > 0) & np.isfinite(a), a, np.nan)
-    padded = np.pad(a, 1, constant_values=np.nan)
-    h, w = a.shape
-    stack = np.stack([padded[i : i + h, j : j + w] for i in range(3) for j in range(3)])
-    total = np.nansum(stack, axis=0)
-    count = np.isfinite(stack).sum(axis=0)
+    """Mean of each 3x3 neighbourhood in linear units, ignoring zeros and NaN (no data).
+
+    Two running-window filters (sum of values, count of valid pixels) instead of nine
+    shifted copies, so memory stays at a few copies of the window even for large fires.
+    """
+    a = np.asarray(window, dtype=np.float32)
+    valid = (a > 0) & np.isfinite(a)
+    mean_value = uniform_filter(np.where(valid, a, 0).astype(np.float32), size=3, mode="constant", cval=0.0)
+    mean_valid = uniform_filter(valid.astype(np.float32), size=3, mode="constant", cval=0.0)
     with np.errstate(invalid="ignore", divide="ignore"):
-        return np.where(count > 0, total / count, np.nan)
+        # Both are divided by 9 inside the filter, so their ratio is sum / count.
+        return np.where(mean_valid > 0.5 / 9, mean_value / mean_valid, np.nan)
 
 
 def _db(linear: np.ndarray) -> np.ndarray:

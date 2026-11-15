@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from pipeline.contract import NDVI, NISAR_HH, NISAR_HV, S1_VH, S1_VV
+from pipeline.contract import FEATURE_COLUMNS, NDVI, NISAR_HV, S1_VH, S1_VV
 from pipeline.cell_features import FEATURES, build_table, input_report
 
 SHAPE = (4, 5)
@@ -20,7 +20,7 @@ def layers():
 
 def test_columns_follow_the_feature_order():
     table = build_table(layers())
-    assert table.names == (NISAR_HV, NISAR_HH, S1_VH, S1_VV, NDVI)
+    assert table.names == tuple(FEATURE_COLUMNS)
     assert np.all(table.values == np.arange(1, 6, dtype=np.float32))
 
 
