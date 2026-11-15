@@ -127,7 +127,7 @@ export function FireSettingsPanel({
               )
             )}
 
-            <Section title="Recovery results and forecast">
+            <Section title="Recovery results and forecast" open>
               <FireResults
                 data={data}
                 forecast={forecast}
@@ -168,10 +168,18 @@ export function FireSettingsPanel({
   );
 }
 
-/** A compact, collapsed-by-default section of secondary information. */
-function Section({ title, children }: { title: string; children: ReactNode }) {
+/** A compact section of secondary information: collapsed unless `open`. */
+function Section({
+  title,
+  children,
+  open,
+}: {
+  title: string;
+  children: ReactNode;
+  open?: boolean;
+}) {
   return (
-    <details className={styles.section}>
+    <details className={styles.section} open={open}>
       <summary>{title}</summary>
       <div className={styles.sectionBody}>{children}</div>
     </details>

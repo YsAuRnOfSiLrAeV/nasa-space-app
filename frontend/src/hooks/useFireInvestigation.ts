@@ -4,7 +4,7 @@ import type { SpatialLayerId } from '@/domain/fire/spatialLayers';
 import { useOpticalImage } from '@/hooks/useOpticalImage';
 import type { FireOverlayVisibility } from '@/components/map/fireLayers';
 import type { StudyMapController } from '@/components/map/StudyMapController';
-import { cellCentre, type GridLayerId } from '@/domain/fire/fireGrid';
+import { cellCentre, layerCoverage, type GridLayerId } from '@/domain/fire/fireGrid';
 import { clampYear, readForecast } from '@/domain/fire/growthForecast';
 import { useFireData } from '@/hooks/useFireData';
 import {
@@ -42,7 +42,10 @@ export function useFireInvestigation(
         : null;
   const optical = useOpticalImage(data?.opticalImageUrl ?? null);
   const [selectedLayer, setLayer] = useState<GridLayerId | null>(null);
-  const layer = selectedLayer ?? (data?.bundle ? 'probability' : 'stage');
+  // The blue relative forest score is the default wherever the export has it; the stage
+  // classes only when it does not.
+  const hasScore = data ? layerCoverage(data.cells, 'probability').valued > 0 : true;
+  const layer = selectedLayer ?? (data?.bundle || hasScore ? 'probability' : 'stage');
   const [overlays, setOverlays] = useState(DEFAULT_OVERLAYS);
   const [spatial, setSpatial] = useState<{ fireId: string | null; layer: SpatialLayerId }>({
     fireId,
