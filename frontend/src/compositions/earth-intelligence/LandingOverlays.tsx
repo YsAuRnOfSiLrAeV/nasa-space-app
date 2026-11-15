@@ -43,7 +43,7 @@ export function LandingLead({
             disabled={!canEnter}
             onClick={onEnter}
           >
-            <span>Explore the Ontario study</span>
+            <span>Explore the fires on the map</span>
             <span aria-hidden>
               <ArrowRight />
             </span>

@@ -54,7 +54,7 @@ export function ForecastYearBar({
     >
       <div className={styles.yearBarHead}>
         <label id="forecast-year-label" htmlFor="forecast-year">
-          Forecast year · whole fire
+          Whole-fire forecast · drag to change the year
         </label>
         <span className={styles.yearBarValue} aria-hidden>
           {estimate.year} · curve {formatValue(estimate.value)}
@@ -79,13 +79,11 @@ export function ForecastYearBar({
         <span id="forecast-year-note">
           <span className={styles.longNote}>
             {curve.series
-              ? 'This fire has no cell timeline, so the map cannot follow this slider.'
+              ? 'No cell map was exported for this fire: the slider only moves the whole-fire forecast (chart in the panel), not the map.'
               : `Map grid: summer ${curve.summer} observation, unchanged by this slider`}
           </span>
           <span className={styles.shortNote}>
-            {curve.series
-              ? 'No cell timeline: map unchanged'
-              : `Grid stays at summer ${curve.summer}`}
+            {curve.series ? 'No cell map: forecast only' : `Grid stays at summer ${curve.summer}`}
           </span>
         </span>
         {estimate.year !== curve.summer && (
@@ -133,7 +131,7 @@ function CellYearBar({
     >
       <div className={styles.yearBarHead}>
         <label id="forecast-year-label" htmlFor="forecast-year">
-          Modeled year · cell recovery on the map
+          Drag to see the forest recover, year by year
         </label>
         <span className={styles.yearBarValue} aria-hidden>
           {shown} · whole-fire curve {formatValue(value)}
@@ -156,7 +154,7 @@ function CellYearBar({
           <span className={styles.longNote}>
             {onMap
               ? `Map: each cell’s modeled recovery in ${shown} (${when}). Every year is a model estimate, not an observation.`
-              : 'Move the slider to show each cell’s modeled recovery on the map.'}
+              : 'Drag the slider: the map will colour each cell by how far it has recovered in that year (modeled).'}
           </span>
           <span className={styles.shortNote}>
             {onMap ? `Map: modeled cells, ${shown}` : 'Move to show modeled cells'}

@@ -1,3 +1,4 @@
+import { fireLabel } from '@/domain/fire/fireLabel';
 import { mapHref } from '@/app/route';
 import { FireGridMap } from '@/components/fire/FireGridMap';
 import { ForecastYearBar } from '@/components/fire/ForecastYearBar';
@@ -27,7 +28,6 @@ import { layerCoverage, overlayAvailability } from '@/domain/fire/fireGrid';
 import { drawnOverlays } from '@/domain/fire/overlays';
 import searchStyles from './MapShell.module.css';
 import { useEarthView } from './useEarthView';
-import { useLandDots } from './useLandDots';
 
 const RegionView = lazy(() => import('./RegionView').then((m) => ({ default: m.RegionView })));
 const AnalysisSections = lazy(() =>
@@ -47,7 +47,6 @@ export function EarthIntelligenceComposition({ load, study, mapView, mapState }:
   const view = useEarthView({ study, mapView, mapState });
   const [regionRequested, setRegionRequested] = useState(view.phase === 'region');
   if (!regionRequested && view.phase === 'region') setRegionRequested(true);
-  const { state: land } = useLandDots(undefined, regionRequested);
   const catalog = useFireCatalog();
   const applicability = useApplicabilityZones(view.phase === 'region');
   const fires = catalog.state.status === 'ready' ? catalog.state.data : EMPTY_FIRES;
@@ -114,14 +113,7 @@ export function EarthIntelligenceComposition({ load, study, mapView, mapState }:
       />
       {regionRequested && (
         <Suspense fallback={null}>
-          <RegionView
-            hidden={view.phase !== 'region' || fireOpen}
-            study={study}
-            land={land}
-            burn={view.burn}
-            mapView={mapView}
-            onPlanet={view.goPlanet}
-          />
+          <RegionView hidden={view.phase !== 'region' || fireOpen} mapView={mapView} />
         </Suspense>
       )}
       {fireData && view.phase === 'region' && (
@@ -218,11 +210,7 @@ export function EarthIntelligenceComposition({ load, study, mapView, mapState }:
           fireDetail={
             fireId &&
             (examples || entry || completed?.result.fire.id === fireId) && (
-              <FireInvestigation
-                investigation={investigation}
-                entry={entry}
-                closeHref={mapHref({ ...mapState, presentation: 'explore', fireId: null })}
-              />
+              <FireInvestigation investigation={investigation} entry={entry} />
             )
           }
         >
@@ -267,7 +255,7 @@ function useFireMarkers(
     () =>
       fires?.map((f) => ({
         id: f.id,
-        label: `${f.name.en} · ${f.year}`,
+        label: fireLabel(f.id),
         lonlat: f.center_lonlat,
       })) ?? null,
     [fires],

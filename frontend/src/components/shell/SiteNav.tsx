@@ -39,7 +39,7 @@ export function SiteNav({
               href={mapHref(changeMapMode(map, mode))}
               aria-current={current === 'explore' && map.mode === mode ? 'true' : undefined}
             >
-              {mode === 'examples' ? 'Examples' : 'Find Your Fire'}
+              {mode === 'examples' ? 'Fires' : 'Find Your Fire'}
             </a>
           ))}
         </div>

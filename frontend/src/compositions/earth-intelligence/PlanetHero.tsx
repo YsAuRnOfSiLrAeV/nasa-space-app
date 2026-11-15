@@ -1,5 +1,6 @@
 import { useRef, type RefObject } from 'react';
 import { fireHref } from '@/app/route';
+import { fireLabel } from '@/domain/fire/fireLabel';
 import { config } from '@/config';
 import type { DemoFire } from '@/data/fireSchema';
 import styles from './PlanetHero.module.css';
@@ -53,7 +54,10 @@ export function PlanetHero({
   label,
   observation = null,
   onAnchors,
+  onPlanetClick,
 }: {
+  /** Opens the full map when the planet itself is clicked (fire dots still open their fire). */
+  onPlanetClick?: () => void;
   /** Extent of the observation window's imagery, marked on the globe. */
   observation?: BBox | null;
   /** Called after every paint with the screen anchors (for leader lines). */
@@ -123,7 +127,20 @@ export function PlanetHero({
 
   return (
     <div className={`relative h-full w-full ${cartography.globeInstruments}`}>
-      <canvas ref={ref} role="img" aria-label={label} className="block h-full w-full" />
+      <canvas
+        ref={ref}
+        role="img"
+        aria-label={label}
+        className={`block h-full w-full ${onPlanetClick ? 'cursor-pointer' : ''}`}
+        onClick={(e) => {
+          if (!onPlanetClick) return;
+          const r = e.currentTarget.getBoundingClientRect();
+          // The disc fills 74% of the square canvas: ignore clicks in the corners around it.
+          const dx = e.clientX - (r.left + r.width / 2);
+          const dy = e.clientY - (r.top + r.height / 2);
+          if (Math.hypot(dx, dy) <= r.width * 0.37) onPlanetClick();
+        }}
+      />
       {fires.map((fire) => (
         <a
           key={fire.id}
@@ -146,7 +163,7 @@ export function PlanetHero({
         >
           <span aria-hidden className={styles.globeMarkerDot} />
           <span className={styles.globeMarkerLabel}>
-            {fire.name.en} · {fire.year}
+            {fireLabel(fire.id)}
             {config.fireDataIsExample && <small> · example</small>}
           </span>
         </a>

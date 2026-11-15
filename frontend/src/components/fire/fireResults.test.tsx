@@ -238,10 +238,12 @@ describe('growth forecast', () => {
         />,
       );
     const off = shown(null);
-    expect(off).toContain('Modeled year · cell recovery on the map');
+    expect(off).toContain('Drag to see the forest recover, year by year');
     // The slider steps through the timeline's own years, from the fire year.
     expect(off).toMatch(/type="range"[^>]*min="0"[^>]*max="4"/);
-    expect(off).toContain('Move the slider to show each cell’s modeled recovery on the map.');
+    expect(off).toContain(
+      'Drag the slider: the map will colour each cell by how far it has recovered in that year (modeled).',
+    );
     expect(off).not.toContain('Hide modeled cells');
     const on = shown(2004);
     expect(on).toMatch(/type="range"[^>]*value="1"/);
@@ -265,9 +267,9 @@ describe('growth forecast', () => {
     const markup = renderToStaticMarkup(
       <ForecastYearBar curve={series} year={2026} onYear={() => {}} cells={null} />,
     );
-    expect(markup).toContain('Forecast year · whole fire');
+    expect(markup).toContain('Whole-fire forecast · drag to change the year');
     expect(markup).toContain(
-      'This fire has no cell timeline, so the map cannot follow this slider.',
+      'No cell map was exported for this fire: the slider only moves the whole-fire forecast (chart in the panel), not the map.',
     );
   });
 

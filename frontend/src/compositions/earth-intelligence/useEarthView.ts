@@ -81,8 +81,9 @@ export function useEarthView({
     if (phase !== 'region' || !flyPending.current || !mapView) return;
     flyPending.current = false;
     const id = requestAnimationFrame(() => {
+      // Stop on the whole-Earth view with every fire; no fly-in to the Ontario test study.
       mapView.showWholeEarth();
-      void mapView.fitStudyArea({ durationMs: 3200, curve: 1.6 }).then(() => setArrived(true));
+      setArrived(true);
     });
     return () => cancelAnimationFrame(id);
   }, [phase, mapView]);

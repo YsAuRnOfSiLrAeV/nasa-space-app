@@ -47,8 +47,8 @@ describe('complete supplied fire catalog', () => {
         onSelect={() => {}}
       />,
     );
-    expect(html.match(/Spatial dataset/g)).toHaveLength(37);
-    expect(html.match(/Perimeter and summary only/g)).toHaveLength(43);
+    expect(html.match(/Recovery map ·/g)).toHaveLength(37);
+    expect(html.match(/Summary only, no map/g)).toHaveLength(43);
     expect(html).toContain('Search identifier, year or region');
   });
 
@@ -87,9 +87,6 @@ describe('complete supplied fire catalog', () => {
         const html = renderToStaticMarkup(<BundleAvailability data={data} />);
         if (!entry.capabilities!.spatial) {
           expect(html).toContain('Perimeter and summary only');
-          expect(html).toContain('Cell inspection unavailable');
-          expect(html).toContain('Cell timeline unavailable');
-          expect(html).toContain('disabled');
           expect(data.result.lidar_points).toEqual([]);
         }
       }

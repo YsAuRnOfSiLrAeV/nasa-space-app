@@ -31,10 +31,10 @@ describe('supplied whole-fire recovery forecast', () => {
       const html = renderToStaticMarkup(
         <FireResults data={data} forecast={forecast} year={index.summer} />,
       );
-      expect(html).toContain(entry.id);
-      expect(html).toContain('model2.now_recovery');
-      expect(html).toContain(formatForecastPercent(model.now_recovery));
       if (model.forecast === 'growth') {
+        expect(html).toContain(entry.id);
+        expect(html).toContain('model2.now_recovery');
+        expect(html).toContain(formatForecastPercent(model.now_recovery));
         if (forecast.status !== 'valid') throw new Error(`Missing supplied forecast: ${entry.id}`);
         expect(forecast.curve.series).toBe(model.series);
         expect(forecast.curve.reliableAge).toBeNull();
@@ -51,9 +51,10 @@ describe('supplied whole-fire recovery forecast', () => {
           expect(html).toContain(data.bundle!.source.reliability.model2);
       } else {
         expect(forecast.status).toBe('none');
-        expect(html).toContain('No supported recovery forecast');
+        // Outside Canada the model-2 block is not shown at all (no list of "Not available").
+        expect(html).not.toContain('model2.now_recovery');
+        expect(html).not.toContain('No supported recovery forecast');
         expect(html).not.toContain('data-forecast-interval');
-        if (model.reason) expect(html).toContain(model.reason);
       }
     },
   );
@@ -67,8 +68,8 @@ describe('supplied whole-fire recovery forecast', () => {
       '61.61%',
       '2066',
       '63.1',
-      'interval_80',
-      'year_80pct',
+      'Likely range',
+      'Year it reaches 80%',
       'FORECAST_EXTRAPOLATES_BEYOND_AGE_36',
       'spatial cell timeline is separate',
     ])
@@ -86,7 +87,7 @@ describe('supplied whole-fire recovery forecast', () => {
     expect(forecast.status).toBe('valid');
     const html = renderToStaticMarkup(<SuppliedForecastSummary data={data} />);
     expect(html).toContain('data-value="missing"');
-    expect(html).toContain('Not supplied · no interval inferred');
+    expect(html).toContain('Not supplied');
     expect(html).not.toContain('2066');
     if (forecast.status !== 'valid') throw new Error('Series must remain available');
     expect(estimateFor(forecast.curve, 2026).value).toBe(0.4436);

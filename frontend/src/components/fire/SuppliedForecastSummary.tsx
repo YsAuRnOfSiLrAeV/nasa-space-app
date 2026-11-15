@@ -9,33 +9,44 @@ export function SuppliedForecastSummary({ data }: { data: FireData }) {
   const bundle = data.bundle!;
   const model = bundle.source.model2;
   const summer = data.result.satellite_images.summer;
+  // Outside Canada there is no growth forecast: show nothing rather than a list of "Not available".
+  if (model.forecast !== 'growth') return null;
+  const [low, high] = model.interval_80 ?? [null, null];
   return (
     <section className={styles.section} aria-label="Supplied fire-level forecast summary">
-      <h4>Fire-level recovery · supplied model 2</h4>
-      {model.forecast !== 'growth' && (
-        <p>No supported recovery forecast: {model.reason ?? 'not supplied for this fire'}.</p>
+      <h4>How far the forest has recovered</h4>
+      {model.now_recovery != null && (
+        <p>
+          In {summer} this fire is about {formatForecastPercent(model.now_recovery)} recovered
+          {low != null && high != null
+            ? ` (likely between ${formatForecastPercent(low)} and ${formatForecastPercent(high)})`
+            : ''}
+          {model.year_80pct != null
+            ? `. It is expected to reach 80% around ${model.year_80pct}.`
+            : '.'}
+        </p>
       )}
       <dl className={styles.stats}>
         <div>
-          <dt>Current modeled recovery · {summer}</dt>
+          <dt>Recovery now · {summer}</dt>
           <dd data-source="model2.now_recovery" data-value={model.now_recovery ?? 'missing'}>
             {formatForecastPercent(model.now_recovery)}
           </dd>
         </div>
         <div>
-          <dt>Supplied 80% summary interval (interval_80)</dt>
+          <dt>Likely range (80% confidence)</dt>
           <dd data-source="model2.interval_80">
             {model.interval_80
               ? `${formatForecastPercent(model.interval_80[0])} – ${formatForecastPercent(model.interval_80[1])}`
-              : 'Not supplied · no interval inferred'}
+              : 'Not supplied'}
           </dd>
         </div>
         <div>
-          <dt>Year reaching 80% of reference forest height (year_80pct)</dt>
+          <dt>Year it reaches 80% of the neighbouring forest’s height</dt>
           <dd>{model.year_80pct ?? UNAVAILABLE}</dd>
         </div>
         <div>
-          <dt>Years after fire to 80% · supplied</dt>
+          <dt>Years after the fire</dt>
           <dd>{model.years_to_80pct ?? UNAVAILABLE}</dd>
         </div>
       </dl>
@@ -44,13 +55,12 @@ export function SuppliedForecastSummary({ data }: { data: FireData }) {
         modeled estimates. The spatial cell timeline is separate and is not adjusted by the forecast
         slider.
       </p>
-      {model.valid_region && <p>Supplied model region: {model.valid_region}</p>}
       <p>{bundle.source.reliability.model2 ?? 'No model-2 reliability statement supplied.'}</p>
       {(model.warnings ?? []).length > 0 && (
         <ul aria-label="Forecast reliability warnings">
           {model.warnings!.map((code) => (
-            <li key={code}>
-              {warningText(code)} <code>{code}</code>
+            <li key={code} title={code}>
+              {warningText(code)}
             </li>
           ))}
         </ul>

@@ -21,19 +21,21 @@ export function ObservedState({ data, missing }: { data: FireData; missing: stri
         <h4>Forest state · summer {result.satellite_images.summer}</h4>
         <dl className={styles.stats}>
           <div>
-            <dt>Mean relative forest ranking score</dt>
+            <dt>Forest-likeness score (0–1)</dt>
             <dd>{data.bundle.source.model1?.mean?.toFixed(3) ?? UNAVAILABLE}</dd>
-            <dd>Not a calibrated probability or recovery percentage.</dd>
+            <dd>A ranking, not a probability or a recovery percentage.</dd>
           </div>
           <div>
-            <dt>Excluded share</dt>
+            <dt>Burned area the model could not rate</dt>
             <dd>{formatShare(data.bundle.source.model1?.excluded_share)}</dd>
           </div>
-          <div>
-            <dt>Reference forest height</dt>
-            <dd>{result.neighbour_forest?.height_m ?? UNAVAILABLE} m</dd>
-            <dd>{result.neighbour_forest?.source}</dd>
-          </div>
+          {result.neighbour_forest?.height_m != null && (
+            <div>
+              <dt>Neighbouring forest height</dt>
+              <dd>{result.neighbour_forest.height_m} m</dd>
+              <dd>{neighbourSource(result.neighbour_forest.source)}</dd>
+            </div>
+          )}
         </dl>
         <p>
           Cell height is modeled. GEDI canopy height is measured. Fire-level growth forecasts are
@@ -42,7 +44,7 @@ export function ObservedState({ data, missing }: { data: FireData; missing: stri
         {Object.entries(data.bundle.source.reliability)
           .filter(([key]) => key !== 'model2')
           .map(([key, text]) => (
-            <p key={key}>{text}</p>
+            <p key={key}>{text.replaceAll('excluded_share', 'the unrated share')}</p>
           ))}
       </section>
     );
@@ -199,4 +201,13 @@ function StageBar({ stages }: { stages: ReturnType<typeof stageSegments> }) {
       </p>
     </div>
   );
+}
+
+/** Where the neighbouring forest height comes from, in words. */
+function neighbourSource(source: string | undefined): string {
+  if (!source) return '';
+  if (source.includes('gedi'))
+    return 'Median of NASA GEDI lidar shots in the unburned forest around the fire';
+  if (source.includes('eth')) return 'ETH global canopy height map (no GEDI coverage here)';
+  return source;
 }

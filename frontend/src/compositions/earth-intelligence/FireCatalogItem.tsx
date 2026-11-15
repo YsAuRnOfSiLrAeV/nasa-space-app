@@ -1,6 +1,7 @@
 import type { MouseEvent } from 'react';
 import { mapHref } from '@/app/route';
 import type { DemoFire } from '@/data/fireSchema';
+import { fireLabel } from '@/domain/fire/fireLabel';
 import { formatShare, isProvided } from '@/domain/fire/fireSummary';
 
 export function FireCatalogItem({
@@ -25,17 +26,13 @@ export function FireCatalogItem({
         onClick={select}
       >
         <span>
-          {fire.name.en}{' '}
-          <small>
-            · {fire.year}
-            {fire.region ? ` · ${fire.region}` : ''}
-          </small>
+          {fireLabel(fire.id)} <small title={fire.id}>· {fire.year}</small>
         </span>
         <small>
           {fire.capabilities
             ? fire.capabilities.spatial
-              ? 'Spatial dataset'
-              : 'Perimeter and summary only'
+              ? 'Recovery map'
+              : 'Summary only, no map'
             : isProvided(fire.recovery_today_avg)
               ? `${formatShare(fire.recovery_today_avg)} recovery`
               : 'Recovery not supplied'}{' '}

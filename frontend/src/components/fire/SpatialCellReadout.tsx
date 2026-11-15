@@ -22,7 +22,7 @@ export function SpatialCellReadout({
   return (
     <div>
       <p>
-        Cell {i} · row {cell.row}, column {cell.col} (source indices) · source summer{' '}
+        Cell {i} · row {cell.row}, column {cell.col} · source summer{' '}
         {data.result.satellite_images.summer}
       </p>
       <dl>

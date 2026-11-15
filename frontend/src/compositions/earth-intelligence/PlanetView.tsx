@@ -170,6 +170,7 @@ export function PlanetView({
         animate={!hidden}
         observation={observed?.manifest.bbox ?? null}
         onAnchors={placeLeaders}
+        onPlanetClick={canEnter ? onEnter : undefined}
         layersOpen={layersOpen}
         onLayersOpenChange={onLayersOpenChange}
       />
@@ -211,6 +212,7 @@ function GlobeStage({
   animate,
   observation,
   onAnchors,
+  onPlanetClick,
   layersOpen,
   onLayersOpenChange,
 }: {
@@ -223,6 +225,7 @@ function GlobeStage({
   animate: boolean;
   observation: readonly [number, number, number, number] | null;
   onAnchors: (anchors: GlobeAnchors) => void;
+  onPlanetClick?: (() => void) | undefined;
   layersOpen: boolean;
   onLayersOpenChange: (open: boolean) => void;
 }) {
@@ -279,6 +282,7 @@ function GlobeStage({
         label={label}
         observation={observation}
         onAnchors={onAnchors}
+        {...(onPlanetClick ? { onPlanetClick } : {})}
       />
       <figcaption className={cartography.figureCaption}>
         <span>Natural Earth 1:110m · orthographic</span>

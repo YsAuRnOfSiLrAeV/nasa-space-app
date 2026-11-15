@@ -219,3 +219,27 @@
     max-width: min(290px, 65vw);
   }
 }
+
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  font: 500 0.6875rem/1.5 var(--font-label);
+}
+.crumbs a {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.crumbs [aria-current='page'] {
+  color: var(--muted-foreground);
+}
+.groupHead {
+  padding: 1rem 0.5rem 0.25rem;
+  color: var(--muted-foreground);
+  font: 500 0.6875rem/1.5 var(--font-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

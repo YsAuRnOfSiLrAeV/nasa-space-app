@@ -10,7 +10,7 @@ export const WARNING_TEXT: Record<string, string> = {
   MODEL_INPUT_CHECK_FAILED:
     'The model library reported input-check issues. Review the backend input diagnostics for units and training-range problems.',
   MANY_CELLS_EXCLUDED:
-    'Many burned-area cells have no valid model estimate. The recovery average covers the retained cells and may overstate recovery.',
+    'Many burned cells could not be estimated (often bare or very dark ground). The average covers the rest, so recovery may look better than it is.',
   ACCURACY_NOT_VALIDATED_WITHOUT_GEDI:
     'Calibration used GEDI reference heights. Its error estimates have not been validated for this alternative reference-height source.',
   MISSING_COVARIATES_USING_AVERAGES:
@@ -21,7 +21,7 @@ export const WARNING_TEXT: Record<string, string> = {
   NOT_VALIDATED_REGION:
     'The growth forecast is applied to a region where it has not been validated.',
   FORECAST_EXTRAPOLATES_BEYOND_AGE_36:
-    'The supplied forecast extends beyond fire age 36 years, outside the validated age range.',
+    'This forecast looks further ahead than the model was tested (fires up to 36 years old). Treat the later years as less certain.',
   LOW_NISAR_COVERAGE: 'NISAR data covers less than 80% of the assessed burn zone.',
   DEFAULT_DNBR: 'Burn severity (dNBR) is missing; the forecast uses the Canada mean.',
   DEFAULT_NBR_PRE: 'Pre-fire NBR is missing; the forecast uses the Canada mean.',

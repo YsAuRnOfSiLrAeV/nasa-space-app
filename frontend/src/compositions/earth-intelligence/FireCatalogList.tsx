@@ -1,7 +1,8 @@
 import type { DemoFire } from '@/data/fireSchema';
 import { filterFireCatalog } from '@/domain/fire/catalogSearch';
 import { EMPTY_FIRES, type FireCatalog } from '@/hooks/useFireCatalog';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
+import { fireCountry } from '@/domain/fire/fireLabel';
 import { FireCatalogItem } from './FireCatalogItem';
 import styles from './MapShell.module.css';
 
@@ -19,7 +20,15 @@ export function FireCatalogList({
   const [query, setQuery] = useState('');
   const [region, setRegion] = useState('');
   const [year, setYear] = useState('');
-  const matches = filterFireCatalog(fires, query, region, year);
+  const matches = filterFireCatalog(fires, query, region, year)
+    .map((fire, order) => ({ fire, order }))
+    .sort(
+      (a, b) =>
+        countryRank(a.fire.id).localeCompare(countryRank(b.fire.id)) ||
+        Number(hasMap(b.fire)) - Number(hasMap(a.fire)) ||
+        a.order - b.order,
+    )
+    .map(({ fire }) => fire);
   const regions = [...new Set(fires.flatMap((fire) => (fire.region ? [fire.region] : [])))].sort();
   const years = [...new Set(fires.map((fire) => fire.year))].sort((a, b) => b - a);
   return (
@@ -71,15 +80,29 @@ export function FireCatalogList({
         </div>
       )}
       <ul className={styles.fireList} aria-label="Available example fires">
-        {matches.map((fire) => (
-          <FireCatalogItem
-            key={fire.id}
-            fire={fire}
-            current={fire.id === selectedId}
-            onSelect={onSelect}
-          />
-        ))}
+        {matches.map((fire, i) => {
+          const country = fireCountry(fire.id);
+          const first = i === 0 || fireCountry(matches[i - 1]!.id) !== country;
+          return (
+            <Fragment key={fire.id}>
+              {first && (
+                <li role="presentation" className={styles.groupHead}>
+                  {country} · {matches.filter((m) => fireCountry(m.id) === country).length}
+                </li>
+              )}
+              <FireCatalogItem fire={fire} current={fire.id === selectedId} onSelect={onSelect} />
+            </Fragment>
+          );
+        })}
       </ul>
     </>
   );
 }
+
+/** Canada first (the validated region), then the other countries alphabetically. */
+const countryRank = (id: string) => {
+  const country = fireCountry(id);
+  return country === 'Canada' ? '' : country;
+};
+
+const hasMap = (fire: DemoFire) => fire.capabilities?.spatial !== false;

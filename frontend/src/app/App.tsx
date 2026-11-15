@@ -93,7 +93,8 @@ export function App() {
                 }
               >
                 <StudyMap
-                  points={data?.points ?? NO_POINTS}
+                  // The Ontario sample points were a test dataset for the first frontend format: not drawn.
+                  points={NO_POINTS}
                   bbox={data?.manifest.bbox ?? CANADA_BBOX}
                   onReady={setMapView}
                 />

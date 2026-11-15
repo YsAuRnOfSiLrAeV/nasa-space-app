@@ -1,4 +1,5 @@
-import { type MapState } from '@/app/route';
+import { mapHref, type MapState } from '@/app/route';
+import { fireLabel } from '@/domain/fire/fireLabel';
 import { config } from '@/config';
 import type { DemoFire } from '@/data/fireSchema';
 import type { FireCatalog } from '@/hooks/useFireCatalog';
@@ -53,9 +54,25 @@ export function InvestigationPanel({
       }
     >
       <div id="investigation-body" hidden={collapsed} className={styles.panelBody}>
-        <button type="button" className={styles.action} onClick={onPlanet}>
-          Back to Globe
-        </button>
+        <nav aria-label="Where you are" className={styles.crumbs}>
+          <button type="button" onClick={onPlanet}>
+            Globe
+          </button>
+          <span aria-hidden="true">›</span>
+          {state.mode === 'examples' && state.fireId ? (
+            <>
+              <a href={mapHref({ mode: 'examples', presentation: 'explore', fireId: null })}>
+                Fires
+              </a>
+              <span aria-hidden="true">›</span>
+              <span aria-current="page">{fireLabel(state.fireId)}</span>
+            </>
+          ) : (
+            <span aria-current="page">
+              {state.mode === 'examples' ? 'Fires' : 'Find Your Fire'}
+            </span>
+          )}
+        </nav>
         {scientificContext}
         {state.mode === 'examples' ? (
           <>

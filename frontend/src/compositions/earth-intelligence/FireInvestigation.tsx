@@ -5,6 +5,7 @@ import { BundleAvailability } from '@/components/fire/BundleAvailability';
 import { FireResults } from '@/components/fire/FireResults';
 import { FireResultDetails } from '@/components/fire/FireResultDetails';
 import type { DemoFire } from '@/data/fireSchema';
+import { fireLabel } from '@/domain/fire/fireLabel';
 import { DEVELOPMENT_FIXTURE, warningText } from '@/data/fireWarnings';
 import { layerCoverage, overlayAvailability } from '@/domain/fire/fireGrid';
 import type { FireInvestigationState } from '@/hooks/useFireInvestigation';
@@ -17,12 +18,10 @@ import styles from './MapShell.module.css';
 /** The selected example fire in the investigation panel: state, layer controls and legend. */
 export function FireInvestigation({
   investigation,
-  entry,
-  closeHref,
 }: {
   investigation: FireInvestigationState;
-  entry: DemoFire | undefined;
-  closeHref: string;
+  /** Kept for the caller; the title comes from the fire id. */
+  entry?: DemoFire | undefined;
 }) {
   const {
     fireId,
@@ -51,8 +50,6 @@ export function FireInvestigation({
         : null,
     [data],
   );
-  const name = data?.result.fire.name.en ?? entry?.name.en ?? fireId;
-  const year = data?.result.fire.year ?? entry?.year;
   const fixture = data?.result.warnings.includes(DEVELOPMENT_FIXTURE) ?? false;
 
   const warnings =
@@ -66,8 +63,7 @@ export function FireInvestigation({
       <div>
         <p className={styles.eyebrow}>Selected fire</p>
         <h3 id="fire-title" className={styles.fireTitle}>
-          {name}
-          {year ? ` · ${year}` : ''}
+          {fireId ? fireLabel(fireId) : ''}
         </h3>
         {data && (
           <dl className={styles.facts}>
@@ -86,9 +82,6 @@ export function FireInvestigation({
             </dd>
           </dl>
         )}
-        <a className={styles.action} href={closeHref}>
-          Back to fire list
-        </a>
       </div>
 
       <>
@@ -136,12 +129,21 @@ export function FireInvestigation({
             )}
           </>
 
+          {data.bundle && data.bundle.cells.length === 0 && (
+            <div role="note" className={styles.note}>
+              <p className="font-medium text-foreground">Summary only</p>
+              <p>
+                This fire has its outline and a whole-fire estimate, but no cell-by-cell map was
+                exported, so the map shows the perimeter only.
+              </p>
+            </div>
+          )}
           <FireResults
             data={data}
             forecast={forecast}
             year={forecastYear ?? data.result.satellite_images.summer}
           />
-          <BundleAvailability data={data} />
+          {data.bundle && data.bundle.cells.length > 0 && <BundleAvailability data={data} />}
           {data.bundle?.timeline && (
             <CellTimelineControls
               key={data.result.fire.id}
@@ -196,8 +198,8 @@ export function FireInvestigation({
               <p className="font-medium text-foreground">Result warnings</p>
               <ul>
                 {warnings.map((w) => (
-                  <li key={w}>
-                    {warningText(w)} <span className="font-mono text-xs">({w})</span>
+                  <li key={w} title={w}>
+                    {warningText(w)}
                   </li>
                 ))}
               </ul>
