@@ -6,6 +6,7 @@
     fire_recovery(height, zones, ref)    fire-level recovery and the share of the burn the model left out
     accuracy(model)                      how far fire-level recovery was from GEDI lidar in validation
     forecast(fire_year, summer, ...)     growth forecast for the fire, None where it is not validated
+    demo_fires(ids)                      the library's demo fires with their perimeters, for batch runs
 
 Recovery is height over the neighbour forest height. Per cell it is too noisy to show
 (about 3.7 m error), so it is only given as a fire average, which is the number the
@@ -129,3 +130,23 @@ def forecast(fire_year: int, summer: int, factors: dict, lon: float, lat: float)
 
 def _inputs(table: CellTable) -> dict[str, np.ndarray]:
     return {name: table.column(name) for name in table.names}
+
+
+def demo_fires(ids: list[str] | None = None) -> list[dict]:
+    """Demo fires of the library: {"id", "name", "year", "area_ha", "geometry"}, in library order or in the order of ``ids``."""
+    listed = {d["id"]: d for d in fr.list_demo_fires()}
+    unknown = [i for i in ids or [] if i not in listed]
+    if unknown:
+        raise KeyError(f"not demo fires of forestrecovery {fr.__version__}: {', '.join(unknown)}")
+    fires = []
+    for fire_id in ids or list(listed):
+        d = listed[fire_id]
+        fires.append({
+            "id": fire_id,
+            "name": d["name_en"],
+            "year": int(d["fire_year"]),
+            "area_ha": float(d["area_ha"]),
+            "geometry": fr.fire_bundle(fire_id)["polygon"]["geometry"],
+        })
+    return fires
+

@@ -9,11 +9,12 @@
                    NISAR HH, HV
                    Sentinel-1 VH, VV
                    NDVI
-                   masks -> zones -> neighbour forest height
+                   masks -> zones -> GEDI shots -> neighbour forest height
                    scene counts for result.json
+                   Sentinel-2 colour picture on the display grid (optional)
     3. state     cell table -> input check -> state model -> maps            cell_features.py, model.py
     4. numbers   distance to edge, covariates, stage shares, coverage,      fire_stats.py
-                 optics
+                 optics, GEDI lidar inside the burn
     5. forecast  fire recovery and growth forecast                          model.py
     6. files     result.json, cells.json, index.json                        export.py
 
@@ -65,7 +66,8 @@ def run(fire: Fire, summer: int, out_dir: Path | str, on_step: Callable[[str], N
     place = model.place(centre.x, centre.y)  # fails here, before any download, where no model applies
 
     step("data")
-    data = _fetch_data(fire, grid, summer)
+    factor = export.display_factor(grid)
+    data = _fetch_data(fire, grid, summer, export.display_grid(grid, factor))
     zones = data["zones"]
 
     step("state")
@@ -83,6 +85,7 @@ def run(fire: Fire, summer: int, out_dir: Path | str, on_step: Callable[[str], N
     covariates = fire_stats.covariates({fire_stats.DIST_EDGE: fire_stats.distance_to_edge(inside)}, zones)
     nisar_coverage = fire_stats.coverage(data["nisar"].layers[NISAR_HV], zones)
     ndvi = data["ndvi"][NDVI]
+    lidar = fire_stats.lidar_in_burn(data["gedi"], zones, grid, data["reference"]["height_m"])
 
     step("forecast")
     reference_m = data["reference"]["height_m"]
@@ -91,7 +94,6 @@ def run(fire: Fire, summer: int, out_dir: Path | str, on_step: Callable[[str], N
     growth, forecast_warnings = model.forecast(fire.year, summer, factors, centre.x, centre.y)
 
     step("files")
-    factor = export.display_factor(grid)
     result = {
         "fire": {"id": fire.id, "name": fire.name, "year": fire.year, "area_ha": round(fire.area_ha), "perimeter": fire.perimeter},
         "satellite_images": {
@@ -116,10 +118,10 @@ def run(fire: Fire, summer: int, out_dir: Path | str, on_step: Callable[[str], N
         "comparison": {
             "optics": fire_stats.optics_recovery(ndvi, zones),
             "model": recovery["recovery_today_avg"],
-            "lidar": None,
-            "lidar_points_in_fire": 0,
+            "lidar": lidar["lidar"],
+            "lidar_points_in_fire": lidar["points_in_fire"],
         },
-        "lidar_points": [],
+        "lidar_points": lidar["points"],
         "warnings": _warnings(place, input_issues, nisar_coverage, recovery, data["reference"], forecast_warnings, fire),
     }
     cells = export.cells_json(
@@ -131,34 +133,46 @@ def run(fire: Fire, summer: int, out_dir: Path | str, on_step: Callable[[str], N
         },
         factor,
     )
-    folder = export.write_fire(out_dir, result, cells)
+    optical = export.optical_png(data["optical"]) if data["optical"] is not None else None
+    folder = export.write_fire(out_dir, result, cells, optical_png=optical)
     export.update_index(out_dir, result)
     return folder
 
 
-def _fetch_data(fire: Fire, grid: Grid, summer: int) -> dict:
-    """All satellite data for the fire. The five downloads do not depend on each other and run at once."""
+def _fetch_data(fire: Fire, grid: Grid, summer: int, display: Grid) -> dict:
+    """All satellite data for the fire. The six downloads do not depend on each other and run at once."""
     client.session()  # log in to Earth Engine once, before the threads start
 
     def zones_and_reference():
         masks = layers.masks(grid, summer)
         z = zone_maps.make_zones(fire.perimeter, grid, masks)
-        return z, gedi.reference_height(fire.perimeter, grid, z)
+        heights = gedi.shot_heights(fire.perimeter, grid)
+        return z, heights, gedi.reference_height(fire.perimeter, grid, z, heights=heights)
 
-    with ThreadPoolExecutor(max_workers=5) as pool:
+    def optical():
+        try:
+            return layers.optical_rgb(display, summer)
+        except Exception as error:  # the picture is optional: the numbers do not depend on it
+            log.warning("optical picture skipped: %s", error)
+            return None
+
+    with ThreadPoolExecutor(max_workers=6) as pool:
         nisar = pool.submit(nisar_layers, grid, summer)
         s1 = pool.submit(layers.sentinel1, grid, summer)
         ndvi = pool.submit(layers.ndvi, grid, summer)
         zones_ref = pool.submit(zones_and_reference)
         images = pool.submit(layers.satellite_images, grid, summer)
-        z, reference = zones_ref.result()
+        rgb = pool.submit(optical)
+        z, heights, reference = zones_ref.result()
         return {
             "nisar": nisar.result(),
             "s1": s1.result(),
             "ndvi": ndvi.result(),
             "zones": z,
+            "gedi": heights,
             "reference": reference,
             "images": images.result(),
+            "optical": rgb.result(),
         }
 
 

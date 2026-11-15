@@ -21,8 +21,11 @@ ground in every layer.
 | 8 | `fire_stats.py` | Fire-level numbers: forecast inputs (median of each factor over the burn) and the totals in `result.json` |
 | 9 | `export.py` | Merges cells into display cells (90 m or larger) and writes the result files |
 | | `run.py` | Runs the steps above for one fire |
+| | `batch.py` | Runs every demo fire of the model library, skipping fires already done |
 
-Steps 2, 3 and 4-5 do not depend on each other and run in parallel. The input values match the
+Steps 2, 3 and 4-5 do not depend on each other and run in parallel. GEDI shots are downloaded once:
+the ring around the fire gives the neighbour forest height, the shots inside the burn give the lidar
+comparison. The Sentinel-2 colour picture (`optical.png`) is fetched on the display grid. The input values match the
 ones the model was trained on: same products, same date windows, same processing.
 
 `contract.py` holds the names of the input layers and the zone codes that all modules share.
@@ -102,6 +105,12 @@ python -m pytest
 **Pipeline for one fire**
 ```bash
 python -m pipeline.run --polygon path/to/fire.geojson --summer 2026 --out ../data/fires
+```
+
+**All demo fires of the model library** (main page fires first, already computed fires are skipped)
+```bash
+python -m pipeline.batch --summer 2026 --out ../data/demo
+python -m pipeline.batch --summer 2026 --out ../data/demo --ids bc_2003_490 quebec_1995_1218
 ```
 
 ## Adding a dependency

@@ -48,7 +48,16 @@ def offline(monkeypatch):
         "sentinel1": {"from": "2026-07-10", "to": "2026-07-24", "scenes": 3},
         "sentinel2": {"from": "2026-07-01", "to": "2026-08-14", "scenes": 10},
     })
-    monkeypatch.setattr(gedi, "reference_height", lambda polygon, grid, zones: {"height_m": 19.1, "source": "gedi", "shots": 500})
+    def shots(polygon, grid):
+        heights = np.full(grid.shape, np.nan, dtype=np.float32)
+        heights[::20, ::20] = 8.6  # sparse GEDI shots everywhere
+        return heights
+
+    monkeypatch.setattr(gedi, "shot_heights", shots)
+    monkeypatch.setattr(gedi, "reference_height", lambda polygon, grid, zones, heights=None: {"height_m": 19.1, "source": "gedi", "shots": 500})
+    monkeypatch.setattr(layers, "optical_rgb", lambda grid, summer: {
+        "red": full(grid, 0.04), "green": full(grid, 0.07), "blue": full(grid, 0.03),
+    })
 
 
 def test_run_writes_a_complete_result(offline, tmp_path):
@@ -73,6 +82,11 @@ def test_run_writes_a_complete_result(offline, tmp_path):
     assert sum(result["model_result"]["stage_share"]) == pytest.approx(1.0, abs=1e-3)
     assert result["comparison"]["optics"] == pytest.approx(1.0)  # same NDVI in the burn and around it
     assert result["comparison"]["model"] == result["model_result"]["recovery_today_avg"]
+    assert result["comparison"]["lidar"] == pytest.approx(8.6 / 19.1, abs=1e-3)
+    assert result["comparison"]["lidar_points_in_fire"] > 0
+    assert 0 < len(result["lidar_points"]) <= result["comparison"]["lidar_points_in_fire"]
+    assert result["files"]["optical_image"] == "optical.png"
+    assert (folder / "optical.png").read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
     growth = result["growth_forecast"]
     assert growth["year_80pct"] > 2003 and len(growth["interval_80_now"]) == 2
     assert len(growth["series"]["years"]) == len(growth["series"]["recovery"])
@@ -124,7 +138,19 @@ def test_bare_burn_is_reported_as_excluded(offline, tmp_path, monkeypatch):
 
 
 def test_neighbour_height_without_gedi_is_flagged(offline, tmp_path, monkeypatch):
-    monkeypatch.setattr(gedi, "reference_height", lambda polygon, grid, zones: {"height_m": 12.0, "source": "eth", "shots": 0})
+    monkeypatch.setattr(gedi, "shot_heights", lambda polygon, grid: None)
+    monkeypatch.setattr(gedi, "reference_height", lambda polygon, grid, zones, heights=None: {"height_m": 12.0, "source": "eth", "shots": 0})
     folder = pipeline_run.run(fire(), 2026, tmp_path)
     result = json.loads((folder / "result.json").read_text(encoding="utf-8"))
     assert "ACCURACY_NOT_VALIDATED_WITHOUT_GEDI" in result["warnings"]
+    assert result["comparison"]["lidar"] is None and result["lidar_points"] == []
+
+
+def test_failed_optical_picture_does_not_stop_the_run(offline, tmp_path, monkeypatch):
+    def broken(grid, summer):
+        raise RuntimeError("no Sentinel-2 scenes")
+
+    monkeypatch.setattr(layers, "optical_rgb", broken)
+    folder = pipeline_run.run(fire(), 2026, tmp_path)
+    result = json.loads((folder / "result.json").read_text(encoding="utf-8"))
+    assert result["files"]["optical_image"] is None and not (folder / "optical.png").exists()

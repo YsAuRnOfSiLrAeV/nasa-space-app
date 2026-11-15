@@ -59,6 +59,17 @@ def ndvi(grid: Grid, year: int) -> dict:
     return client.fetch(image, grid, [NDVI])
 
 
+def optical_rgb(grid: Grid, year: int) -> dict:
+    """Return {"red", "green", "blue"}: Sentinel-2 surface reflectance 0..1 on `grid`, the scenes used for NDVI.
+
+    For the optical picture of the fire, so call it on the coarse display grid, not the 30 m grid.
+    """
+    scenes = _s2_scenes(grid, year)
+    _require(scenes, "Sentinel-2", year, S2_WINDOW)
+    image = scenes.median().select(["B4", "B3", "B2"], ["red", "green", "blue"]).divide(10000)
+    return client.fetch(image, grid, ["red", "green", "blue"])
+
+
 def masks(grid: Grid, year: int) -> dict:
     """Return WorldCover / Hansen / fire history layers on `grid` (used by zones.py)."""
     ee = client.session()

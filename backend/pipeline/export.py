@@ -22,6 +22,7 @@ neighbour forest values are not mixed.
 """
 from __future__ import annotations
 
+import io
 import json
 import math
 import os
@@ -57,6 +58,10 @@ CELL_LAYERS: dict[tuple[str, str], tuple[str, int]] = {
 
 # Top-level sections result.json must have before it is written. Sections that
 # do not apply to a fire (for example growth_forecast outside Canada) are present with null.
+# Reflectance that maps to full brightness in optical.png, and a gamma that lifts dark forest.
+OPTICAL_WHITE = 0.25
+OPTICAL_GAMMA = 1.6
+
 RESULT_SECTIONS = (
     "fire", "satellite_images", "map_grid", "neighbour_forest", "model_result",
     "growth_forecast", "comparison", "lidar_points", "warnings",
@@ -191,6 +196,19 @@ def index_entry(result: dict) -> dict:
         "year_80pct": forecast.get("year_80pct"),
         "result": f"{fire['id']}/result.json",
     }
+
+
+def optical_png(rgb: Mapping[str, np.ndarray]) -> bytes:
+    """optical.png from {"red", "green", "blue"} reflectance (0..1) on the display grid. No data is transparent."""
+    from PIL import Image
+
+    stack = np.stack([rgb["red"], rgb["green"], rgb["blue"]], axis=-1).astype(np.float32)
+    valid = np.isfinite(stack).all(axis=-1)
+    scaled = np.clip(np.nan_to_num(stack) / OPTICAL_WHITE, 0, 1) ** (1 / OPTICAL_GAMMA)
+    rgba = np.dstack([(scaled * 255).round().astype(np.uint8), np.where(valid, 255, 0).astype(np.uint8)])
+    buffer = io.BytesIO()
+    Image.fromarray(rgba, "RGBA").save(buffer, format="PNG", optimize=True)
+    return buffer.getvalue()
 
 
 def _blocks(layer: np.ndarray, factor: int) -> np.ndarray:

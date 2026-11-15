@@ -219,3 +219,10 @@ def test_earth_engine_pixels_land_on_grid_cells(grid):
     # within half a cell whichever corner or centre Earth Engine reports; a shifted or flipped grid fails
     assert np.abs(where["x"] - x).max() <= CELL_M / 2
     assert np.abs(where["y"] - y).max() <= CELL_M / 2
+
+
+def test_reference_height_uses_given_shots_without_downloading(grid, zones, monkeypatch):
+    monkeypatch.setattr(gedi, "_gedi_rh98", lambda g: pytest.fail("shots were given, nothing to download"))
+    heights = np.where(zones == REFERENCE, 20.0, np.nan)
+    assert gedi.reference_height(FIRE, grid, zones, heights=heights)["height_m"] == 20.0
+
