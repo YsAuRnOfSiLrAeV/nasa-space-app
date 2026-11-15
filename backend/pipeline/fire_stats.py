@@ -67,7 +67,8 @@ def distance_to_edge(inside: np.ndarray) -> np.ndarray:
 
 
 def fire_size_log(area_ha: float) -> float:
-    return round(math.log10(area_ha), 4)
+    # Not rounded: the largest training fire sits exactly on the edge of the model's range.
+    return math.log10(area_ha)
 
 
 def burn_median(layer: np.ndarray, zones: np.ndarray, where: np.ndarray | None = None) -> float | None:
