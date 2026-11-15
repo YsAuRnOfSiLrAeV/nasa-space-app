@@ -3,6 +3,7 @@ import { fireLabel } from '@/domain/fire/fireLabel';
 import { config } from '@/config';
 import type { DemoFire } from '@/data/fireSchema';
 import type { FireCatalog } from '@/hooks/useFireCatalog';
+import type { CatalogFilters } from '@/domain/fire/catalogSearch';
 import { useState, type ReactNode, type RefObject } from 'react';
 import { MapSidePanel } from '../MapSidePanel';
 import { FindYourFireNotice } from './FindYourFireNotice';
@@ -19,6 +20,7 @@ export function InvestigationPanel({
   search,
   children,
   scientificContext,
+  filters,
 }: {
   state: MapState;
   catalog: FireCatalog;
@@ -30,9 +32,16 @@ export function InvestigationPanel({
   search?: ReactNode;
   children?: ReactNode;
   scientificContext?: ReactNode;
+  /** Search and filters of the fire list, held by the explorer. */
+  filters?: [CatalogFilters, (filters: CatalogFilters) => void];
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [toolsRequested, setToolsRequested] = useState(false);
+  const [previousMode, setPreviousMode] = useState(state.mode);
+  if (state.mode !== previousMode) {
+    setPreviousMode(state.mode);
+    setCollapsed(false);
+  }
   return (
     <MapSidePanel
       label="Fire investigation"
@@ -73,9 +82,19 @@ export function InvestigationPanel({
             </span>
           )}
         </nav>
-        {scientificContext}
         {state.mode === 'examples' ? (
           <>
+            <a
+              className={styles.drawAction}
+              href={mapHref({
+                mode: 'find-your-fire',
+                presentation: 'explore',
+                fireId: null,
+                draw: true,
+              })}
+            >
+              Draw Your Polygon
+            </a>
             {fireDetail}
             {!state.fireId && (
               <p>
@@ -84,15 +103,26 @@ export function InvestigationPanel({
                   : 'Published, precomputed fire results.'}
               </p>
             )}
-            {state.fireId && <h3 className={styles.listHead}>Switch fire</h3>}
-            <FireCatalogList catalog={catalog} selectedId={state.fireId} onSelect={onFireSelect} />
+            <FireCatalogList
+              catalog={catalog}
+              selectedId={state.fireId}
+              onSelect={onFireSelect}
+              filters={filters}
+            />
           </>
         ) : (
           <>
+            <a
+              className={styles.action}
+              href={mapHref({ mode: 'examples', presentation: 'explore', fireId: null })}
+            >
+              Browse Examples
+            </a>
             {search ?? <FindYourFireNotice />}
             {fireDetail}
           </>
         )}
+        {scientificContext}
         {children && (
           <details
             className={styles.studyDetails}

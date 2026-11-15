@@ -110,6 +110,22 @@
   height: 1px;
   background: var(--select);
 }
+/* The one page link: no frame, no fill. It stands out by being the only item in
+   full-strength type with a signal-coloured arrow; the current page keeps the
+   usual underline. */
+.prominent {
+  gap: 0.35rem;
+  color: var(--foreground);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+.prominentArrow {
+  color: var(--signal);
+  transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.prominent:hover .prominentArrow {
+  transform: translateX(3px);
+}
 
 .brand:focus-visible,
 .item:focus-visible {

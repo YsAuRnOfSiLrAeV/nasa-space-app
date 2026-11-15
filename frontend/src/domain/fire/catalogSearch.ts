@@ -11,3 +11,44 @@ export function filterFireCatalog(fires: DemoFire[], query: string, region = '',
       ),
   );
 }
+
+/** Search and filters of the fire list. Held by the explorer, so they survive the list moving panels. */
+export interface CatalogFilters {
+  query: string;
+  region: string;
+  year: string;
+}
+export const NO_CATALOG_FILTERS: CatalogFilters = { query: '', region: '', year: '' };
+
+export interface CatalogCapabilityFlags {
+  spatial?: boolean;
+  perimeter?: boolean;
+  timeline?: boolean;
+  forecast?: boolean;
+}
+
+export function catalogCapabilityLabels(capabilities: CatalogCapabilityFlags): string[] {
+  const labels: string[] = [];
+  if (capabilities.spatial) labels.push('Spatial data available');
+  else if (capabilities.perimeter) labels.push('Perimeter and summary only');
+  else if (capabilities.spatial === false) labels.push('No spatial data supplied');
+  if (capabilities.timeline) labels.push('Timeline available');
+  if (capabilities.forecast) labels.push('Forecast available');
+  return labels;
+}
+
+export function groupFireCatalog(fires: DemoFire[]) {
+  const regions = [...new Set(fires.map((fire) => fire.region || 'Region not supplied'))].sort();
+  return regions.map((region) => {
+    const regional = fires.filter((fire) => (fire.region || 'Region not supplied') === region);
+    return {
+      region,
+      years: [...new Set(regional.map((fire) => fire.year))]
+        .sort((a, b) => b - a)
+        .map((year) => ({
+          year,
+          fires: regional.filter((fire) => fire.year === year),
+        })),
+    };
+  });
+}

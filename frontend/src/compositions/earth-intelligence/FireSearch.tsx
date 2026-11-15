@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Polygon, FeatureCollection } from 'geojson';
+import type { FeatureCollection } from 'geojson';
+import { usePolygonDraft, type PolygonDraft } from '@/hooks/usePolygonDraft';
+import { PolygonDrawingControls } from './PolygonDrawingControls';
 import { mapHref, type MapState } from '@/app/route';
 import type { StudyMapController } from '@/components/map/StudyMapController';
 import { config } from '@/config';
@@ -15,6 +17,7 @@ import { simulateAnalysis } from '@/services/search/mockAnalysis';
 import { filterCatalog, type CatalogFire, type Run } from '@/services/search/contracts';
 import { drawingPolygon } from '@/services/search/coverage';
 import { boundaryOverlap, canAnalyze, precomputedHref } from '@/services/search/selection';
+import { catalogCapabilityLabels } from '@/domain/fire/catalogSearch';
 import styles from './MapShell.module.css';
 
 async function json(path: string, signal: AbortSignal) {
@@ -33,18 +36,20 @@ export function FireSearch({
   onResult,
   catalog,
   applicability,
+  draft: suppliedDraft,
 }: {
   mapView: StudyMapController | null;
   state: MapState;
   onResult: (url: string, fireId: string) => Promise<void>;
   catalog: FireCatalog;
   applicability?: ApplicabilityResource;
+  draft?: PolygonDraft;
 }) {
   const [mock, setMock] = useState(() => import.meta.env.DEV && state.country === 'development');
   const country = state.country ?? '';
   const setCountry = (value: string) => {
     window.location.hash = mapHref({
-      mode: 'search',
+      mode: 'find-your-fire',
       presentation: 'explore',
       fireId: null,
       country: value,
@@ -52,9 +57,9 @@ export function FireSearch({
   };
   const [query, setQuery] = useState('');
   const [year, setYear] = useState('');
-  const [drawing, setDrawing] = useState(false);
-  const [points, setPoints] = useState<[number, number][]>([]);
-  const [polygon, setPolygon] = useState<Polygon | null>(null);
+  const localDraft = usePolygonDraft(state.draw === true);
+  const draft = suppliedDraft ?? localDraft;
+  const { drawing, setDrawing, points, setPoints, polygon, setPolygon } = draft;
   const [summer, setSummer] = useState('');
   const [run, setRun] = useState<Run | null>(null);
   const [runOwner, setRunOwner] = useState('');
@@ -160,7 +165,7 @@ export function FireSearch({
     (id: string) => {
       if (!drawing)
         window.location.hash = mapHref({
-          mode: 'search',
+          mode: 'find-your-fire',
           presentation: 'fire',
           fireId: id,
           country: selectedCountry?.code,
@@ -217,7 +222,7 @@ export function FireSearch({
       drawing && mapView
         ? mapView.onDrawPoint((point) => setPoints((previous) => [...previous, point]))
         : undefined,
-    [drawing, mapView],
+    [drawing, mapView, setPoints],
   );
   useEffect(() => {
     const escape = (event: KeyboardEvent) => {
@@ -228,7 +233,7 @@ export function FireSearch({
     };
     window.addEventListener('keydown', escape);
     return () => window.removeEventListener('keydown', escape);
-  }, []);
+  }, [setDrawing, setPoints]);
   useEffect(() => () => active.current?.abort(), [state.fireId, mock, summer]);
   const analyze = async () => {
     if (!selected || !chosenSummer || !analysisEnabled) return;
@@ -267,6 +272,12 @@ export function FireSearch({
   };
   return (
     <section className={styles.search} aria-label="Find Your Fire workflow">
+      <PolygonDrawingControls draft={draft} mapView={mapView} busy={processing} onFinish={finish} />
+      {drawing ? (
+        <p role="status">Finish or cancel drawing to evaluate this boundary.</p>
+      ) : (
+        <GeographicCoverage value={evaluated.value} error={evaluated.error} />
+      )}
       {import.meta.env.DEV && (
         <label>
           <input
@@ -361,8 +372,6 @@ export function FireSearch({
           <a href={precomputedHref(selected.resultId)}>
             Open available exported data · {selected.name}
           </a>
-          {selected.spatial === false &&
-            ' · Perimeter and summary only; no spatial dataset supplied.'}
         </p>
       )}
       <ul className={styles.fireList}>
@@ -375,22 +384,14 @@ export function FireSearch({
               }}
               aria-current={selected?.id === fire.id ? 'true' : undefined}
               href={mapHref({
-                mode: 'search',
+                mode: 'find-your-fire',
                 presentation: 'fire',
                 fireId: fire.id,
                 country: selectedCountry?.code,
               })}
             >
               {fire.name} · {fire.year}
-              <small>
-                {fire.resultId
-                  ? fire.spatial === false
-                    ? 'Perimeter and summary export available'
-                    : fire.spatial
-                      ? 'Spatial dataset available'
-                      : 'Precomputed result available'
-                  : 'No exported dataset available'}
-              </small>
+              <small>{searchCapabilityText(fire)}</small>
               {polygon && (
                 <small>
                   {(
@@ -408,49 +409,6 @@ export function FireSearch({
           No exported dataset exists for this identifier in the supplied catalog. Choose a listed
           fire.
         </p>
-      )}
-      <fieldset>
-        <legend>Selection boundary</legend>
-        <button
-          disabled={!mapView || drawing || processing}
-          onClick={() => {
-            setDrawing(true);
-            setPolygon(null);
-            setPoints([]);
-          }}
-        >
-          Draw polygon
-        </button>
-        {drawing && (
-          <>
-            <p>
-              Click the map to add vertices ({points.length}). Escape cancels. Keyboard users can
-              add the map centre.
-            </p>
-            <button
-              onClick={() => mapView && setPoints((previous) => [...previous, mapView.centre()])}
-            >
-              Add map centre
-            </button>
-            <button disabled={points.length < 3} onClick={finish}>
-              Finish polygon
-            </button>
-            <button
-              onClick={() => {
-                setDrawing(false);
-                setPoints([]);
-              }}
-            >
-              Cancel drawing
-            </button>
-          </>
-        )}
-        {polygon && <button onClick={() => setPolygon(null)}>Clear polygon</button>}
-      </fieldset>
-      {drawing ? (
-        <p role="status">Finish or cancel drawing to evaluate this boundary.</p>
-      ) : (
-        <GeographicCoverage value={evaluated.value} error={evaluated.error} />
       )}
       {zonesResource.state.status === 'loading' && (
         <p role="status">Loading supplied applicability zones…</p>
@@ -575,4 +533,16 @@ export function FireSearch({
 
 function chosenSummerKey(summer: string) {
   return summer || 'default';
+}
+
+function searchCapabilityText(fire: CatalogFire) {
+  if (!fire.resultId) return 'No exported dataset available';
+  return (
+    catalogCapabilityLabels({
+      spatial: fire.spatial,
+      perimeter: fire.perimeterAvailable,
+      timeline: fire.timeline,
+      forecast: fire.forecast,
+    }).join(' · ') || 'Precomputed result available'
+  );
 }

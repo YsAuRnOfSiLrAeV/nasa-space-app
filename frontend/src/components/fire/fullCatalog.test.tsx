@@ -47,8 +47,12 @@ describe('complete supplied fire catalog', () => {
         onSelect={() => {}}
       />,
     );
-    expect(html.match(/Recovery map ·/g)).toHaveLength(37);
-    expect(html.match(/Summary only, no map/g)).toHaveLength(43);
+    expect(html.match(/Spatial data available/g)).toHaveLength(37);
+    expect(html.match(/Perimeter and summary only/g)).toHaveLength(43);
+    expect(html.match(/Timeline available/g)).toHaveLength(18);
+    expect(html.match(/Forecast available/g)).toHaveLength(
+      catalog.filter((fire) => fire.capabilities!.forecast).length,
+    );
     expect(html).toContain('Search identifier, year or region');
   });
 
@@ -83,8 +87,27 @@ describe('complete supplied fire catalog', () => {
         expect(data.bundle!.geometry.features.length).toBe(data.bundle!.cells.length);
         expect(Boolean(data.opticalImageUrl)).toBe(entry.capabilities!.imagery);
         expect(Boolean(data.bundle!.timeline)).toBe(entry.capabilities!.timeline);
+        expect(data.bundle!.capabilities.forecast).toBe(entry.capabilities!.forecast);
         expect(data.result.model_result.recovery_today_avg).toBeNull();
         const html = renderToStaticMarkup(<BundleAvailability data={data} />);
+        expect(html).toContain(
+          entry.capabilities!.timeline ? 'Cell timeline available.' : 'No cell timeline supplied.',
+        );
+        expect(html).toContain(
+          entry.capabilities!.forecast
+            ? 'Whole-fire forecast available.'
+            : 'No whole-fire forecast supplied.',
+        );
+        expect(html).toContain(
+          entry.capabilities!.imagery
+            ? 'Satellite image supplied.'
+            : 'No satellite image supplied.',
+        );
+        expect(html).toContain(
+          entry.capabilities!.gedi
+            ? 'measured GEDI observations supplied.'
+            : 'No measured GEDI observations supplied.',
+        );
         if (!entry.capabilities!.spatial) {
           expect(html).toContain('Perimeter and summary only');
           expect(data.result.lidar_points).toEqual([]);

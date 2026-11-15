@@ -33,11 +33,15 @@ export function SiteNav({
       }
       center={
         <div className={styles.modes} aria-label="Map mode">
-          {(['examples', 'search'] as const).map((mode) => (
+          {(['examples', 'find-your-fire'] as const).map((mode) => (
             <a
               key={mode}
               href={mapHref(changeMapMode(map, mode))}
-              aria-current={current === 'explore' && map.mode === mode ? 'true' : undefined}
+              aria-current={
+                current === 'explore' && map.presentation !== 'intro' && map.mode === mode
+                  ? 'true'
+                  : undefined
+              }
             >
               {mode === 'examples' ? 'Fires' : 'Find Your Fire'}
             </a>
@@ -50,6 +54,7 @@ export function SiteNav({
           label: 'Methodology',
           href: RESEARCH_HREF,
           current: current === 'research',
+          prominent: true,
         },
       ]}
     />

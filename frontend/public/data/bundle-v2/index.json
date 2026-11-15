@@ -707,7 +707,7 @@
       "lat": 50.7572,
       "has_grid": true,
       "has_points": false,
-      "forecast": "growth",
+      "forecast": "none",
       "dir": "fire_manitoba_1988_36/summer_2026",
       "files": [
         "manifest.json",
@@ -733,7 +733,7 @@
       "lat": 51.3725,
       "has_grid": true,
       "has_points": false,
-      "forecast": "growth",
+      "forecast": "none",
       "dir": "fire_manitoba_2003_746/summer_2026",
       "files": [
         "manifest.json",

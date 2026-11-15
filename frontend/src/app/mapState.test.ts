@@ -18,29 +18,32 @@ describe('unified map URL state', () => {
     });
   });
   it('round-trips modes, presentations and encoded fire identifiers', () => {
-    for (const mode of ['examples', 'search'] as const) {
+    for (const mode of ['examples', 'find-your-fire'] as const) {
       for (const presentation of ['intro', 'explore', 'fire'] as const) {
         const state: MapState = {
           mode,
           presentation,
           fireId: presentation === 'fire' ? 'a b/é?&' : null,
         };
-        expect(mapStateOf(parseRoute(mapHref(state)))).toEqual(state);
+        expect(mapStateOf(parseRoute(mapHref(state)))).toEqual(
+          presentation === 'intro' ? INITIAL_MAP_STATE : state,
+        );
       }
     }
   });
   it('clears active selection on a workflow change without storing or changing camera state', () => {
     const selected: MapState = { mode: 'examples', presentation: 'fire', fireId: 'bc_2003_490' };
-    expect(changeMapMode(selected, 'search')).toEqual({
-      mode: 'search',
+    expect(changeMapMode(selected, 'find-your-fire')).toEqual({
+      mode: 'find-your-fire',
       presentation: 'explore',
       fireId: null,
     });
     expect(changeMapMode(selected, 'examples')).toBe(selected);
-    expect(changeMapMode(INITIAL_MAP_STATE, 'search')).toEqual({
-      mode: 'search',
-      presentation: 'intro',
+    expect(changeMapMode(INITIAL_MAP_STATE, 'find-your-fire')).toEqual({
+      mode: 'find-your-fire',
+      presentation: 'explore',
       fireId: null,
+      draw: true,
     });
     expect(selected.fireId).toBe('bc_2003_490');
   });
@@ -51,7 +54,7 @@ describe('unified map URL state', () => {
       fireId: null,
     });
     expect(mapStateOf(parseRoute('#/?view=invalid&mode=search'))).toEqual({
-      mode: 'search',
+      mode: 'find-your-fire',
       presentation: 'intro',
       fireId: null,
     });
@@ -64,7 +67,7 @@ describe('unified map URL state', () => {
       fireId: 'bc_2003_490',
     });
     expect(mapStateOf(parseRoute('#/analyze'))).toEqual({
-      mode: 'search',
+      mode: 'find-your-fire',
       presentation: 'explore',
       fireId: null,
     });

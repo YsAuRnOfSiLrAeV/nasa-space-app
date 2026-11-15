@@ -28,6 +28,9 @@ export function exportedSearchFires(
             : entry.region
           : undefined,
         spatial: entry.capabilities?.spatial,
+        perimeterAvailable: entry.capabilities?.perimeter,
+        timeline: entry.capabilities?.timeline,
+        forecast: entry.capabilities?.forecast,
       };
     }),
   );

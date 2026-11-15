@@ -6,7 +6,8 @@ Phase 8 connects the existing search, drawing and shared investigation workflow 
 
 - The current country selector and identifier/year/region search use the same validated bundle index as Examples. All countries is the default. Supplied Canadian province codes are grouped under Canada; other supplied region codes identify their countries.
 - Locations and perimeters come from the source metadata and the lightweight `bundle-v2/perimeters.geojson` collection. No point buffers, approximate fire boundaries or new fire records are generated.
-- 37 fires have spatial datasets; 43 have perimeter/summary exports. Cards distinguish these capabilities. Detailed resources load only when a known fire is selected.
+- All 80 fires and perimeters are available in Examples, the map and polygon discovery. Of these, 37 have spatial datasets and 43 have perimeter/summary exports. Cards identify which kind of export is available.
+- 18 fires have cell timelines and 59 have whole-fire forecasts; these capabilities are shown separately because a perimeter-only fire may still have a forecast. Selecting a summary-only fire shows its supplied whole-fire information, marks cell layers unavailable and never creates cells, GEDI observations, imagery or forecasts.
 - Perimeter interiors and outlines can select known fires. Existing exports open through the shared Examples investigation route; Search selection and country remain shareable in the URL. Browser Back can return to Search.
 
 ## Draw and intersect

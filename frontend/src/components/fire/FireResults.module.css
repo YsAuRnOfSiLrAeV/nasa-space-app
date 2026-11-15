@@ -199,6 +199,23 @@
   font-size: 0.75rem;
   color: var(--foreground);
 }
+/* The same slider inside the selected fire's bottom bar: no position or frame of its own. */
+.yearBarEmbedded {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--foreground);
+}
+.yearBarEmbedded input[type='range'] {
+  width: 100%;
+  min-height: 28px;
+  accent-color: var(--signal);
+}
+.yearBarEmbedded input[type='range']:focus-visible,
+.yearBarEmbedded button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
 .yearBarHead,
 .yearBarFoot {
   display: flex;
@@ -210,6 +227,23 @@
   font: 500 0.6875rem/1.4 var(--font-label);
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+/* The year readout and its "Back to" action, together at the right of the head row. */
+.yearBarHeadRight {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.yearBarHeadRight button {
+  min-height: 28px;
+  font: 500 0.6875rem/1.5 var(--font-label);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  color: var(--foreground);
+}
+.yearBarHeadRight button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 .yearBarValue {
   font: 500 0.8125rem/1.4 var(--font-data);

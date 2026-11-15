@@ -4,8 +4,10 @@
  *
  *   Explore
  *     #/                                      → unchanged intro composition
- *     #/?view=explore&mode=examples            → investigation
- *     #/?view=fire&mode=examples&fire=<id>      → existing fire result
+ *     #/explore?mode=examples                 → fire browsing
+ *     #/explore?mode=find-your-fire           → search and drawing
+ *     #/explore?mode=examples&fire=<id>        → existing fire result
+ *     #/?view=fire&mode=examples&fire=<id>     → supported legacy fire link
  *     #/fire/<fire id>                         → legacy selected fire
  *   Research
  *     #/research                              → research and methodology
@@ -21,13 +23,15 @@ export type RecoveryView = 'observed' | 'growth';
 
 export type Section = 'explore' | 'research' | 'analyze';
 
-export type MapMode = 'examples' | 'search';
+export type ExplorerMode = 'examples' | 'find-your-fire';
+export type MapMode = ExplorerMode;
 export type MapPresentation = 'intro' | 'explore' | 'fire';
 export interface MapState {
   country?: string;
   mode: MapMode;
   presentation: MapPresentation;
   fireId: string | null;
+  draw?: true;
 }
 export const INITIAL_MAP_STATE: MapState = {
   mode: 'examples',
@@ -61,25 +65,32 @@ export function mapHref(state: MapState): string {
     : state.presentation === 'fire'
       ? 'explore'
       : state.presentation;
-  if (state.mode === 'examples' && presentation === 'intro') return EXPLORE_HREF;
-  const query = new URLSearchParams({ view: presentation, mode: state.mode });
-  if (state.mode === 'search' && state.country) query.set('country', state.country);
+  if (presentation === 'intro') return EXPLORE_HREF;
+  const query = new URLSearchParams({ mode: state.mode });
+  if (state.mode === 'find-your-fire' && state.country) query.set('country', state.country);
+  if (state.mode === 'find-your-fire' && state.draw) query.set('draw', '1');
   if (presentation === 'fire' && state.fireId) query.set('fire', state.fireId);
-  return `#/?${query}`;
+  return `#/explore?${query}`;
 }
 
 export function mapStateOf(route: Route): MapState | null {
   if (route.page === 'explore') return route.map ?? INITIAL_MAP_STATE;
   if (route.page === 'fire')
     return { mode: 'examples', presentation: 'fire', fireId: route.fireId };
-  if (route.page === 'analyze') return { mode: 'search', presentation: 'explore', fireId: null };
+  if (route.page === 'analyze')
+    return { mode: 'find-your-fire', presentation: 'explore', fireId: null };
   return null;
 }
 
 /** A different workflow clears active selection; cached data and cameras live outside this state. */
 export function changeMapMode(state: MapState, mode: MapMode): MapState {
-  if (mode === state.mode) return state;
-  return { mode, presentation: state.presentation === 'intro' ? 'intro' : 'explore', fireId: null };
+  if (mode === state.mode && state.presentation !== 'intro') return state;
+  return {
+    mode,
+    presentation: 'explore',
+    fireId: null,
+    ...(mode === 'find-your-fire' && state.presentation === 'intro' ? { draw: true as const } : {}),
+  };
 }
 
 export function recoveryHref(groupId?: string | null, view: RecoveryView = 'observed'): string {
@@ -118,18 +129,26 @@ export function parseRoute(hash: string): Route {
     case 'analyze':
       return { page: 'analyze' };
     default:
-      if (!page && hash.includes('?')) {
-        const query = new URLSearchParams(hash.slice(hash.indexOf('?') + 1));
+      if (page === 'explore' || (!page && hash.includes('?'))) {
+        const query = new URLSearchParams(
+          hash.includes('?') ? hash.slice(hash.indexOf('?') + 1) : '',
+        );
         const fireId = query.get('fire')?.trim() || null;
         const view = query.get('view');
         return {
           page: 'explore',
           map: {
-            mode: query.get('mode') === 'search' ? 'search' : 'examples',
+            mode: ['search', 'find-your-fire'].includes(query.get('mode') ?? '')
+              ? 'find-your-fire'
+              : 'examples',
+            ...(['search', 'find-your-fire'].includes(query.get('mode') ?? '') &&
+            query.get('draw') === '1'
+              ? { draw: true as const }
+              : {}),
             ...(query.get('country') ? { country: query.get('country')! } : {}),
             presentation: fireId
               ? 'fire'
-              : view === 'explore' || view === 'fire'
+              : page === 'explore' || view === 'explore' || view === 'fire'
                 ? 'explore'
                 : 'intro',
             fireId,

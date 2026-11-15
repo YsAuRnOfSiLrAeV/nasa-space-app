@@ -19,6 +19,9 @@ export const CatalogFiresSchema = z
       region: z.string().optional(),
       country: z.string().optional(),
       spatial: z.boolean().optional(),
+      perimeterAvailable: z.boolean().optional(),
+      timeline: z.boolean().optional(),
+      forecast: z.boolean().optional(),
     }),
   )
   .refine(

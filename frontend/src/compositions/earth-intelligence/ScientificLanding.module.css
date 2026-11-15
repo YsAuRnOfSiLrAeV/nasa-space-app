@@ -181,8 +181,10 @@
   position: absolute;
   inset-block: 0;
   right: 3rem;
-  /* Also bounded by height, so FIG. 01A always clears the header above the datum. */
-  width: min(11rem, var(--side), calc(50dvh - 11rem));
+  /* Also bounded by height, so FIG. 01A always clears the header above the datum:
+     the panel ends 1.5rem above the middle and is about its width + 5.5rem tall,
+     which leaves at least 5rem (the header and a small gap) above it. */
+  width: min(11rem, var(--side), calc(50dvh - 12.5rem));
 }
 .annotations > .panel {
   position: absolute;

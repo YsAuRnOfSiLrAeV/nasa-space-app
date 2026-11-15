@@ -1,7 +1,12 @@
 import type { DemoFire } from '@/data/fireSchema';
-import { filterFireCatalog } from '@/domain/fire/catalogSearch';
+import {
+  filterFireCatalog,
+  groupFireCatalog,
+  NO_CATALOG_FILTERS,
+  type CatalogFilters,
+} from '@/domain/fire/catalogSearch';
 import { EMPTY_FIRES, type FireCatalog } from '@/hooks/useFireCatalog';
-import { Fragment, useState } from 'react';
+import { useState } from 'react';
 import { fireCountry } from '@/domain/fire/fireLabel';
 import { FireCatalogItem } from './FireCatalogItem';
 import styles from './MapShell.module.css';
@@ -11,24 +16,23 @@ export function FireCatalogList({
   catalog,
   selectedId,
   onSelect,
+  filters: shared,
 }: {
   catalog: FireCatalog;
   selectedId: string | null;
   onSelect: (fire: DemoFire) => void;
+  /** Search and filters held by the caller, so they survive the list moving between panels. */
+  filters?: [CatalogFilters, (filters: CatalogFilters) => void];
 }) {
   const fires = catalog.state.status === 'ready' ? catalog.state.data : EMPTY_FIRES;
-  const [query, setQuery] = useState('');
-  const [region, setRegion] = useState('');
-  const [year, setYear] = useState('');
-  const matches = filterFireCatalog(fires, query, region, year)
-    .map((fire, order) => ({ fire, order }))
-    .sort(
-      (a, b) =>
-        countryRank(a.fire.id).localeCompare(countryRank(b.fire.id)) ||
-        Number(hasMap(b.fire)) - Number(hasMap(a.fire)) ||
-        a.order - b.order,
-    )
-    .map(({ fire }) => fire);
+  const own = useState(NO_CATALOG_FILTERS);
+  const [{ query, region, year }, setFilters] = shared ?? own;
+  const set = (change: Partial<CatalogFilters>) => setFilters({ query, region, year, ...change });
+  const matches = filterFireCatalog(fires, query, region, year).sort(
+    (a, b) =>
+      countryRank(a.id).localeCompare(countryRank(b.id)) || Number(hasMap(b)) - Number(hasMap(a)),
+  );
+  const countries = [...new Set(matches.map((fire) => fireCountry(fire.id)))];
   const regions = [...new Set(fires.flatMap((fire) => (fire.region ? [fire.region] : [])))].sort();
   const years = [...new Set(fires.map((fire) => fire.year))].sort((a, b) => b - a);
   return (
@@ -49,11 +53,15 @@ export function FireCatalogList({
         <div className={styles.search}>
           <label>
             Search identifier, year or region
-            <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => set({ query: event.target.value })}
+            />
           </label>
           <label>
             Region
-            <select value={region} onChange={(event) => setRegion(event.target.value)}>
+            <select value={region} onChange={(event) => set({ region: event.target.value })}>
               <option value="">All regions</option>
               {regions.map((value) => (
                 <option key={value} value={value}>
@@ -64,7 +72,7 @@ export function FireCatalogList({
           </label>
           <label>
             Fire year
-            <select value={year} onChange={(event) => setYear(event.target.value)}>
+            <select value={year} onChange={(event) => set({ year: event.target.value })}>
               <option value="">All years</option>
               {years.map((value) => (
                 <option key={value} value={value}>
@@ -80,20 +88,35 @@ export function FireCatalogList({
         </div>
       )}
       <ul className={styles.fireList} aria-label="Available example fires">
-        {matches.map((fire, i) => {
-          const country = fireCountry(fire.id);
-          const first = i === 0 || fireCountry(matches[i - 1]!.id) !== country;
-          return (
-            <Fragment key={fire.id}>
-              {first && (
-                <li role="presentation" className={styles.groupHead}>
-                  {country} · {matches.filter((m) => fireCountry(m.id) === country).length}
-                </li>
-              )}
-              <FireCatalogItem fire={fire} current={fire.id === selectedId} onSelect={onSelect} />
-            </Fragment>
-          );
-        })}
+        {countries.map((country) => (
+          <li key={country}>
+            <h3 className={styles.groupHead}>
+              {country} · {matches.filter((fire) => fireCountry(fire.id) === country).length}
+            </h3>
+            {groupFireCatalog(matches.filter((fire) => fireCountry(fire.id) === country)).map(
+              (group) => (
+                <section key={group.region} aria-label={`${country}, ${group.region}`}>
+                  <h3 className={styles.catalogRegion}>{group.region}</h3>
+                  {group.years.map(({ year, fires }) => (
+                    <section key={year} aria-label={`${group.region}, ${year}`}>
+                      <h4 className={styles.catalogYear}>{year}</h4>
+                      <ul>
+                        {fires.map((fire) => (
+                          <FireCatalogItem
+                            key={fire.id}
+                            fire={fire}
+                            current={fire.id === selectedId}
+                            onSelect={onSelect}
+                          />
+                        ))}
+                      </ul>
+                    </section>
+                  ))}
+                </section>
+              ),
+            )}
+          </li>
+        ))}
       </ul>
     </>
   );

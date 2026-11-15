@@ -18,16 +18,16 @@ describe('real Find Your Fire interface', () => {
       <FireSearch
         catalog={{ state: { status: 'ready', data: entries }, retry: () => {} }}
         mapView={null}
-        state={{ mode: 'search', presentation: 'fire', fireId: 'bc_2003_490' }}
+        state={{ mode: 'find-your-fire', presentation: 'fire', fireId: 'bc_2003_490' }}
         onResult={async () => {}}
       />,
     );
     for (const entry of entries) expect(html).toContain(entry.id);
     expect(html).toContain('All countries');
-    expect(html).toContain('Draw polygon');
+    expect(html).toContain('Draw Polygon');
     expect(html).toContain('Open available exported data');
-    expect(html).toContain('Spatial dataset available');
-    expect(html).toContain('Perimeter and summary export available');
+    expect(html).toContain('Spatial data available');
+    expect(html).toContain('Perimeter and summary only');
     expect(html).toMatch(/<button[^>]*disabled[^>]*>New analysis unavailable<\/button>/);
     expect(html).toContain('Coverage cannot be evaluated');
     expect(html).not.toContain('/runs');
@@ -63,7 +63,7 @@ describe('real Find Your Fire interface', () => {
       <FireSearch
         catalog={{ state: { status: 'ready', data: entries }, retry: () => {} }}
         mapView={null}
-        state={{ mode: 'search', presentation: 'fire', fireId: 'unknown-test-id' }}
+        state={{ mode: 'find-your-fire', presentation: 'fire', fireId: 'unknown-test-id' }}
         onResult={async () => {}}
       />,
     );

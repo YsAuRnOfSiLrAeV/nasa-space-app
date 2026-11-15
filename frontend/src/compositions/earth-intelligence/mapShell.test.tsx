@@ -6,7 +6,10 @@ import { MapNavigationContext } from '@/app/mapNavigation';
 import { SiteNav } from '@/components/shell/SiteNav';
 import { InvestigationPanel } from './InvestigationPanel';
 
-const panel = (status: 'loading' | 'ready' | 'error', mode: 'examples' | 'search' = 'examples') =>
+const panel = (
+  status: 'loading' | 'ready' | 'error',
+  mode: 'examples' | 'find-your-fire' = 'examples',
+) =>
   renderToStaticMarkup(
     createElement(InvestigationPanel, {
       state: { ...INITIAL_MAP_STATE, mode, presentation: 'explore' },
@@ -49,7 +52,7 @@ describe('Map shell accessible states', () => {
     expect(panel('error')).toContain('Retry catalog');
   });
   it('exposes an operable disclosure and an honest search placeholder', () => {
-    const html = panel('ready', 'search');
+    const html = panel('ready', 'find-your-fire');
     expect(html).toContain('aria-expanded="true"');
     expect(html).toContain('aria-controls="investigation-body"');
     expect(html).toContain('Checking backend availability');
@@ -69,7 +72,7 @@ describe('Map shell accessible states', () => {
     );
     expect(html).toContain('Methodology');
     expect(html).toContain('href="#/research"');
-    expect(html).toContain('#/?view=explore&amp;mode=search');
+    expect(html).toContain('#/explore?mode=find-your-fire');
     expect(html).toContain('aria-current="true"');
     expect(html).not.toContain('#/analyze');
   });

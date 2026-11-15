@@ -9,6 +9,7 @@ export interface NavItem {
   href: string;
   /** Marks the page the reader is on. */
   current?: boolean;
+  prominent?: boolean;
 }
 
 /** The brand mark: a link (a page → explorer) or an action (explorer → planet view). */
@@ -52,9 +53,14 @@ export function SiteHeader({
               <a
                 href={item.href}
                 aria-current={item.current ? 'page' : undefined}
-                className={styles.item}
+                className={`${styles.item} ${item.prominent ? styles.prominent : ''}`}
               >
                 {item.label}
+                {item.prominent && (
+                  <span aria-hidden className={styles.prominentArrow}>
+                    →
+                  </span>
+                )}
               </a>
             </li>
           ))}

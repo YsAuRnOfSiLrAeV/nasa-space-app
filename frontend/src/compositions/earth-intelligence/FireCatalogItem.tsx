@@ -3,6 +3,7 @@ import { mapHref } from '@/app/route';
 import type { DemoFire } from '@/data/fireSchema';
 import { fireLabel } from '@/domain/fire/fireLabel';
 import { formatShare, isProvided } from '@/domain/fire/fireSummary';
+import { catalogCapabilityLabels } from '@/domain/fire/catalogSearch';
 
 export function FireCatalogItem({
   fire,
@@ -18,6 +19,11 @@ export function FireCatalogItem({
     event.preventDefault();
     onSelect(fire);
   };
+  const capabilityText = fire.capabilities
+    ? catalogCapabilityLabels(fire.capabilities).join(' · ')
+    : isProvided(fire.recovery_today_avg)
+      ? `${formatShare(fire.recovery_today_avg)} recovery`
+      : 'Recovery not supplied';
   return (
     <li>
       <a
@@ -29,14 +35,7 @@ export function FireCatalogItem({
           {fireLabel(fire.id)} <small title={fire.id}>· {fire.year}</small>
         </span>
         <small>
-          {fire.capabilities
-            ? fire.capabilities.spatial
-              ? 'Recovery map'
-              : 'Summary only, no map'
-            : isProvided(fire.recovery_today_avg)
-              ? `${formatShare(fire.recovery_today_avg)} recovery`
-              : 'Recovery not supplied'}{' '}
-          · Summer {fire.summer}
+          {capabilityText || 'Perimeter available'} · Summer {fire.summer}
         </small>
       </a>
     </li>

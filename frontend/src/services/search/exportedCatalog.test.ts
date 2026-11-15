@@ -24,12 +24,17 @@ describe('Find Your Fire exported catalog connection', () => {
     expect(fires).toHaveLength(80);
     expect(fires.filter((fire) => fire.spatial)).toHaveLength(37);
     expect(fires.filter((fire) => fire.spatial === false)).toHaveLength(43);
+    expect(fires.filter((fire) => fire.timeline)).toHaveLength(18);
+    expect(fires.filter((fire) => fire.forecast)).toHaveLength(
+      entries.filter((entry) => entry.capabilities!.forecast).length,
+    );
     fires.forEach((fire, i) => {
       expect(fire.center).toEqual([index.fires[i]!.lon, index.fires[i]!.lat]);
       expect(fire.perimeter).toEqual(
         perimeters.features.find((feature) => feature.properties.id === fire.id)!.geometry,
       );
       expect(fire.resultId).toBe(fire.id);
+      expect(fire.perimeterAvailable).toBe(true);
     });
     expect(catalogCountries(fires).map((country) => country.code)).toEqual([
       'canada',
@@ -76,6 +81,28 @@ describe('Find Your Fire exported catalog connection', () => {
       [-0.1, 0.1],
     ]);
     expect(fires.filter((entry) => (boundaryOverlap(entry, empty) ?? 0) > 0)).toEqual([]);
+  });
+  it('includes perimeter-only exports in polygon discovery without inventing spatial data', () => {
+    const fire = fires.find((entry) => entry.spatial === false)!;
+    const positions =
+      fire.perimeter!.type === 'Polygon'
+        ? fire.perimeter!.coordinates.flat()
+        : fire.perimeter!.coordinates.flat(2);
+    const west = Math.min(...positions.map((point) => point[0]));
+    const east = Math.max(...positions.map((point) => point[0]));
+    const south = Math.min(...positions.map((point) => point[1]));
+    const north = Math.max(...positions.map((point) => point[1]));
+    const boundary = drawingPolygon([
+      [west, south],
+      [east, south],
+      [east, north],
+      [west, north],
+    ]);
+
+    expect(boundaryOverlap(fire, boundary)).toBeCloseTo(1);
+    expect(filterCatalog([fire], '', '')).toEqual([fire]);
+    expect(fire.spatial).toBe(false);
+    expect(fire.timeline).toBe(false);
   });
   it('never substitutes points for missing perimeter geometry', () => {
     const missing = exportedSearchFires(entries, null);

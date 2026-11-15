@@ -238,19 +238,22 @@ describe('growth forecast', () => {
         />,
       );
     const off = shown(null);
-    expect(off).toContain('Drag to see the forest recover, year by year');
+    expect(off).toContain('Recovery by year');
     // The slider steps through the timeline's own years, from the fire year.
     expect(off).toMatch(/type="range"[^>]*min="0"[^>]*max="4"/);
-    expect(off).toContain(
-      'Drag the slider: the map will colour each cell by how far it has recovered in that year (modeled).',
-    );
+    expect(off).not.toContain('Move slider to show modeled cells.');
+    expect(off).not.toContain('forecast-year-note');
     expect(off).not.toContain('Hide modeled cells');
     const on = shown(2004);
     expect(on).toMatch(/type="range"[^>]*value="1"/);
-    expect(on).toContain('Map: each cell’s modeled recovery in 2004');
+    expect(on).toContain('2004 · 4%');
+    expect(on).not.toContain('whole-fire');
+    expect(on).toContain('Modeled cell recovery, 2004. Not observed.');
+    expect(on).toContain('id="forecast-year-note"');
     expect(on).toContain('modeled back from summer 2026');
-    expect(on).toContain('not an observation');
     expect(on).toContain('Back to 2026');
+    // "Back to" sits in the head row with the year readout, above the slider.
+    expect(on.indexOf('Back to 2026')).toBeLessThan(on.indexOf('type="range"'));
     expect(on).toContain('Hide modeled cells');
   });
 
@@ -267,10 +270,11 @@ describe('growth forecast', () => {
     const markup = renderToStaticMarkup(
       <ForecastYearBar curve={series} year={2026} onYear={() => {}} cells={null} />,
     );
-    expect(markup).toContain('Whole-fire forecast · drag to change the year');
+    expect(markup).toContain('Recovery by year');
     expect(markup).toContain(
-      'No cell map was exported for this fire: the slider only moves the whole-fire forecast (chart in the panel), not the map.',
+      'No cell timeline: the slider changes this recovery estimate, not the map.',
     );
+    expect(markup).not.toContain('whole-fire');
   });
 
   it('states that no uncertainty interval is supplied', () => {

@@ -98,7 +98,7 @@ export function useEarthView({
   const goPlanet = () => {
     focusNext.current = 'planet';
     mapView?.showWholeEarth();
-    window.location.hash = mapHref({ ...mapState, presentation: 'intro', fireId: null });
+    window.location.hash = '#/';
   };
 
   const index = located.findIndex((p) => p.point_id === selectedId);

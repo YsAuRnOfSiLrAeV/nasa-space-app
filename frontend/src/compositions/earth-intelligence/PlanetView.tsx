@@ -121,6 +121,14 @@ export function PlanetView({
     const panel = windowRef.current?.parentElement;
     if (panel) ro.observe(panel);
     window.addEventListener('resize', replace);
+    // The stage scales in and out (planet ↔ region). Rectangles read mid-transition
+    // are scaled, so measure again once it has settled; a transform fires no resize.
+    const stage = stageRef.current;
+    const settled = (event: TransitionEvent | AnimationEvent) => {
+      if (event.target === stage) replace();
+    };
+    stage?.addEventListener('transitionend', settled);
+    stage?.addEventListener('animationend', settled);
     let live = true;
     document.fonts?.ready.then(() => live && replace());
     replace();
@@ -129,6 +137,8 @@ export function PlanetView({
       cancelAnimationFrame(raf);
       ro.disconnect();
       window.removeEventListener('resize', replace);
+      stage?.removeEventListener('transitionend', settled);
+      stage?.removeEventListener('animationend', settled);
     };
   }, [placeLeaders, observed, leaderLayout]);
 

@@ -133,8 +133,8 @@ export function FireInvestigation({
             <div role="note" className={styles.note}>
               <p className="font-medium text-foreground">Summary only</p>
               <p>
-                This fire has its outline and a whole-fire estimate, but no cell-by-cell map was
-                exported, so the map shows the perimeter only.
+                No cell-by-cell spatial data was exported. The map shows the supplied perimeter; any
+                available whole-fire summary or forecast appears below.
               </p>
             </div>
           )}
@@ -143,7 +143,7 @@ export function FireInvestigation({
             forecast={forecast}
             year={forecastYear ?? data.result.satellite_images.summer}
           />
-          {data.bundle && data.bundle.cells.length > 0 && <BundleAvailability data={data} />}
+          {data.bundle && <BundleAvailability data={data} />}
           {data.bundle?.timeline && (
             <CellTimelineControls
               key={data.result.fire.id}
@@ -155,7 +155,9 @@ export function FireInvestigation({
           )}
 
           <h4 className={styles.listHead}>
-            Map · summer {data.result.satellite_images.summer} grid
+            {data.bundle && data.bundle.cells.length === 0
+              ? 'Map · supplied fire perimeter'
+              : `Map · summer ${data.result.satellite_images.summer} grid`}
           </h4>
           {data.bundle ? (
             <SpatialLayerPicker

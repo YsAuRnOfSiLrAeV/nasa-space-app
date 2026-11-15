@@ -139,7 +139,7 @@ describe('confidence classifications and scientific context', () => {
   });
   it('returns to the exact selected Explorer route from Methodology', () => {
     const state = {
-      mode: 'search' as const,
+      mode: 'find-your-fire' as const,
       presentation: 'fire' as const,
       fireId: 'ukraine_2020_3009_5131',
       country: 'ukraine',
