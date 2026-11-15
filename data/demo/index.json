@@ -1,0 +1,530 @@
+[
+  {
+    "id": "alberta_2003_612",
+    "name": {
+      "en": "Alberta #612"
+    },
+    "year": 2003,
+    "area_ha": 15358,
+    "summer": 2026,
+    "center_lonlat": [
+      -116.0783,
+      51.1203
+    ],
+    "recovery_today_avg": 0.465,
+    "year_80pct": 2059,
+    "result": "alberta_2003_612/result.json"
+  },
+  {
+    "id": "bc_1998_622",
+    "name": {
+      "en": "British Columbia #622"
+    },
+    "year": 1998,
+    "area_ha": 5678,
+    "summer": 2026,
+    "center_lonlat": [
+      -119.3791,
+      50.6442
+    ],
+    "recovery_today_avg": 0.424,
+    "year_80pct": 2057,
+    "result": "bc_1998_622/result.json"
+  },
+  {
+    "id": "bc_2003_490",
+    "name": {
+      "en": "British Columbia #490"
+    },
+    "year": 2003,
+    "area_ha": 27137,
+    "summer": 2026,
+    "center_lonlat": [
+      -120.1985,
+      51.1408
+    ],
+    "recovery_today_avg": 0.463,
+    "year_80pct": 2066,
+    "result": "bc_2003_490/result.json"
+  },
+  {
+    "id": "bc_2003_515",
+    "name": {
+      "en": "British Columbia #515"
+    },
+    "year": 2003,
+    "area_ha": 5221,
+    "summer": 2026,
+    "center_lonlat": [
+      -121.4017,
+      50.6716
+    ],
+    "recovery_today_avg": 0.249,
+    "year_80pct": 2067,
+    "result": "bc_2003_515/result.json"
+  },
+  {
+    "id": "bc_2003_547",
+    "name": {
+      "en": "British Columbia #547"
+    },
+    "year": 2003,
+    "area_ha": 6228,
+    "summer": 2026,
+    "center_lonlat": [
+      -120.2726,
+      50.7844
+    ],
+    "recovery_today_avg": 0.291,
+    "year_80pct": 2075,
+    "result": "bc_2003_547/result.json"
+  },
+  {
+    "id": "bc_2003_549",
+    "name": {
+      "en": "British Columbia #549"
+    },
+    "year": 2003,
+    "area_ha": 10879,
+    "summer": 2026,
+    "center_lonlat": [
+      -119.8115,
+      50.7848
+    ],
+    "recovery_today_avg": 0.381,
+    "year_80pct": 2068,
+    "result": "bc_2003_549/result.json"
+  },
+  {
+    "id": "bc_2003_668",
+    "name": {
+      "en": "British Columbia #668"
+    },
+    "year": 2003,
+    "area_ha": 5628,
+    "summer": 2026,
+    "center_lonlat": [
+      -117.9633,
+      50.0289
+    ],
+    "recovery_today_avg": 0.302,
+    "year_80pct": 2092,
+    "result": "bc_2003_668/result.json"
+  },
+  {
+    "id": "bc_2003_683",
+    "name": {
+      "en": "British Columbia #683"
+    },
+    "year": 2003,
+    "area_ha": 10512,
+    "summer": 2026,
+    "center_lonlat": [
+      -115.1866,
+      50.392
+    ],
+    "recovery_today_avg": 0.447,
+    "year_80pct": 2056,
+    "result": "bc_2003_683/result.json"
+  },
+  {
+    "id": "bc_2009_386",
+    "name": {
+      "en": "British Columbia #386"
+    },
+    "year": 2009,
+    "area_ha": 8330,
+    "summer": 2026,
+    "center_lonlat": [
+      -119.6366,
+      50.1202
+    ],
+    "recovery_today_avg": 0.416,
+    "year_80pct": 2061,
+    "result": "bc_2009_386/result.json"
+  },
+  {
+    "id": "greece_2007_2212_3726",
+    "name": {
+      "en": "Greece #3726"
+    },
+    "year": 2007,
+    "area_ha": 9574,
+    "summer": 2026,
+    "center_lonlat": [
+      22.1186,
+      37.2641
+    ],
+    "recovery_today_avg": 0.712,
+    "year_80pct": null,
+    "result": "greece_2007_2212_3726/result.json"
+  },
+  {
+    "id": "greece_2007_2322_3929",
+    "name": {
+      "en": "Greece #3929"
+    },
+    "year": 2007,
+    "area_ha": 5817,
+    "summer": 2026,
+    "center_lonlat": [
+      23.2224,
+      39.2928
+    ],
+    "recovery_today_avg": 1.06,
+    "year_80pct": null,
+    "result": "greece_2007_2322_3929/result.json"
+  },
+  {
+    "id": "greece_2008_2793_3612",
+    "name": {
+      "en": "Greece #3612"
+    },
+    "year": 2008,
+    "area_ha": 8286,
+    "summer": 2026,
+    "center_lonlat": [
+      27.9258,
+      36.1249
+    ],
+    "recovery_today_avg": 0.786,
+    "year_80pct": null,
+    "result": "greece_2008_2793_3612/result.json"
+  },
+  {
+    "id": "manitoba_1988_36",
+    "name": {
+      "en": "Manitoba #36"
+    },
+    "year": 1988,
+    "area_ha": 5231,
+    "summer": 2026,
+    "center_lonlat": [
+      -97.6031,
+      50.756
+    ],
+    "recovery_today_avg": 0.667,
+    "year_80pct": null,
+    "result": "manitoba_1988_36/result.json"
+  },
+  {
+    "id": "manitoba_2003_746",
+    "name": {
+      "en": "Manitoba #746"
+    },
+    "year": 2003,
+    "area_ha": 5969,
+    "summer": 2026,
+    "center_lonlat": [
+      -99.187,
+      51.3756
+    ],
+    "recovery_today_avg": 0.532,
+    "year_80pct": null,
+    "result": "manitoba_2003_746/result.json"
+  },
+  {
+    "id": "ontario_1988_21",
+    "name": {
+      "en": "Ontario #21"
+    },
+    "year": 1988,
+    "area_ha": 19386,
+    "summer": 2026,
+    "center_lonlat": [
+      -94.9671,
+      49.892
+    ],
+    "recovery_today_avg": 0.607,
+    "year_80pct": 2024,
+    "result": "ontario_1988_21/result.json"
+  },
+  {
+    "id": "ontario_1988_41",
+    "name": {
+      "en": "Ontario #41"
+    },
+    "year": 1988,
+    "area_ha": 7899,
+    "summer": 2026,
+    "center_lonlat": [
+      -94.489,
+      50.9098
+    ],
+    "recovery_today_avg": 0.799,
+    "year_80pct": 2016,
+    "result": "ontario_1988_41/result.json"
+  },
+  {
+    "id": "ontario_1996_579",
+    "name": {
+      "en": "Ontario #579"
+    },
+    "year": 1996,
+    "area_ha": 15788,
+    "summer": 2026,
+    "center_lonlat": [
+      -90.679,
+      50.8794
+    ],
+    "recovery_today_avg": 0.673,
+    "year_80pct": 2033,
+    "result": "ontario_1996_579/result.json"
+  },
+  {
+    "id": "ontario_2002_655",
+    "name": {
+      "en": "Ontario #655"
+    },
+    "year": 2002,
+    "area_ha": 6313,
+    "summer": 2026,
+    "center_lonlat": [
+      -93.9252,
+      51.4074
+    ],
+    "recovery_today_avg": 0.67,
+    "year_80pct": 2040,
+    "result": "ontario_2002_655/result.json"
+  },
+  {
+    "id": "ontario_2007_59",
+    "name": {
+      "en": "Ontario #59"
+    },
+    "year": 2007,
+    "area_ha": 14245,
+    "summer": 2026,
+    "center_lonlat": [
+      -90.529,
+      50.1672
+    ],
+    "recovery_today_avg": 0.713,
+    "year_80pct": 2042,
+    "result": "ontario_2007_59/result.json"
+  },
+  {
+    "id": "quebec_1986_28",
+    "name": {
+      "en": "Quebec #28"
+    },
+    "year": 1986,
+    "area_ha": 5249,
+    "summer": 2026,
+    "center_lonlat": [
+      -76.3967,
+      50.1936
+    ],
+    "recovery_today_avg": 0.792,
+    "year_80pct": 2015,
+    "result": "quebec_1986_28/result.json"
+  },
+  {
+    "id": "quebec_1995_1218",
+    "name": {
+      "en": "Quebec #1218"
+    },
+    "year": 1995,
+    "area_ha": 39354,
+    "summer": 2026,
+    "center_lonlat": [
+      -76.3749,
+      48.8892
+    ],
+    "recovery_today_avg": 0.809,
+    "year_80pct": 2019,
+    "result": "quebec_1995_1218/result.json"
+  },
+  {
+    "id": "quebec_1997_343",
+    "name": {
+      "en": "Quebec #343"
+    },
+    "year": 1997,
+    "area_ha": 14860,
+    "summer": 2026,
+    "center_lonlat": [
+      -79.1574,
+      49.8726
+    ],
+    "recovery_today_avg": 0.937,
+    "year_80pct": 2021,
+    "result": "quebec_1997_343/result.json"
+  },
+  {
+    "id": "quebec_2010_557",
+    "name": {
+      "en": "Quebec #557"
+    },
+    "year": 2010,
+    "area_ha": 16751,
+    "summer": 2026,
+    "center_lonlat": [
+      -75.811,
+      49.1413
+    ],
+    "recovery_today_avg": 0.811,
+    "year_80pct": 2035,
+    "result": "quebec_2010_557/result.json"
+  },
+  {
+    "id": "spain_2004_-641_3760",
+    "name": {
+      "en": "Spain #3760"
+    },
+    "year": 2004,
+    "area_ha": 13803,
+    "summer": 2026,
+    "center_lonlat": [
+      -6.4132,
+      37.597
+    ],
+    "recovery_today_avg": 0.91,
+    "year_80pct": null,
+    "result": "spain_2004_-641_3760/result.json"
+  },
+  {
+    "id": "spain_2005_-222_4096",
+    "name": {
+      "en": "Spain #4096"
+    },
+    "year": 2005,
+    "area_ha": 10669,
+    "summer": 2026,
+    "center_lonlat": [
+      -2.2202,
+      40.958
+    ],
+    "recovery_today_avg": 0.579,
+    "year_80pct": null,
+    "result": "spain_2005_-222_4096/result.json"
+  },
+  {
+    "id": "spain_2012_-615_4227",
+    "name": {
+      "en": "Spain #4227"
+    },
+    "year": 2012,
+    "area_ha": 5345,
+    "summer": 2026,
+    "center_lonlat": [
+      -6.1519,
+      42.2695
+    ],
+    "recovery_today_avg": 0.706,
+    "year_80pct": null,
+    "result": "spain_2012_-615_4227/result.json"
+  },
+  {
+    "id": "turkey_2019_2700_3825",
+    "name": {
+      "en": "Turkey #3825"
+    },
+    "year": 2019,
+    "area_ha": 5989,
+    "summer": 2026,
+    "center_lonlat": [
+      27.0006,
+      38.251
+    ],
+    "recovery_today_avg": 0.46,
+    "year_80pct": null,
+    "result": "turkey_2019_2700_3825/result.json"
+  },
+  {
+    "id": "turkey_2021_2820_3677",
+    "name": {
+      "en": "Turkey #3677"
+    },
+    "year": 2021,
+    "area_ha": 8307,
+    "summer": 2026,
+    "center_lonlat": [
+      28.1968,
+      36.77
+    ],
+    "recovery_today_avg": 0.684,
+    "year_80pct": null,
+    "result": "turkey_2021_2820_3677/result.json"
+  },
+  {
+    "id": "turkey_2021_2839_3734",
+    "name": {
+      "en": "Turkey #3734"
+    },
+    "year": 2021,
+    "area_ha": 6010,
+    "summer": 2026,
+    "center_lonlat": [
+      28.3883,
+      37.3427
+    ],
+    "recovery_today_avg": 0.438,
+    "year_80pct": null,
+    "result": "turkey_2021_2839_3734/result.json"
+  },
+  {
+    "id": "ukraine_2019_3225_4882",
+    "name": {
+      "en": "Ukraine #4882"
+    },
+    "year": 2019,
+    "area_ha": 2340,
+    "summer": 2026,
+    "center_lonlat": [
+      32.2449,
+      48.8243
+    ],
+    "recovery_today_avg": 0.549,
+    "year_80pct": null,
+    "result": "ukraine_2019_3225_4882/result.json"
+  },
+  {
+    "id": "ukraine_2020_2967_5137",
+    "name": {
+      "en": "Ukraine #5137"
+    },
+    "year": 2020,
+    "area_ha": 4959,
+    "summer": 2026,
+    "center_lonlat": [
+      29.6667,
+      51.373
+    ],
+    "recovery_today_avg": 0.605,
+    "year_80pct": null,
+    "result": "ukraine_2020_2967_5137/result.json"
+  },
+  {
+    "id": "ukraine_2020_3009_5131",
+    "name": {
+      "en": "Ukraine #5131"
+    },
+    "year": 2020,
+    "area_ha": 2876,
+    "summer": 2026,
+    "center_lonlat": [
+      30.0926,
+      51.3115
+    ],
+    "recovery_today_avg": 0.856,
+    "year_80pct": null,
+    "result": "ukraine_2020_3009_5131/result.json"
+  },
+  {
+    "id": "ukraine_2020_3868_4887",
+    "name": {
+      "en": "Ukraine #4887"
+    },
+    "year": 2020,
+    "area_ha": 10883,
+    "summer": 2026,
+    "center_lonlat": [
+      38.6837,
+      48.8669
+    ],
+    "recovery_today_avg": 0.907,
+    "year_80pct": null,
+    "result": "ukraine_2020_3868_4887/result.json"
+  }
+]
