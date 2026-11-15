@@ -5,6 +5,8 @@
 import type { Geometry } from 'geojson';
 
 export const SOURCE_FIRE_MARKERS = 'fires-markers';
+export const SOURCE_CATALOG_PERIMETERS = 'fires-catalog-perimeters';
+export const LAYER_CATALOG_PERIMETERS = 'fires-catalog-perimeters-line';
 export const LAYER_FIRE_MARKERS = 'fires-markers-circle';
 export const LAYER_FIRE_MARKER_LABELS = 'fires-markers-label';
 
@@ -20,6 +22,7 @@ export const SOURCE_FIRE_EXTENT = 'fires-extent';
 export const LAYER_FIRE_EXTENT = 'fires-extent-line';
 export const SOURCE_FIRE_PERIMETER = 'fires-perimeter';
 export const LAYER_FIRE_PERIMETER = 'fires-perimeter-line';
+export const LAYER_FIRE_PERIMETER_FILL = 'fires-perimeter-fill';
 export const SOURCE_FIRE_HIGHLIGHT = 'fires-highlight';
 export const LAYER_FIRE_HIGHLIGHT = 'fires-highlight-line';
 export const SOURCE_FIRE_GEDI = 'fires-gedi';
@@ -32,6 +35,7 @@ export const FIRE_GRID_LAYERS = [
   LAYER_FIRE_ZONE,
   LAYER_FIRE_ZONE_LINE,
   LAYER_FIRE_EXTENT,
+  LAYER_FIRE_PERIMETER_FILL,
   LAYER_FIRE_PERIMETER,
   LAYER_FIRE_HIGHLIGHT,
   LAYER_FIRE_GEDI,
@@ -58,6 +62,8 @@ export interface FireMarker {
 }
 
 export interface FireGridScene {
+  cellGeometry?: import('geojson').FeatureCollection<import('geojson').Polygon>;
+  opticalCorners?: Corners;
   corners: Corners;
   /** Categorical cell image (one pixel per cell), as a URL. */
   gridImage: string;
@@ -82,6 +88,7 @@ export interface FireGridColors {
 
 /** What is under the pointer on the fire layers. */
 export interface FirePointer {
+  perimeterHit?: boolean;
   /** `reset`: the camera started moving, so any pinned position is stale. */
   type: 'move' | 'click' | 'leave' | 'reset';
   lngLat: LngLat | null;

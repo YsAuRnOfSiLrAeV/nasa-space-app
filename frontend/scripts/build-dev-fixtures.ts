@@ -19,6 +19,7 @@
  */
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import type { z } from 'zod';
 import {
   FireCellsSchema,
   FireIndexSchema,
@@ -154,7 +155,7 @@ function build(spec: FixtureSpec) {
     year_80pct: null,
     result: `${spec.id}/result.json`,
   };
-  const result: FireResult = {
+  const result: z.input<typeof FireResultSchema> = {
     schema_version: 1,
     fire: { id: spec.id, name, year: spec.year, area_ha: null, perimeter: null },
     satellite_images: { summer: SUMMER },

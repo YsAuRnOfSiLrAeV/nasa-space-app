@@ -152,7 +152,7 @@ describe('whole-fire summary', () => {
 
   it('labels observation and prediction separately', () => {
     const markup = html(BC);
-    expect(markup).toContain('Observation · not a forecast');
+    expect(markup).toContain('Current modeled state · not a measurement or forecast');
     expect(markup).toContain('Prediction · whole fire');
     expect(markup).toContain('does not recolour the grid');
   });
@@ -201,6 +201,13 @@ describe('growth forecast', () => {
     expect(estimateFor(curve, 2030).reached80).toBe(false);
   });
 
+  it('counts a supplied 80% year as reached in that year, whatever the fractional age says', () => {
+    // BC 2003 bundle: year_80pct 2066 with years_to_80pct 63.1 (2003 + 63 < 63.1).
+    const supplied = { ...curve, year80: 2066, yearsTo80: 63.1, endYear: 2066 };
+    expect(estimateFor(supplied, 2066).reached80).toBe(true);
+    expect(estimateFor(supplied, 2065).reached80).toBe(false);
+  });
+
   it('is monotonic and has no points before the fire', () => {
     const points = curvePoints(curve);
     expect(points[0]).toEqual({ year: 2003, value: 0 });
@@ -217,6 +224,51 @@ describe('growth forecast', () => {
     expect(markup).toContain('Map grid: summer 2026 observation, unchanged by this slider');
     expect(markup).toContain('extrapolation');
     expect(markup).toContain('Back to 2026');
+  });
+
+  it('drives the map with modeled cell recovery when the fire has a cell timeline', () => {
+    const years = [2003, 2004, 2026, 2040, 2066];
+    const shown = (year: number | null) =>
+      renderToStaticMarkup(
+        <ForecastYearBar
+          curve={curve}
+          year={2026}
+          onYear={() => {}}
+          cells={{ years, year, onYear: () => {} }}
+        />,
+      );
+    const off = shown(null);
+    expect(off).toContain('Modeled year · cell recovery on the map');
+    // The slider steps through the timeline's own years, from the fire year.
+    expect(off).toMatch(/type="range"[^>]*min="0"[^>]*max="4"/);
+    expect(off).toContain('Move the slider to show each cell’s modeled recovery on the map.');
+    expect(off).not.toContain('Hide modeled cells');
+    const on = shown(2004);
+    expect(on).toMatch(/type="range"[^>]*value="1"/);
+    expect(on).toContain('Map: each cell’s modeled recovery in 2004');
+    expect(on).toContain('modeled back from summer 2026');
+    expect(on).toContain('not an observation');
+    expect(on).toContain('Back to 2026');
+    expect(on).toContain('Hide modeled cells');
+  });
+
+  it('says the map cannot follow a fire without a cell timeline', () => {
+    const series = {
+      ...curve,
+      series: {
+        years: [2003, 2026, 2066],
+        recovery: [0, 0.4, 0.8],
+        low: [0, 0.3, 0.6],
+        high: [0.1, 0.5, 0.9],
+      },
+    };
+    const markup = renderToStaticMarkup(
+      <ForecastYearBar curve={series} year={2026} onYear={() => {}} cells={null} />,
+    );
+    expect(markup).toContain('Forecast year · whole fire');
+    expect(markup).toContain(
+      'This fire has no cell timeline, so the map cannot follow this slider.',
+    );
   });
 
   it('states that no uncertainty interval is supplied', () => {

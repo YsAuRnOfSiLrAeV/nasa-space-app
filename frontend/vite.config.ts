@@ -33,6 +33,8 @@ export default defineConfig(({ mode }) => {
       // pull shared helpers into a chunk that the landing must then import.
     },
     test: {
+      // Real GeoJSON fixtures are memory/CPU heavy; bound concurrency on desktop machines.
+      maxWorkers: 4,
       environment: 'node',
       include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts'],
     },

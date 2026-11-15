@@ -4,6 +4,9 @@ import { ForecastYearBar } from '@/components/fire/ForecastYearBar';
 import type { StudyMapController } from '@/components/map/StudyMapController';
 import type { DemoFire } from '@/data/fireSchema';
 import { useFireCamera } from '@/hooks/useFireCamera';
+import { useCatalogPerimeters } from '@/hooks/useCatalogPerimeters';
+import { useApplicabilityZones } from '@/hooks/useApplicabilityZones';
+import { ConfidenceZonesPanel } from '@/components/fire/ConfidenceZonesPanel';
 import { EMPTY_FIRES, useFireCatalog } from '@/hooks/useFireCatalog';
 import { type FireState } from '@/hooks/useFireData';
 import { useFireInvestigation } from '@/hooks/useFireInvestigation';
@@ -19,6 +22,7 @@ import { AnalysisClient } from '@/services/search/AnalysisClient';
 import { config } from '@/config';
 import type { FireData } from '@/data/fireSchema';
 import { FireLegend } from '@/components/fire/FireLegend';
+import { SpatialLegend } from '@/components/fire/SpatialLegend';
 import { layerCoverage, overlayAvailability } from '@/domain/fire/fireGrid';
 import { drawnOverlays } from '@/domain/fire/overlays';
 import searchStyles from './MapShell.module.css';
@@ -45,10 +49,15 @@ export function EarthIntelligenceComposition({ load, study, mapView, mapState }:
   if (!regionRequested && view.phase === 'region') setRegionRequested(true);
   const { state: land } = useLandDots(undefined, regionRequested);
   const catalog = useFireCatalog();
+  const applicability = useApplicabilityZones(view.phase === 'region');
   const fires = catalog.state.status === 'ready' ? catalog.state.data : EMPTY_FIRES;
   const examples = mapState.mode === 'examples';
   const fireId = mapState.fireId;
   const fireOpen = fireId !== null;
+  const perimeters = useCatalogPerimeters(
+    examples && view.phase === 'region' ? mapView : null,
+    fireId,
+  );
   const [completed, setCompleted] = useState<FireData | null>(null);
   const resultRequest = useRef<AbortController | null>(null);
   useEffect(() => () => resultRequest.current?.abort(), [fireId, examples]);
@@ -82,6 +91,14 @@ export function EarthIntelligenceComposition({ load, study, mapView, mapState }:
         {fireOpen ? fireStatus(fire, entry?.name.en ?? fireId) : view.status}
       </p>
       <EarthHeader view={view} />
+      {perimeters.state.status === 'error' && (
+        <div role="alert" className={searchStyles.mapLegend}>
+          Catalog perimeters unavailable; fire locations and selection remain available.
+          <button type="button" onClick={perimeters.retry}>
+            Retry perimeters
+          </button>
+        </div>
+      )}
       {view.sourcesOpen && <SourcesPanel study={study} onClose={view.closeSources} />}
       <PlanetView
         fires={fires}
@@ -116,40 +133,72 @@ export function EarthIntelligenceComposition({ load, study, mapView, mapState }:
           overlays={investigation.overlays}
           opticalReady={investigation.optical === 'ready'}
           inspected={investigation.inspected}
+          timelineYear={investigation.timelineYear}
+          spatialLayer={investigation.spatialLayer}
           onInspect={investigation.inspect}
         />
       )}
       {curve && forecastYear !== null && view.phase === 'region' && (
-        <ForecastYearBar curve={curve} year={forecastYear} onYear={pickYear} />
+        <ForecastYearBar
+          curve={curve}
+          year={forecastYear}
+          onYear={pickYear}
+          cells={
+            fireData?.bundle?.timeline
+              ? {
+                  years: fireData.bundle.timeline.years,
+                  year: investigation.timelineYear,
+                  onYear: investigation.setTimelineYear,
+                }
+              : null
+          }
+        />
       )}
       {fireData && view.phase === 'region' && (
         <div className={searchStyles.mapLegend}>
-          <FireLegend
-            layer={investigation.layer}
-            coverage={layerCoverage(fireData.cells, investigation.layer)}
-            overlays={drawnOverlays(
-              investigation.overlays,
-              overlayAvailability(fireData),
-              investigation.optical === 'ready',
-            )}
-          />
+          {fireData.bundle ? (
+            <SpatialLegend
+              data={fireData}
+              layer={investigation.spatialLayer}
+              year={investigation.timelineYear}
+              visible={investigation.overlays.cells !== false && fireData.bundle.cells.length > 0}
+              overlays={drawnOverlays(
+                investigation.overlays,
+                overlayAvailability(fireData),
+                investigation.optical === 'ready',
+              )}
+            />
+          ) : (
+            <FireLegend
+              layer={investigation.layer}
+              coverage={layerCoverage(fireData.cells, investigation.layer)}
+              overlays={drawnOverlays(
+                investigation.overlays,
+                overlayAvailability(fireData),
+                investigation.optical === 'ready',
+              )}
+            />
+          )}
         </div>
       )}
       {!examples && !fireData && view.phase === 'region' && (
         <div className={searchStyles.mapLegend}>
           Catalog points and supplied outlines. Applicability boundaries carry provider labels;
-          analysis requires evaluated coverage.
+          geographic coverage is separate from exported data. New analysis is unavailable.
         </div>
       )}
       {view.phase === 'region' && (
         <InvestigationPanel
           state={mapState}
           catalog={catalog}
+          scientificContext={<ConfidenceZonesPanel mapView={mapView} resource={applicability} />}
           onFireSelect={selectFire}
           onPlanet={view.goPlanet}
           headingRef={view.regionHeadingRef}
           search={
             <FireSearch
+              applicability={applicability}
+              catalog={catalog}
               state={mapState}
               mapView={mapView}
               onResult={async (url, selectedId) => {

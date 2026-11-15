@@ -32,6 +32,7 @@ export function GridLayerPicker({
             name="fire-grid-layer"
             value={id}
             checked={layer === id}
+            disabled={coverage[id].valued === 0}
             onChange={() => onLayer(id)}
           />
           <span>
@@ -49,6 +50,11 @@ const OVERLAYS: { id: keyof FireOverlayVisibility; label: string; missing: strin
   { id: 'zone', label: 'Neighbouring-forest zone', missing: 'No reference cells supplied' },
   { id: 'gedi', label: 'GEDI lidar footprints', missing: 'No GEDI footprints supplied' },
   { id: 'optical', label: 'Optical image (export)', missing: 'No optical image supplied' },
+  {
+    id: 'cells',
+    label: 'Recovery cells · spatial model estimates',
+    missing: 'No cell dataset supplied',
+  },
 ];
 
 /** Why the optical overlay cannot be switched on, or null when it can. */

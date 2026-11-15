@@ -8,6 +8,15 @@
  * a fake fetch and the app's instance lives in `./index.ts`.
  */
 import { z } from 'zod';
+import { CatalogPerimetersSchema, type CatalogPerimeters } from '@/data/catalogPerimeters';
+import { ApplicabilityZonesSchema, type ApplicabilityZones } from '@/data/applicabilityZones';
+import {
+  BundleFormatError,
+  bundleIndexEntry,
+  loadBundleV2,
+  parseBundleIndex,
+  type BundleEntry,
+} from '@/data/bundleV2';
 import { decodeDots } from '../../domain/globe/sphere';
 import { parseLandRings, type LandRing } from '../../domain/globe/landOutline';
 import {
@@ -27,8 +36,8 @@ import { CanadianContextSchema, type CanadianContext } from '../../data/contextS
 import {
   FireIndexSchema,
   FireResultSchema,
-  FireCellsSchema,
-  validateFireCells,
+  ExportCellsSchema,
+  parseFireCells,
   type DemoFire,
   type FireData,
   type FireResult,
@@ -55,6 +64,8 @@ const LandDotsFileSchema = z.object({
 export class DataLoadError extends Error {}
 
 export interface StudyDataApiConfig {
+  maxCachedFires?: number;
+  bundleBaseUrl?: string;
   /** Folder that holds the data files, without a trailing slash. */
   baseUrl: string;
   /** Defaults to the global fetch. */
@@ -66,6 +77,10 @@ export interface StudyDataApiConfig {
 export type ImageProbe = (url: string, signal?: AbortSignal) => Promise<boolean>;
 
 export class StudyDataApi {
+  private readonly maxCachedFires: number;
+  private readonly bundleBaseUrl?: string;
+  private bundleEntries: BundleEntry[] = [];
+  private bundleSummer = 2026;
   private readonly baseUrl: string;
   private readonly fetchImpl: typeof fetch;
   private readonly probeImage: ImageProbe;
@@ -77,6 +92,8 @@ export class StudyDataApi {
   private fireIndex: Promise<DemoFire[]> | null = null;
 
   constructor(config: StudyDataApiConfig) {
+    this.maxCachedFires = Math.max(1, Math.floor(config.maxCachedFires ?? 3));
+    this.bundleBaseUrl = config.bundleBaseUrl;
     this.baseUrl = config.baseUrl;
     // No DOM here: without an injected probe, optional images count as absent.
     this.probeImage = config.probeImage ?? (() => Promise.resolve(false));
@@ -138,6 +155,24 @@ export class StudyDataApi {
     return request;
   }
 
+  /** Lightweight catalog geometry only; never fetches an individual fire's detail files. */
+  async loadFirePerimeters(signal?: AbortSignal): Promise<CatalogPerimeters | null> {
+    if (!this.bundleBaseUrl) return null;
+    const response = await this.fetchImpl(`${this.bundleBaseUrl}/perimeters.geojson`, { signal });
+    if (!response.ok) throw new DataLoadError('Catalog perimeters could not be loaded.');
+    return CatalogPerimetersSchema.parse(await response.json());
+  }
+
+  async loadApplicabilityZones(signal?: AbortSignal): Promise<ApplicabilityZones | null> {
+    if (!this.bundleBaseUrl) return null;
+    const response = await this.fetchImpl(`${this.bundleBaseUrl}/confidence_zones.geojson`, {
+      signal,
+    });
+    if (response.status === 404) return null;
+    if (!response.ok) throw new DataLoadError('Supplied applicability zones could not be loaded.');
+    return ApplicabilityZonesSchema.parse(await response.json());
+  }
+
   private async fetchFireIndex(signal?: AbortSignal): Promise<DemoFire[]> {
     const file = 'demo/index.json';
     const response = await this.reach(file, signal);
@@ -145,7 +180,36 @@ export class StudyDataApi {
       throw new DataLoadError(
         `The demonstration fire catalog failed to load (HTTP ${response.status}).`,
       );
-    return this.parse(response, file, FireIndexSchema, 'the team’s fire export', false);
+    const legacy = await this.parse(
+      response,
+      file,
+      FireIndexSchema,
+      'the team’s fire export',
+      false,
+    );
+    if (!this.bundleBaseUrl) return legacy;
+    const bundle = await this.bundleFile(
+      'the supplied fire index',
+      async () =>
+        parseBundleIndex(await this.readBundleJson(`${this.bundleBaseUrl}/index.json`, signal)),
+      signal,
+    );
+    this.bundleEntries = bundle.fires;
+    this.bundleSummer = bundle.summer;
+    // Retain v1 fixtures on disk and in v1-only configurations; replace their
+    // Examples cards only when the corresponding supplied real export exists.
+    const replacedFixtures: Record<string, string> = {
+      quebec_1995_fixture: 'quebec_1995_1218',
+      quebec_2010_fixture: 'quebec_2010_557',
+      ontario_1988_fixture: 'ontario_1988_21',
+    };
+    return [
+      ...legacy.filter(
+        (entry) =>
+          !bundle.fires.some((fire) => fire.id === (replacedFixtures[entry.id] ?? entry.id)),
+      ),
+      ...bundle.fires.map((entry) => bundleIndexEntry(entry, bundle.summer)),
+    ];
   }
 
   async loadCanadianContext(fireId: string, signal?: AbortSignal): Promise<CanadianContext | null> {
@@ -188,12 +252,20 @@ export class StudyDataApi {
     signal?.throwIfAborted();
     if (options.fresh) this.fires.delete(fireId);
     const cached = this.fires.get(fireId);
-    if (cached) return cached;
+    if (cached) {
+      this.fires.delete(fireId);
+      this.fires.set(fireId, cached);
+      return cached;
+    }
     const version = ++this.fireRevision;
     this.fireVersions.set(fireId, version);
     const data = await this.fetchFire(fireId, signal, options.fresh);
     signal?.throwIfAborted();
-    if (data && this.fireVersions.get(fireId) === version) this.fires.set(fireId, data);
+    if (data && this.fireVersions.get(fireId) === version) {
+      this.fires.set(fireId, data);
+      while (this.fires.size > this.maxCachedFires)
+        this.fires.delete(this.fires.keys().next().value!);
+    }
     return data;
   }
 
@@ -208,6 +280,23 @@ export class StudyDataApi {
       (!fresh && (await this.fireIndex?.catch(() => null))) || (await this.loadFireIndex(signal));
     const entry = index.find((fire) => fire.id === fireId);
     if (!entry) return null;
+    const bundleEntry = this.bundleEntries.find((fire) => fire.id === fireId);
+    if (bundleEntry && this.bundleBaseUrl) {
+      const base = this.bundleBaseUrl;
+      const summer = this.bundleSummer;
+      return this.bundleFile(
+        `fire ${fireId}`,
+        () =>
+          loadBundleV2(
+            base,
+            bundleEntry,
+            summer,
+            (url) => this.readBundleJson(url, signal),
+            signal,
+          ),
+        signal,
+      );
+    }
     const path = `demo/${entry.result}`;
     const result = await this.parse(
       await this.reach(path, signal),
@@ -225,15 +314,16 @@ export class StudyDataApi {
     }
     const folder = path.slice(0, path.lastIndexOf('/') + 1);
     const cellsPath = `${folder}${result.files.cells}`;
-    const cells = await this.parse(
+    const rawCells = await this.parse(
       await this.reach(cellsPath, signal),
       cellsPath,
-      FireCellsSchema,
+      ExportCellsSchema,
       'the team’s fire export',
       false,
     );
+    let cells;
     try {
-      validateFireCells(cells, result.map_grid);
+      cells = parseFireCells(rawCells, result.map_grid);
     } catch {
       throw new DataLoadError('The fire grid dimensions do not match its cell arrays.');
     }
@@ -320,6 +410,41 @@ export class StudyDataApi {
         swir: this.url(i.swir),
       })),
     };
+  }
+
+  /** One JSON file of a supplied bundle. A missing file and an HTML fallback page both fail here. */
+  private async readBundleJson(url: string, signal?: AbortSignal): Promise<unknown> {
+    let response: Response;
+    try {
+      response = await this.fetchImpl(url, { signal });
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      throw new DataLoadError(`Could not reach ${url}. Check your connection and try again.`);
+    }
+    if (!response.ok)
+      throw new DataLoadError(
+        `Bundle resource could not be loaded: ${url} (HTTP ${response.status}).`,
+      );
+    try {
+      return await response.json();
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      throw new DataLoadError(`Bundle resource is missing or is not valid JSON: ${url}.`);
+    }
+  }
+
+  /** Turn a bundle format failure into a message a reader can act on; aborts pass through. */
+  private async bundleFile<T>(
+    what: string,
+    load: () => Promise<T>,
+    signal?: AbortSignal,
+  ): Promise<T> {
+    try {
+      return await load();
+    } catch (error) {
+      if (signal?.aborted || !(error instanceof BundleFormatError)) throw error;
+      throw new DataLoadError(`The supplied export of ${what} cannot be used. ${error.message}`);
+    }
   }
 
   private url(path: string): string {

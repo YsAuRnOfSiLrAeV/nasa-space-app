@@ -6,8 +6,8 @@
  *  - Cells are shown only as categories. No per-cell numbers (heights, recovery or
  *    probabilities) leave this module; probabilities are binned for display.
  *  - A missing value stays missing: nothing is interpolated or filled.
- *  - `map.confidence` is the geographic domain where the model applies. It is a
- *    pipeline classification, never the model's probability, and is named so.
+ *  - `map.confidence` meanings are undefined by the current backend. Codes are
+ *    preserved without masking values or deriving geographic applicability.
  *  - The grid shows the observation summer only: nothing here depends on a year.
  *
  * Geometry: the export supplies four lon/lat corners (TL, TR, BR, BL; row 0 at the
@@ -72,9 +72,9 @@ export const GRID_FALLBACK_COLORS: Record<string, string> = {
 };
 
 export const DOMAIN_NAMES = [
-  'Outside the model’s geographic domain',
-  'Inside the domain: current state only',
-  'Inside the domain: current state and forecast',
+  'Pipeline confidence code 0 (meaning not defined by backend)',
+  'Pipeline confidence code 1 (meaning not defined by backend)',
+  'Pipeline confidence code 2 (meaning not defined by backend)',
 ] as const;
 
 export const ZONE_NAMES = { 1: 'Burned area', 0: 'Neighbouring forest (reference)' } as const;
@@ -90,9 +90,8 @@ export function categoryAt(cells: FireCells, layer: GridLayerId, index: number):
   return p == null ? null : probabilityBand(p);
 }
 
-/** Outside the domain overrides the value: such cells carry no estimate (DELIVERABLES tab 8). */
+/** Display supplied categories without interpreting undefined pipeline flags. */
 export function cellClass(cells: FireCells, layer: GridLayerId, index: number): CellClass {
-  if (cells.map.confidence[index] === 0) return 'outside';
   return categoryAt(cells, layer, index);
 }
 
@@ -118,6 +117,7 @@ export function layerCoverage(cells: FireCells, layer: GridLayerId): LayerCovera
 
 /** Which overlays the export can actually support. */
 export interface OverlayAvailability {
+  cells?: boolean;
   perimeter: boolean;
   zone: boolean;
   gedi: boolean;
@@ -126,6 +126,9 @@ export interface OverlayAvailability {
 
 export function overlayAvailability(data: FireData): OverlayAvailability {
   return {
+    cells: data.bundle
+      ? data.bundle.cells.length > 0
+      : data.cells.model.stage.some((_, index) => isSupplied(data.cells, index)),
     perimeter: data.result.fire.perimeter !== null,
     zone: data.cells.map.zone.some((z) => z === 0),
     gedi: data.result.lidar_points.length > 0,
@@ -136,6 +139,7 @@ export function overlayAvailability(data: FireData): OverlayAvailability {
 // ── Categorical cell description (the tooltip) ──────────────────────────────
 
 export interface CellDescription {
+  modeledHeight?: number | null;
   index: number;
   /** One-based, for people. */
   row: number;
@@ -159,11 +163,22 @@ export function describeCell(data: FireData, layer: GridLayerId, index: number):
   const cls = cellClass(cells, layer, index);
   const spec = GRID_LAYERS[layer];
   return {
+    ...(data.bundle
+      ? {
+          modeledHeight:
+            data.bundle.cells.find((cell) => cell.row * columns + cell.col === index)?.height_m ??
+            null,
+        }
+      : {}),
     index,
     row: Math.floor(index / columns) + 1,
     column: (index % columns) + 1,
     supplied,
-    area: zone == null ? 'Not assessed (outside burned area and reference ring)' : ZONE_NAMES[zone],
+    area: data.bundle
+      ? 'Burn/reference classification not supplied in bundle'
+      : zone == null
+        ? 'Not assessed (outside burned area and reference ring)'
+        : ZONE_NAMES[zone],
     layerLabel: spec.label,
     value:
       cls === 'outside'

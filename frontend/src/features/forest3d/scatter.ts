@@ -4,7 +4,7 @@
  * steep slopes and stays out of the stream; species follow elevation (conifers
  * higher, broadleaf lower, toward the water). Pure and DOM-free.
  */
-import { fbm, rng, slopeAt, type HeightField } from './heightField';
+import { fbm, hash2, rng, slopeAt, type HeightField } from './heightField';
 import type { StandParams } from './recoveryAdapter';
 
 export type PlantKind = 'spruce' | 'fir' | 'pine' | 'broadleaf' | 'snag' | 'shrub';
@@ -20,6 +20,13 @@ export interface Plant {
   yaw: number;
   /** Small lean, radians (snags and edge trees). */
   lean: number;
+  /**
+   * Fixed 0..1 order in which this plant appears (low ranks first) when a year shows
+   * only part of the stand. Hashed from the position, so it never changes.
+   */
+  rank: number;
+  /** Fixed 0..1 position in the year's height distribution (tall trees high). */
+  heightRank: number;
 }
 
 const KINDS = ['spruce', 'fir', 'pine', 'broadleaf', 'snag'] as const;
@@ -45,7 +52,13 @@ export function scatterPlants(field: HeightField, stand: StandParams): Plant[] {
 
   const place = (kind: PlantKind, x: number, z: number, scale = 1) => {
     const [lo, hi] = HEIGHT[kind];
-    const h = (lo + (hi - lo) * random()) * scale * (kind === 'shrub' ? 1 : stand.heightScale);
+    // Shrubs and fire-killed snags keep their height whatever the stand's scale.
+    const h =
+      (lo + (hi - lo) * random()) *
+      scale *
+      (kind === 'shrub' || kind === 'snag' ? 1 : stand.heightScale);
+    const ix = Math.round(x * 1000);
+    const iz = Math.round(z * 1000);
     plants.push({
       kind,
       x,
@@ -54,6 +67,8 @@ export function scatterPlants(field: HeightField, stand: StandParams): Plant[] {
       height: h,
       yaw: random() * Math.PI * 2,
       lean: kind === 'snag' ? (random() - 0.5) * 0.18 : (random() - 0.5) * 0.05,
+      rank: hash2(ix, iz, stand.seed),
+      heightRank: hash2(iz, ix, stand.seed + 7),
     });
   };
 

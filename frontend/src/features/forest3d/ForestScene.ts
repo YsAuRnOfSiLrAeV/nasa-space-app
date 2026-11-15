@@ -1,25 +1,33 @@
 /**
  * The 3D forest scene: owns the renderer, camera, controls and the built model
- * for one container element. Renders on demand (only while the view moves or
- * after a resize), so an idle view costs nothing. React only mounts it, calls
- * `resetView` and `dispose`.
+ * for one container element. Renders on demand (only while the view moves, a
+ * year change animates, or after a resize), so an idle view costs nothing. React
+ * only mounts it and calls its methods.
  *
- * Scene generation (height field, scatter) is pure and separate; this class
- * only turns their output into Three.js objects.
+ * Scene generation (height field, scatter, growth) is pure and separate; this
+ * class only turns their output into Three.js objects.
  */
 import * as THREE from 'three';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { createCamera, fitCamera, homeCamera } from './ForestCamera';
 import { createControls } from './ForestControls';
 import { createLighting } from './ForestLighting';
+import { growHeights } from './growth';
 import { createHeightField } from './heightField';
-import { scatterPlants, type PlantKind } from './scatter';
+import {
+  ILLUSTRATIVE_STAND,
+  MATURE_GROWTH,
+  type GrowthParams,
+  type StandParams,
+} from './recoveryAdapter';
+import { scatterPlants, type Plant, type PlantKind } from './scatter';
 import { buildTerrainBlock } from './TerrainBlock';
-import { buildVegetation } from './VegetationSystem';
-import { ILLUSTRATIVE_STAND, type StandParams } from './recoveryAdapter';
+import { buildVegetation, type Vegetation } from './VegetationSystem';
 
 export const PAPER = '#ffffff';
 const BLOCK_SIZE = 120;
+/** How long a year change takes to grow into place. */
+const GROWTH_MS = 700;
 
 /** Thrown when WebGL cannot start; the viewer shows its fallback. */
 export class WebGLUnavailableError extends Error {
@@ -43,23 +51,32 @@ export interface ForestSceneStats {
   plants: Record<PlantKind, number>;
 }
 
+const ease = (t: number) => 1 - (1 - t) ** 3;
+
 export class ForestScene {
   readonly stats: ForestSceneStats;
+  /** The stand as scattered, in the order heights are given. */
+  readonly plants: Plant[];
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private camera: THREE.OrthographicCamera;
   private controls: OrbitControls;
+  private vegetation: Vegetation;
+  private heights: Float32Array;
+  private tween: { from: Float32Array; to: Float32Array; start: number } | null = null;
   private disposers: (() => void)[] = [];
   private raf = 0;
   private resize: ResizeObserver;
   private disposed = false;
+  private reducedMotion: boolean;
 
   constructor(
     private container: HTMLElement,
     {
       stand = ILLUSTRATIVE_STAND,
+      growth = MATURE_GROWTH,
       onContextLost,
-    }: { stand?: StandParams; onContextLost?: () => void } = {},
+    }: { stand?: StandParams; growth?: GrowthParams; onContextLost?: () => void } = {},
   ) {
     if (!webglSupported()) throw new WebGLUnavailableError();
     try {
@@ -70,6 +87,7 @@ export class ForestScene {
     } catch (e) {
       throw new WebGLUnavailableError(e);
     }
+    this.reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     const r = this.renderer;
     r.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     r.outputColorSpace = THREE.SRGBColorSpace;
@@ -86,18 +104,21 @@ export class ForestScene {
     r.domElement.addEventListener('webglcontextlost', (e) => {
       e.preventDefault();
       cancelAnimationFrame(this.raf);
-      onContextLost?.();
+      // `dispose` drops the context on purpose: that is not a lost view.
+      if (!this.disposed) onContextLost?.();
     });
 
-    // Model.
+    // Model. The stand is scattered once; growth only rescales it.
     const field = createHeightField({ size: BLOCK_SIZE, seed: stand.seed % 1000 });
     const block = buildTerrainBlock(field);
-    const plants = scatterPlants(field, stand);
-    const vegetation = buildVegetation(plants.filter((p) => p.y > block.waterLevel + 0.05));
+    this.plants = scatterPlants(field, stand).filter((p) => p.y > block.waterLevel + 0.05);
+    this.vegetation = buildVegetation(this.plants);
+    this.heights = growHeights(this.plants, growth);
+    this.vegetation.setHeights(this.heights);
     const lighting = createLighting(BLOCK_SIZE);
-    this.scene.add(block.group, vegetation.group, lighting.group);
-    this.disposers.push(block.dispose, vegetation.dispose, lighting.dispose);
-    this.stats = { plants: vegetation.counts };
+    this.scene.add(block.group, this.vegetation.group, lighting.group);
+    this.disposers.push(block.dispose, this.vegetation.dispose, lighting.dispose);
+    this.stats = { plants: this.vegetation.counts };
 
     // View.
     const { width, height } = this.size();
@@ -117,6 +138,19 @@ export class ForestScene {
     this.requestRender();
   }
 
+  /** Show another year: every plant grows (or shrinks, appears, falls) into place. */
+  setGrowth(growth: GrowthParams, { animate = true }: { animate?: boolean } = {}) {
+    const to = growHeights(this.plants, growth);
+    if (!animate || this.reducedMotion) {
+      this.tween = null;
+      this.heights = to;
+      this.vegetation.setHeights(to);
+    } else {
+      this.tween = { from: this.heights.slice(), to, start: performance.now() };
+    }
+    this.requestRender();
+  }
+
   /** Back to the home axonometric. */
   resetView = () => {
     this.controls.reset();
@@ -125,6 +159,49 @@ export class ForestScene {
     this.controls.update();
     this.requestRender();
   };
+
+  /**
+   * Cheaper drawing for slow devices: no shadows and one pixel per CSS pixel.
+   * The picture keeps every plant; only the light changes.
+   */
+  setLowDetail() {
+    const r = this.renderer;
+    r.shadowMap.enabled = false;
+    r.setPixelRatio(1);
+    const s = this.size();
+    r.setSize(s.width, s.height, false);
+    this.scene.traverse((object) => {
+      if (object instanceof THREE.Light) object.castShadow = false;
+      const material = (object as THREE.Mesh).material;
+      if (material)
+        (Array.isArray(material) ? material : [material]).forEach((m) => (m.needsUpdate = true));
+    });
+    this.requestRender();
+  }
+
+  /**
+   * Median time of `frames` consecutive frames, in milliseconds: how fast this device
+   * actually draws the scene. Rendering waits for the GPU at each frame boundary, so
+   * the interval between frames includes its work.
+   */
+  measureFrameTime(frames = 24): Promise<number> {
+    return new Promise((resolve) => {
+      const times: number[] = [];
+      let last = performance.now();
+      const step = () => {
+        if (this.disposed) return resolve(0);
+        this.renderer.render(this.scene, this.camera);
+        const now = performance.now();
+        times.push(now - last);
+        last = now;
+        if (times.length > frames) {
+          const sorted = times.slice(1).sort((a, b) => a - b);
+          resolve(sorted[Math.floor(sorted.length / 2)]!);
+        } else requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
+  }
 
   private size() {
     return {
@@ -138,13 +215,23 @@ export class ForestScene {
     this.raf = requestAnimationFrame(this.tick);
   };
 
-  /** One frame; keeps going only while damping is still moving the camera. */
+  /** One frame; keeps going while the camera damps or a year change is still growing. */
   private tick = () => {
     this.raf = 0;
     if (this.disposed) return;
+    let growing = false;
+    if (this.tween) {
+      const t = Math.min(1, (performance.now() - this.tween.start) / GROWTH_MS);
+      const k = ease(t);
+      const { from, to } = this.tween;
+      for (let i = 0; i < to.length; i++) this.heights[i] = from[i]! + (to[i]! - from[i]!) * k;
+      this.vegetation.setHeights(this.heights);
+      if (t >= 1) this.tween = null;
+      else growing = true;
+    }
     const moving = this.controls.update();
     this.renderer.render(this.scene, this.camera);
-    if (moving) this.requestRender();
+    if (moving || growing) this.requestRender();
   };
 
   dispose() {

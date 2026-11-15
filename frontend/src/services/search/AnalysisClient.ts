@@ -1,11 +1,6 @@
 import { z } from 'zod';
 import { ErrorSchema, RunSchema, SummersSchema, type Run } from './contracts';
-import {
-  FireResultSchema,
-  FireCellsSchema,
-  validateFireCells,
-  type FireData,
-} from '@/data/fireSchema';
+import { FireResultSchema, parseFireCells, type FireData } from '@/data/fireSchema';
 
 export function pause(milliseconds: number, signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
@@ -82,8 +77,10 @@ export class AnalysisClient {
       return response.json();
     };
     const result = FireResultSchema.parse(await reach(url));
-    const cells = FireCellsSchema.parse(await reach(new URL(result.files.cells, url).href));
-    validateFireCells(cells, result.map_grid);
+    const cells = parseFireCells(
+      await reach(new URL(result.files.cells, url).href),
+      result.map_grid,
+    );
     signal.throwIfAborted();
     return {
       result,

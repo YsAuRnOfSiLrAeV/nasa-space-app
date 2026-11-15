@@ -1,22 +1,24 @@
 import { PageIntro, PageLayout } from '@/components/shell/PageLayout';
-import { ForestViewer } from '@/features/forest3d';
+import { ForestGrowthExplorer } from './ForestGrowthExplorer';
 
 /**
- * A standalone page for the 3D forest illustration (first milestone). Lazily
- * loaded, so Three.js is fetched only when this page opens. Not linked from the
- * navigation yet; reached at #/research/forest-3d.
+ * Forest growth in 3D: an illustration of a stand at a fire's modeled recovery.
+ * Lazily loaded, so Three.js is fetched only when this page opens; nothing in the
+ * explorer or the map depends on it (see docs/forest-3d.md to remove it).
+ * Reached at #/research/forest-3d.
  */
 export function Forest3DPage() {
   return (
     <PageLayout section="research">
-      <PageIntro eyebrow="Research · illustration" title="Forest structure in three dimensions">
+      <PageIntro eyebrow="Research · illustration" title="Forest growth in three dimensions">
         <p>
           Greenness is a surface; a forest is a structure of trunks, branches and crowns over
-          terrain. This block is a conceptual model of that structure. Its terrain and trees are
-          synthetic, not measurements of any fire or place.
+          terrain. Pick a fire and a year: the trees in this synthetic block grow to the height the
+          model estimates for that fire. It is an illustration, not a measurement and not a picture
+          of the place.
         </p>
       </PageIntro>
-      <ForestViewer />
+      <ForestGrowthExplorer />
     </PageLayout>
   );
 }

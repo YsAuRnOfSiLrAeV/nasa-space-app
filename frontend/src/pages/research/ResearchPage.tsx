@@ -9,6 +9,7 @@ import { ChapterBar, ResearchIntro } from './ResearchIntro';
 import { StructureChapter } from './StructureChapter';
 import { useState } from 'react';
 import { SampleUnavailable, type ResearchSelection } from './ResearchStudy';
+import { MethodologyGuide } from './MethodologyGuide';
 
 /** The research page composes its chapters; each owns its evidence and supporting material. */
 export function ResearchPage({ load, study }: { load: StudyLoad; study: StudyView | null }) {
@@ -23,6 +24,7 @@ export function ResearchPage({ load, study }: { load: StudyLoad; study: StudyVie
       <div className={styles.doc}>
         <ResearchIntro />
         <ChapterBar />
+        <MethodologyGuide />
         <div>
           <div className="min-w-0">
             <GreenChapter {...selection} />

@@ -16,6 +16,9 @@ export const CatalogFiresSchema = z
       center: Position,
       perimeter: FirePerimeterSchema.nullable(),
       resultId: z.string().nullable(),
+      region: z.string().optional(),
+      country: z.string().optional(),
+      spatial: z.boolean().optional(),
     }),
   )
   .refine(
@@ -26,7 +29,15 @@ export type CatalogFire = z.infer<typeof CatalogFiresSchema>[number];
 export function filterCatalog(fires: CatalogFire[], query: string, year: string) {
   return fires.filter(
     (fire) =>
-      fire.name.toLowerCase().includes(query.trim().toLowerCase()) &&
+      query
+        .trim()
+        .toLowerCase()
+        .split(/\s+/)
+        .every((term) =>
+          `${fire.id} ${fire.name} ${fire.year} ${fire.region ?? ''} ${fire.country ?? ''}`
+            .toLowerCase()
+            .includes(term),
+        ) &&
       (!year || String(fire.year) === year),
   );
 }

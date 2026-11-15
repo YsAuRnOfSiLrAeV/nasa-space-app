@@ -1,0 +1,78 @@
+/*
+ * Recovery through time: the cell timeline's controls in the investigation panel.
+ * Values come from the theme.
+ */
+.timeline > * + * {
+  margin-top: 0.75rem;
+}
+.kicker {
+  font: var(--eyebrow-weight) var(--eyebrow-size) / 1.4 var(--eyebrow-font);
+  letter-spacing: var(--eyebrow-tracking);
+  text-transform: var(--eyebrow-transform);
+  color: var(--muted-foreground);
+}
+.heading {
+  margin-top: 0.25rem;
+  font: 500 0.9375rem/1.3 var(--font-section);
+  color: var(--foreground);
+}
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  color: var(--foreground);
+}
+
+.player {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--rule-strong);
+}
+.readout {
+  display: grid;
+  gap: 0.125rem;
+}
+.label,
+.kind {
+  font: 500 0.6875rem/1.4 var(--font-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+/* The current modeled year, the largest thing in the control. */
+.year {
+  font: 400 2.5rem/1 var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+.buttons button:disabled {
+  opacity: 0.4;
+  cursor: default;
+  text-decoration: none;
+}
+.buttons button[aria-pressed='true'] {
+  color: var(--signal);
+}
+.player input[type='range'] {
+  width: 100%;
+  min-height: 28px;
+  accent-color: var(--signal);
+}
+.player input[type='range']:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.range {
+  display: flex;
+  justify-content: space-between;
+  font: 400 0.6875rem/1 var(--font-data);
+  color: var(--muted-foreground);
+}

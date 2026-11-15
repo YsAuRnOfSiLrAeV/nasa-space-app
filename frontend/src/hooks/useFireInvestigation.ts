@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { FireData } from '@/data/fireSchema';
+import type { SpatialLayerId } from '@/domain/fire/spatialLayers';
 import { useOpticalImage } from '@/hooks/useOpticalImage';
 import type { FireOverlayVisibility } from '@/components/map/fireLayers';
 import type { StudyMapController } from '@/components/map/StudyMapController';
@@ -12,6 +13,7 @@ import {
 } from '@/domain/fire/investigationSelection';
 
 const DEFAULT_OVERLAYS: FireOverlayVisibility = {
+  cells: true,
   perimeter: true,
   zone: true,
   gedi: true,
@@ -39,29 +41,53 @@ export function useFireInvestigation(
         ? fire.state.data
         : null;
   const optical = useOpticalImage(data?.opticalImageUrl ?? null);
-  const [layer, setLayer] = useState<GridLayerId>('stage');
+  const [selectedLayer, setLayer] = useState<GridLayerId | null>(null);
+  const layer = selectedLayer ?? (data?.bundle ? 'probability' : 'stage');
   const [overlays, setOverlays] = useState(DEFAULT_OVERLAYS);
+  const [spatial, setSpatial] = useState<{ fireId: string | null; layer: SpatialLayerId }>({
+    fireId,
+    layer: 'score',
+  });
+  if (spatial.fireId !== fireId) setSpatial({ fireId, layer: 'score' });
 
   const [selection, setSelection] = useState<InvestigationSelection>({
     fireId,
     cell: null,
     year: null,
+    timelineYear: null,
   });
   const current = selectionForFire(selection, fireId);
   if (current !== selection) setSelection(current);
 
-  const forecast = useMemo(() => (data ? readForecast(data.result) : null), [data]);
+  const forecast = useMemo(
+    () => (data ? readForecast(data.result, data.bundle?.source.model2) : null),
+    [data],
+  );
   const curve = forecast?.status === 'valid' ? forecast.curve : null;
   const forecastYear = curve ? clampYear(curve, current.year ?? curve.summer) : null;
 
   return {
     fireId,
+    timelineYear: current.timelineYear,
+    setTimelineYear: (timelineYear: number | null) => {
+      // One year for the map and the whole-fire readout: a cell year also moves the forecast year.
+      if (fireId)
+        setSelection((previous) => {
+          const current = selectionForFire(previous, fireId);
+          return { ...current, timelineYear, year: timelineYear ?? current.year };
+        });
+    },
     /** Load state of the fire's result and cells. */
     fire: data ? { status: 'ready' as const, data } : fire.state,
     retry: fire.retry,
     data,
     optical,
     layer,
+    spatialLayer: spatial.fireId === fireId ? spatial.layer : ('score' as SpatialLayerId),
+    setSpatialLayer: (layer: SpatialLayerId) => {
+      setSpatial({ fireId, layer });
+      setSelection((previous) => ({ ...selectionForFire(previous, fireId), timelineYear: null }));
+    },
     setLayer,
     overlays,
     setOverlays,
@@ -71,8 +97,15 @@ export function useFireInvestigation(
     },
     /** Move the camera to a cell (the one deliberate camera action of the inspector). */
     showCell: (cell: number) => {
-      if (data)
-        mapView?.focus(cellCentre(data.result.map_grid, cell), { minZoom: 11, durationMs: 900 });
+      if (data) {
+        const supplied = data.bundle?.cells.find(
+          (record) => record.row * data.result.map_grid.columns + record.col === cell,
+        );
+        const center: [number, number] = supplied
+          ? [supplied.lon, supplied.lat]
+          : cellCentre(data.result.map_grid, cell);
+        mapView?.focus(center, { minZoom: 11, durationMs: 900 });
+      }
     },
     forecast,
     /** The valid forecast curve, or null when the fire has none to draw. */

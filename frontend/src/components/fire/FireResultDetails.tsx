@@ -30,14 +30,19 @@ export function FireResultDetails({
         </dd>
         <dt>Grid</dt>
         <dd>
-          {grid.columns} × {grid.rows} cells · {grid.cell_size_m} m
+          {data.bundle && !data.bundle.cells.length
+            ? 'No cell grid supplied'
+            : `${grid.columns} × ${grid.rows} cells · ${grid.cell_size_m} m`}
         </dd>
         <dt>Observation summer</dt>
-        <dd>{summer} · July–August</dd>
+        <dd>
+          {summer}
+          {data.bundle ? ' · supplied bundle period' : ' · July–August'}
+        </dd>
         <dt>NISAR L-band</dt>
         <dd>
           {nisar
-            ? `${nisar.date}${nisar.fire_covered != null ? ` · ${formatShare(nisar.fire_covered)} of the fire covered` : ''}`
+            ? `${nisar.date ?? 'Acquisition date not supplied'}${nisar.fire_covered != null ? ` · ${formatShare(nisar.fire_covered)} of the fire covered` : ''}`
             : UNAVAILABLE}
         </dd>
         <dt>Sentinel-1 C-band</dt>
@@ -47,7 +52,11 @@ export function FireResultDetails({
             : UNAVAILABLE}
         </dd>
         <dt>Sentinel-2 optical</dt>
-        <dd>{sentinel2 ? `${sentinel2.from} → ${sentinel2.to}` : UNAVAILABLE}</dd>
+        <dd>
+          {sentinel2
+            ? `${sentinel2.from} → ${sentinel2.to}${sentinel2.scenes != null ? ` · ${sentinel2.scenes} scenes` : ''}`
+            : UNAVAILABLE}
+        </dd>
         <dt>GEDI coordinates</dt>
         <dd>{result.lidar_points.length} supplied</dd>
       </dl>
@@ -67,15 +76,20 @@ export function FireResultDetails({
       </p>
       <p>
         The grid’s relative-score layer bands the model’s score for forest above 5 m into Low,
-        Medium and High. The score ranks cells but is not a calibrated probability. Grey cells mark
-        the model’s geographic domain, which is a separate pipeline flag, not a score.
+        Medium and High. The score ranks cells but is not a calibrated probability. The backend does
+        not define the meaning of map.confidence codes; they do not establish geographic
+        applicability.
       </p>
       <p>
-        {forecast.status === 'valid'
-          ? `Forecast: method “saturating_exp”, r(age) = 1 − exp(−age / τ) with τ = ${forecast.curve.tau} years. The app draws it only because it reproduces the supplied years to 80% and 80% year. Ages outside ${forecast.curve.reliableAge[0]}–${forecast.curve.reliableAge[1]} are extrapolation.`
-          : forecast.status === 'unsupported'
-            ? `Forecast: ${forecast.reason}`
-            : 'No growth forecast is supplied for this fire.'}
+        {data.bundle
+          ? 'Forecast: the supplied model2.series is drawn directly, including its low and high bounds. No growth equation is reconstructed. Cell timeline values use a separate method and are not fire-level forecast values.'
+          : forecast.status === 'valid' && forecast.curve.series
+            ? 'Forecast: growth_forecast.series and its low/high bounds are drawn directly from the backend export. No equation is reconstructed from tau.'
+            : forecast.status === 'valid'
+              ? `Forecast: method “saturating_exp”, r(age) = 1 − exp(−age / τ) with τ = ${forecast.curve.tau} years. The app draws it only because it reproduces the supplied years to 80% and 80% year. Ages outside ${forecast.curve.reliableAge?.[0]}–${forecast.curve.reliableAge?.[1]} are extrapolation.`
+              : forecast.status === 'unsupported'
+                ? `Forecast: ${forecast.reason}`
+                : 'No growth forecast is supplied for this fire.'}
       </p>
 
       <h5 className={styles.subheading}>Warnings</h5>

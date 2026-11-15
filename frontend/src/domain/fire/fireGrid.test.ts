@@ -59,6 +59,8 @@ function tiny(): FireData {
       area_recovered_80pct: null,
       stage_share: null,
       error_vs_lidar_pct: null,
+      excluded_share: null,
+      accuracy: null,
     },
     lidar_points: [],
     files: { cells: 'cells.json' },
@@ -85,7 +87,7 @@ describe('categorical layers', () => {
     expect([0, 39, 40, 69, 70, 100].map(probabilityBand)).toEqual([0, 0, 1, 1, 2, 2]);
   });
 
-  it('keeps missing values missing and greys only cells outside the domain', () => {
+  it('keeps missing values missing without interpreting undefined confidence codes', () => {
     const { cells } = tiny();
     expect([0, 1, 2, 3, 4, 5].map((i) => cellClass(cells, 'stage', i))).toEqual([
       0,
@@ -93,7 +95,7 @@ describe('categorical layers', () => {
       1,
       1,
       null,
-      'outside',
+      2,
     ]);
     expect([0, 1, 2, 3, 4, 5].map((i) => cellClass(cells, 'probability', i))).toEqual([
       0,
@@ -101,9 +103,9 @@ describe('categorical layers', () => {
       1,
       null,
       null,
-      'outside',
+      2,
     ]);
-    expect(layerCoverage(cells, 'probability')).toEqual({ valued: 3, outside: 1, total: 6 });
+    expect(layerCoverage(cells, 'probability')).toEqual({ valued: 4, outside: 0, total: 6 });
   });
 
   it('draws one transparent pixel for every cell without a class', () => {
@@ -117,7 +119,7 @@ describe('categorical layers', () => {
     expect(Array.from(px.slice(0, 4))).toEqual([255, 0, 0, 255]);
     expect(Array.from(px.slice(12, 16))).toEqual([0, 0, 0, 0]); // supplied stage, no probability
     expect(Array.from(px.slice(16, 20))).toEqual([0, 0, 0, 0]); // entirely missing
-    expect(Array.from(px.slice(20, 24))).toEqual([9, 9, 9, 255]); // outside the domain
+    expect(Array.from(px.slice(20, 24))).toEqual([0, 0, 255, 255]);
     const zone = zonePixels(cells, [1, 2, 3], 50);
     expect([0, 1, 2, 3, 4, 5].map((i) => zone[i * 4 + 3])).toEqual([0, 0, 50, 50, 0, 0]);
   });
@@ -149,9 +151,11 @@ describe('cell descriptions', () => {
     const data = tiny();
     expect(describeCell(data, 'stage', 4).supplied).toBe(false);
     expect(describeCell(data, 'probability', 3).value).toBe('No value supplied (not interpolated)');
-    expect(describeCell(data, 'stage', 5).value).toBe('No estimate (outside the model’s domain)');
+    expect(describeCell(data, 'stage', 5).value).toBe('Above 10 m');
     expect(describeCell(data, 'stage', 2).area).toBe('Neighbouring forest (reference)');
-    expect(describeCell(data, 'stage', 3).domain).toBe('Inside the domain: current state only');
+    expect(describeCell(data, 'stage', 3).domain).toBe(
+      'Pipeline confidence code 1 (meaning not defined by backend)',
+    );
   });
 
   it('labels the probability layer as model output, not the geographic domain', () => {
@@ -197,8 +201,8 @@ describe('keyboard inspection helpers', () => {
     expect(rows.map((r) => [r.label, r.counts])).toEqual([
       ['Low', { burned: 1, reference: 0, other: 0 }],
       ['Medium', { burned: 0, reference: 1, other: 0 }],
-      ['High', { burned: 1, reference: 0, other: 0 }],
-      ['Outside the model’s domain', { burned: 1, reference: 0, other: 0 }],
+      ['High', { burned: 2, reference: 0, other: 0 }],
+      ['Outside the model’s domain', { burned: 0, reference: 0, other: 0 }],
       ['No value supplied', { burned: 0, reference: 1, other: 0 }],
     ]);
   });

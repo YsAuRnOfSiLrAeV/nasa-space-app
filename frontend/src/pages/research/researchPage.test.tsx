@@ -137,10 +137,10 @@ describe('research page', () => {
     expect(out).toContain(
       'The optical-to-recovery rule (NDVI 0.2…0.8 mapped to 0…100%) is provisional',
     );
-    expect(out).toContain('Provisional · not confirmed by the model owner');
+    expect(out).toContain('Conceptual illustration · not a supplied fire forecast');
     expect(out).toContain('R(age) = 1 − exp(−age / τ)');
     expect(out).toContain('Provisional thresholds, pending approval by the model owner');
-    expect(out).toContain('no zone geometry has been supplied');
+    expect(out).toContain('zone boundaries are now available in the Explorer');
   });
 
   it('does not overclaim', () => {
@@ -148,7 +148,7 @@ describe('research page', () => {
     expect(out).toContain('Optical readings do not always overestimate recovery');
     expect(out).toContain('The model also substantially overestimates Quebec 2010');
     expect(out).toContain('Only three of the seven are NISAR measurements');
-    expect(out).toContain('it does not measure tree height');
+    expect(out).toContain('not direct measurements of tree height');
     expect(out).toContain('Good ranking does not guarantee calibrated probabilities');
     expect(out).toContain('It is not an uncertainty interval for any one fire');
     expect(out).not.toMatch(/dev fixture|development fixture/i);

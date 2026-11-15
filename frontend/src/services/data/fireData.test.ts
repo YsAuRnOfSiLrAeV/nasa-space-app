@@ -31,6 +31,17 @@ function service(overrides: Record<string, unknown | number> = {}) {
 }
 
 describe('precomputed fire loading', () => {
+  it('loads backend exports with omitted layers through the same data service', async () => {
+    const { api } = service({
+      [cellFile]: {
+        map: { zone: Array(result.map_grid.rows * result.map_grid.columns).fill(null) },
+      },
+    });
+    const data = await api.loadFire(index[0]!.id);
+    expect(data?.cells.model.stage).toHaveLength(result.map_grid.rows * result.map_grid.columns);
+    expect(data?.cells.model.stage.every((value) => value === null)).toBe(true);
+    expect(data?.opticalImageUrl).toBeNull();
+  });
   it('loads the delivered index, result and cells through the public data entry point', async () => {
     const { api, requests } = service();
     const data = await api.loadFire('bc_2003_490');

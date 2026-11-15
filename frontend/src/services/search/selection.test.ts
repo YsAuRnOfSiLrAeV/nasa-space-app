@@ -68,7 +68,8 @@ describe('catalog boundary selection', () => {
 
 describe('analysis eligibility and routing', () => {
   it('blocks unfinished drawings for both real and mock requests', () => {
-    expect(canAnalyze(allowed)).toBe(true);
+    expect(canAnalyze(allowed)).toBe(false);
+    expect(canAnalyze({ ...allowed, mock: true })).toBe(true);
     expect(canAnalyze({ ...allowed, drawing: true })).toBe(false);
     expect(canAnalyze({ ...allowed, drawing: true, mock: true })).toBe(false);
     expect(canAnalyze({ ...allowed, matchesBoundary: false })).toBe(false);

@@ -7,7 +7,10 @@ import { CHAPTER_LIST, INTRO } from './chapters';
 import { HeadlineComparison } from './figures/RecoveryComparisonChart';
 import styles from './research.module.css';
 
-const CONTENTS: ContentsEntry[] = CHAPTER_LIST.map((c) => ({ id: c.id, n: c.n, title: c.short }));
+const CONTENTS: ContentsEntry[] = [
+  { id: 'methodology-guide', n: 'i', title: 'Methodology guide' },
+  ...CHAPTER_LIST.map((c) => ({ id: c.id, n: c.n, title: c.short })),
+];
 export function ResearchIntro() {
   const headline = DEMO_FIRE_COMPARISON.find((r) => r.fire === INTRO.headlineFire);
   return (

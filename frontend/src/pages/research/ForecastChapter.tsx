@@ -20,9 +20,9 @@ export function ForecastChapter() {
           <a href={fireHref('bc_2003_490')} className={recovery.link}>
             British Columbia 2003
           </a>{' '}
-          on the map draws this curve from its export and plots its 2026 model estimate as a
-          separate point. Its year slider changes the fire-level forecast only; the grid stays at
-          the 2026 observation.
+          on the map draws its supplied model2.series and uncertainty, with its current modeled
+          estimate marked separately. Its forecast-year slider is independent of the spatial cell
+          timeline. It does not turn either output into a new observation.
         </Prose>
       </Chapter>
     </Reveal>

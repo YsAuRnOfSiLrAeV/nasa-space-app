@@ -1,4 +1,7 @@
 import { CellInspector } from '@/components/fire/CellInspector';
+import { SpatialLayerPicker } from '@/components/fire/SpatialLayerPicker';
+import { CellTimelineControls } from '@/components/fire/CellTimeline';
+import { BundleAvailability } from '@/components/fire/BundleAvailability';
 import { FireResults } from '@/components/fire/FireResults';
 import { FireResultDetails } from '@/components/fire/FireResultDetails';
 import type { DemoFire } from '@/data/fireSchema';
@@ -52,7 +55,11 @@ export function FireInvestigation({
   const year = data?.result.fire.year ?? entry?.year;
   const fixture = data?.result.warnings.includes(DEVELOPMENT_FIXTURE) ?? false;
 
-  const warnings = data?.result.warnings.filter((warning) => warning !== DEVELOPMENT_FIXTURE) ?? [];
+  const warnings =
+    data?.result.warnings.filter(
+      (warning) =>
+        warning !== DEVELOPMENT_FIXTURE && !data.bundle?.source.model2.warnings?.includes(warning),
+    ) ?? [];
 
   return (
     <section className={styles.fire} aria-labelledby="fire-title">
@@ -73,7 +80,10 @@ export function FireInvestigation({
                 : `${data.result.fire.area_ha.toLocaleString('en')} ha`}
             </dd>
             <dt>Observation summer</dt>
-            <dd>{data.result.satellite_images.summer} · July–August</dd>
+            <dd>
+              {data.result.satellite_images.summer}
+              {data.bundle ? ' · supplied bundle' : ' · July–August'}
+            </dd>
           </dl>
         )}
         <a className={styles.action} href={closeHref}>
@@ -113,7 +123,8 @@ export function FireInvestigation({
                 <p>{warningText(DEVELOPMENT_FIXTURE).replace(/^Development fixture\.\s*/, '')}</p>
               </div>
             ) : (
-              config.fireDataIsExample && (
+              config.fireDataIsExample &&
+              !data.bundle && (
                 <div role="note" className={styles.note}>
                   <p className="font-medium text-foreground">Documentation example</p>
                   <p>
@@ -130,11 +141,29 @@ export function FireInvestigation({
             forecast={forecast}
             year={forecastYear ?? data.result.satellite_images.summer}
           />
+          <BundleAvailability data={data} />
+          {data.bundle?.timeline && (
+            <CellTimelineControls
+              key={data.result.fire.id}
+              timeline={data.bundle.timeline}
+              year={investigation.timelineYear}
+              summer={data.result.satellite_images.summer}
+              onYear={investigation.setTimelineYear}
+            />
+          )}
 
           <h4 className={styles.listHead}>
             Map · summer {data.result.satellite_images.summer} grid
           </h4>
-          <GridLayerPicker layer={layer} coverage={coverage} onLayer={onLayer} />
+          {data.bundle ? (
+            <SpatialLayerPicker
+              data={data}
+              layer={investigation.timelineYear != null ? 'recovery' : investigation.spatialLayer}
+              onLayer={investigation.setSpatialLayer}
+            />
+          ) : (
+            <GridLayerPicker layer={layer} coverage={coverage} onLayer={onLayer} />
+          )}
           <OverlayToggles
             overlays={overlays}
             available={available}
@@ -142,19 +171,25 @@ export function FireInvestigation({
             onChange={onOverlays}
           />
 
-          <CellInspector
-            data={data}
-            layer={layer}
-            cell={inspected}
-            onCell={onInspect}
-            onShowOnMap={onShowCell}
-          />
+          {(!data.bundle || data.bundle.cells.length > 0) && (
+            <CellInspector
+              data={data}
+              layer={layer}
+              cell={inspected}
+              timelineYear={investigation.timelineYear}
+              onCell={onInspect}
+              onShowOnMap={onShowCell}
+            />
+          )}
 
-          <p>
-            Hover over a cell, tap it, or use “Inspect a cell” above to see its categories. The grid
-            shows summer {data.result.satellite_images.summer} only; forecast years do not recolour
-            it. The background imagery is a generic basemap, not this fire’s optical scene.
-          </p>
+          {!data.bundle && (
+            <p>
+              Hover over a cell, tap it, or use “Inspect a cell” above to see its categories. The
+              grid shows summer {data.result.satellite_images.summer} only; forecast years do not
+              recolour it. The background imagery is a generic basemap, not this fire’s optical
+              scene.
+            </p>
+          )}
 
           {warnings.length > 0 && (
             <div className={styles.note}>

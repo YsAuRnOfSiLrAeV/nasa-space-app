@@ -17,6 +17,7 @@ export function InvestigationPanel({
   fireDetail,
   search,
   children,
+  scientificContext,
 }: {
   state: MapState;
   catalog: FireCatalog;
@@ -27,6 +28,7 @@ export function InvestigationPanel({
   fireDetail?: ReactNode;
   search?: ReactNode;
   children?: ReactNode;
+  scientificContext?: ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [toolsRequested, setToolsRequested] = useState(false);
@@ -54,13 +56,14 @@ export function InvestigationPanel({
         <button type="button" className={styles.action} onClick={onPlanet}>
           Back to Globe
         </button>
+        {scientificContext}
         {state.mode === 'examples' ? (
           <>
             {fireDetail}
             {!state.fireId && (
               <p>
                 {config.fireDataIsExample
-                  ? 'One documentation example and labelled development fixtures. Calibrated team exports are not available yet.'
+                  ? 'Supplied fire catalog. Spatial datasets and perimeter-only summaries are labelled separately. Ranking scores and modeled estimates are distinct from measured observations.'
                   : 'Published, precomputed fire results.'}
               </p>
             )}

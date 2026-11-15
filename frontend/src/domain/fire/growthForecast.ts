@@ -9,9 +9,12 @@
  * milestones, so the chart draws the supplied forecast rather than a guess.
  *
  * Nothing here is spatial: the forecast never recolours or reinterprets grid cells,
- * and no uncertainty interval is drawn unless the export supplies one (it does not yet).
+ * and uncertainty is displayed only when supplied. Bundle v2 uses model2.series
+ * directly, as do v1 exports with growth_forecast.series. The legacy equation
+ * applies only to older v1 exports without a supplied series.
  */
 import type { FireResult } from '@/data/fireSchema';
+import type { ForecastSeries } from '@/data/forecastSchema';
 
 /** Tolerance for rounding in the supplied milestones. */
 const YEARS_TOLERANCE = 0.5;
@@ -19,13 +22,15 @@ const MILESTONE_TOLERANCE = 1;
 export const TARGET = 0.8;
 
 export interface GrowthCurve {
-  method: 'saturating_exp';
-  tau: number;
+  method: 'saturating_exp' | 'supplied_series';
+  series?: ForecastSeries;
+  seriesSource?: 'model2.series' | 'growth_forecast.series';
+  tau?: number;
   fireYear: number;
   /** The observation summer: the grid's year, and the first forecast year. */
   summer: number;
-  reliableAge: [number, number];
-  yearsTo80: number;
+  reliableAge: [number, number] | null;
+  yearsTo80: number | null;
   year80: number | null;
   /** Slider and chart horizon. */
   endYear: number;
@@ -36,9 +41,44 @@ export type ForecastStatus =
   | { status: 'unsupported'; reason: string }
   | { status: 'valid'; curve: GrowthCurve };
 
-export function readForecast(result: FireResult): ForecastStatus {
+export function readForecast(
+  result: FireResult,
+  supplied?: import('@/data/bundleV2').BundleV2Data['source']['model2'],
+): ForecastStatus {
+  if (supplied) {
+    if (supplied.forecast !== 'growth' || !supplied.series) return { status: 'none' };
+    return {
+      status: 'valid',
+      curve: {
+        method: 'supplied_series',
+        series: supplied.series,
+        seriesSource: 'model2.series',
+        fireYear: result.fire.year,
+        summer: result.satellite_images.summer,
+        reliableAge: null,
+        yearsTo80: supplied.years_to_80pct ?? null,
+        year80: supplied.year_80pct ?? null,
+        endYear: supplied.series.years.at(-1)!,
+      },
+    };
+  }
   const f = result.growth_forecast;
   if (!f) return { status: 'none' };
+  if (f.series)
+    return {
+      status: 'valid',
+      curve: {
+        method: 'supplied_series',
+        series: f.series,
+        seriesSource: 'growth_forecast.series',
+        fireYear: result.fire.year,
+        summer: result.satellite_images.summer,
+        reliableAge: f.reliable_age,
+        yearsTo80: f.years_to_80pct,
+        year80: f.year_80pct,
+        endYear: f.series.years.at(-1)!,
+      },
+    };
   if (f.method !== 'saturating_exp')
     return {
       status: 'unsupported',
@@ -84,7 +124,11 @@ export function readForecast(result: FireResult): ForecastStatus {
 
 /** Expected whole-fire recovery (share of neighbouring forest height) in a calendar year. */
 export function curveValue(curve: GrowthCurve, year: number): number | null {
-  return recoveryAtAge(year - curve.fireYear, curve.tau);
+  if (curve.series) {
+    const index = curve.series.years.indexOf(year);
+    return index < 0 ? null : (curve.series.recovery[index] ?? null);
+  }
+  return recoveryAtAge(year - curve.fireYear, curve.tau ?? Number.NaN);
 }
 
 /** The same age-based equation for fire forecasts and the normalized research illustration. */
@@ -93,39 +137,57 @@ export function recoveryAtAge(age: number, tau: number): number | null {
   return 1 - Math.exp(-age / tau);
 }
 
-export function withinReliableAge(curve: GrowthCurve, year: number): boolean {
+export function withinReliableAge(curve: GrowthCurve, year: number): boolean | null {
+  if (!curve.reliableAge) return null;
   const age = year - curve.fireYear;
   return age >= curve.reliableAge[0] && age <= curve.reliableAge[1];
 }
 
 /** Clamp a slider year to the forecast range (the observation summer to the horizon). */
 export function clampYear(curve: GrowthCurve, year: number): number {
-  return Math.min(curve.endYear, Math.max(curve.summer, Math.round(year)));
+  const start = Math.min(
+    curve.endYear,
+    Math.max(curve.summer, curve.series?.years[0] ?? curve.summer),
+  );
+  return Math.min(curve.endYear, Math.max(start, Math.round(year)));
 }
 
 export interface YearEstimate {
   year: number;
   age: number;
-  value: number;
-  reliable: boolean;
+  value: number | null;
+  reliable: boolean | null;
   /** Whether the curve has reached 80% by this year. */
-  reached80: boolean;
+  reached80: boolean | null;
 }
 
 export function estimateFor(curve: GrowthCurve, year: number): YearEstimate {
   const y = clampYear(curve, year);
-  const value = curveValue(curve, y)!;
+  const value = curveValue(curve, y);
   return {
     year: y,
     age: y - curve.fireYear,
     value,
     reliable: withinReliableAge(curve, y),
-    reached80: y - curve.fireYear >= curve.yearsTo80,
+    // A supplied milestone year is the source's own answer; the fractional
+    // years-to-80% (e.g. 63.1) would otherwise deny it in that very year.
+    reached80:
+      curve.year80 != null
+        ? y >= curve.year80
+        : curve.yearsTo80 == null
+          ? null
+          : y - curve.fireYear >= curve.yearsTo80,
   };
 }
 
 /** One point per year from the fire year to the horizon. */
 export function curvePoints(curve: GrowthCurve): { year: number; value: number }[] {
+  if (curve.series)
+    return curve.series.years.flatMap((year, index) =>
+      curve.series!.recovery[index] == null
+        ? []
+        : [{ year, value: curve.series!.recovery[index]! }],
+    );
   const points = [];
   for (let year = curve.fireYear; year <= curve.endYear; year++)
     points.push({ year, value: curveValue(curve, year)! });

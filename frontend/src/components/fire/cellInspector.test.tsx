@@ -23,7 +23,7 @@ describe('keyboard cell inspector', () => {
     expect(out).toContain('<table');
     expect(out).toContain('<caption>');
     expect(out).toContain('scope="col"');
-    expect(out).toContain('Outside the model’s domain');
+    expect(out).not.toContain('Outside the model’s domain');
     expect(out).toMatch(/<label>Row<input type="number"[^>]*max="60"/);
     expect(out).toContain('Next cell with data');
     expect(out).toContain('aria-live="polite"');

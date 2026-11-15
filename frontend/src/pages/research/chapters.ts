@@ -73,7 +73,7 @@ export const CHAPTERS = {
     short: 'Reading structure',
     question: 'How can satellites read forest structure, not just colour?',
     title: 'Reading forest structure from space',
-    lede: 'The model takes seven inputs from three sensors. Only three of the seven are NISAR measurements. NISAR’s long radar waves respond to trunks and branches, but it does not measure tree height: height comes from GEDI lidar, which the model is tested against and never sees as an input.',
+    lede: 'In the calibration study, the model takes seven inputs from three sensors. Only three of the seven are NISAR measurements. NISAR’s radar signals respond to forest structure, but are not direct measurements of tree height. GEDI provides reference height metrics for testing, rather than one of the seven predictor inputs.',
     figure: {
       label: 'Fig. 2',
       title: 'From satellite observations to fire-level estimates',
@@ -114,7 +114,7 @@ export const CHAPTERS = {
     short: 'Where it works',
     question: 'Where can the model be trusted, and what does its score mean?',
     title: 'Where the model works',
-    lede: 'The model gives every cell a score for forest taller than 5 m. Tested in eight countries, the score ranks places well, but its absolute values are shifted, so it is not a calibrated probability. The map shows it as Low, Medium or High, never as "an 80% chance of forest".',
+    lede: 'The model gives a relative score for forest taller than 5 m. In the eight-country calibration study it ranks places better than its absolute values would suggest: it is not a calibrated probability. The Explorer shows a ranking score, never an "80% chance of forest".',
     figure: {
       label: 'Fig. 4',
       title: 'Mean relative score against the real share of forest above 5 m',
@@ -130,8 +130,8 @@ export const CHAPTERS = {
     ],
     unresolved: [
       'The Low / Medium / High band thresholds are provisional until the model owner approves them.',
-      'Geographic applicability zone boundaries are not drawn here: no zone geometry has been supplied.',
-      'Whether Turkey should be listed as "not confirmed" is an open team decision.',
+      'The supplied geographic zone boundaries are now available in the Explorer. Their verified/extrapolated labels describe provider validation, not calibrated probabilities.',
+      'Model-1 state coverage, growth-forecast coverage and scenario coverage must be considered separately.',
     ],
   },
   forecast: {
@@ -155,8 +155,8 @@ export const CHAPTERS = {
       'The four demonstration fires were part of the growth model’s training data, so they are not independent tests of it.',
     ],
     unresolved: [
-      'The curve the fire panel draws, R(age) = 1 − exp(−age / τ), is inferred by the app from exported parameters. The model owner has not confirmed it, so it is provisional, not the verified method.',
-      'An age-only curve describes a typical fire of that age. A fire’s observed 2026 recovery estimate can differ from it, as BC 2003’s does.',
+      'The real-data Explorer draws supplied model2.series values and uncertainty directly. The conceptual equation below is explanatory; it is not used to reconstruct bundle forecasts.',
+      'A current modeled estimate, a fire-level forecast and a cell timeline are different outputs. Do not substitute one for another or describe them as new observations.',
     ],
   },
 } satisfies Record<string, ChapterCopy>;
@@ -164,7 +164,7 @@ export const CHAPTERS = {
 export const CHAPTER_LIST: ChapterCopy[] = Object.values(CHAPTERS);
 
 export const INTRO = {
-  eyebrow: 'Research · evidence and calibration',
+  eyebrow: 'Methodology · evidence and calibration',
   title: 'Green again is not forest again',
   lede: 'A burn scar can look recovered from space long before its trees have grown back. Five questions set out the evidence, and where it stops.',
   /** The headline comparison shown in the opening band (a row of DEMO_FIRE_COMPARISON). */

@@ -4,26 +4,29 @@ import { union } from '@turf/union';
 import { featureCollection, feature } from '@turf/helpers';
 import type { Polygon, MultiPolygon } from 'geojson';
 import type { Zones } from './contracts';
+import { geometryBounds, nearbyPolygons } from './geometryBounds';
 
 export function coverage(polygon: Polygon | MultiPolygon, zones: Zones | null): number | null {
   if (!zones) return null;
   const total = area(polygon);
   if (!total) throw new Error('Draw a polygon with non-zero area.');
-  const supported = zones.features.filter((zone) => zone.properties.supported);
-  if (!supported.length) return 0;
-  const merged =
-    supported.length === 1
-      ? feature(supported[0]!.geometry)
-      : union(
-          featureCollection(
-            supported.map((zone) => feature<Polygon | MultiPolygon>(zone.geometry)),
-          ),
-        );
+  // Provider zones span continents. Intersect only nearby original polygons first,
+  // then union local overlaps, rather than constructing a global union on every draw.
+  const bounds = geometryBounds(polygon);
+  const overlaps = zones.features
+    .filter((zone) => zone.properties.supported)
+    .flatMap((zone) => {
+      const candidate = nearbyPolygons(zone.geometry, bounds);
+      if (!candidate) return [];
+      const overlap = intersect(
+        featureCollection<Polygon | MultiPolygon>([feature(polygon), feature(candidate)]),
+      );
+      return overlap ? [overlap] : [];
+    });
+  if (!overlaps.length) return 0;
+  const merged = overlaps.length === 1 ? overlaps[0]! : union(featureCollection(overlaps));
   if (!merged) return 0;
-  const overlap = intersect(
-    featureCollection<Polygon | MultiPolygon>([feature<Polygon | MultiPolygon>(polygon), merged]),
-  );
-  return overlap ? Math.min(1, area(overlap) / total) : 0;
+  return Math.min(1, area(merged) / total);
 }
 
 export function drawingPolygon(points: [number, number][]): Polygon {

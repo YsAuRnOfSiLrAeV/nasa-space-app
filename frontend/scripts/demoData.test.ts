@@ -8,6 +8,12 @@ const tmp = mkdtempSync(join(tmpdir(), 'demo-data-'));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 describe('demo data source', () => {
+  it('accepts the backend data/fires output through FIRE_DEMO_DIR', () => {
+    const output = join(tmp, 'data', 'fires');
+    mkdirSync(output, { recursive: true });
+    writeFileSync(join(output, 'index.json'), '[]');
+    expect(resolveDemoData({ FIRE_DEMO_DIR: output })).toEqual({ source: 'team', dir: output });
+  });
   it('uses a folder with an index.json as team results', () => {
     const team = join(tmp, 'team');
     mkdirSync(team);

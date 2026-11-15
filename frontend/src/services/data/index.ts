@@ -8,5 +8,6 @@ export type { ImageProbe, LandMask, StudyData, StudyDataApiConfig } from './Stud
 /** The app's data service, reading the files Vite serves from public/data. */
 export const studyDataApi = new StudyDataApi({
   baseUrl: config.dataBaseUrl,
+  bundleBaseUrl: config.fireDataIsExample ? `${config.dataBaseUrl}/bundle-v2` : undefined,
   probeImage: browserImageProbe,
 });

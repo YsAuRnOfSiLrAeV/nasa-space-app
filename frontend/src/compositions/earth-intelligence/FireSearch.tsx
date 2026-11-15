@@ -5,17 +5,15 @@ import type { StudyMapController } from '@/components/map/StudyMapController';
 import { config } from '@/config';
 import { FireIndexSchema } from '@/data/fireSchema';
 import { useResource } from '@/hooks/useResource';
-import { AnalysisClient } from '@/services/search/AnalysisClient';
+import { EMPTY_FIRES, type FireCatalog } from '@/hooks/useFireCatalog';
+import { studyDataApi } from '@/services/data';
+import { exportedSearchFires, catalogCountries } from '@/services/search/exportedCatalog';
+import { evaluateApplicability } from '@/services/search/applicability';
+import { GeographicCoverage } from '@/components/fire/GeographicCoverage';
+import { useApplicabilityZones, type ApplicabilityResource } from '@/hooks/useApplicabilityZones';
 import { simulateAnalysis } from '@/services/search/mockAnalysis';
-import {
-  CatalogSchema,
-  CatalogFiresSchema,
-  filterCatalog,
-  ZonesSchema,
-  type CatalogFire,
-  type Run,
-} from '@/services/search/contracts';
-import { coverage, drawingPolygon } from '@/services/search/coverage';
+import { filterCatalog, type CatalogFire, type Run } from '@/services/search/contracts';
+import { drawingPolygon } from '@/services/search/coverage';
 import { boundaryOverlap, canAnalyze, precomputedHref } from '@/services/search/selection';
 import styles from './MapShell.module.css';
 
@@ -28,16 +26,19 @@ async function json(path: string, signal: AbortSignal) {
   return response.json();
 }
 const EMPTY: CatalogFire[] = [];
-const client = new AnalysisClient(config.apiBaseUrl);
 
 export function FireSearch({
   mapView,
   state,
   onResult,
+  catalog,
+  applicability,
 }: {
   mapView: StudyMapController | null;
   state: MapState;
   onResult: (url: string, fireId: string) => Promise<void>;
+  catalog: FireCatalog;
+  applicability?: ApplicabilityResource;
 }) {
   const [mock, setMock] = useState(() => import.meta.env.DEV && state.country === 'development');
   const country = state.country ?? '';
@@ -61,41 +62,51 @@ export function FireSearch({
   const [busy, setBusy] = useState(false);
   const [failMock, setFailMock] = useState(false);
   const active = useRef<AbortController | null>(null);
-  const base = `${config.dataBaseUrl}/catalog/`;
-  const catalog = useResource('search-countries', async (signal) => {
-    const data = await json(`${base}index.json`, signal);
-    return data === null ? { countries: [] } : CatalogSchema.parse(data);
-  });
-  const countries = mock
-    ? [{ code: 'development', name: 'Development fixtures', file: '' }]
-    : catalog.state.status === 'ready'
-      ? catalog.state.data.countries
-      : [];
+  const perimetersResource = useResource(mock ? null : 'search-perimeters', (signal) =>
+    studyDataApi.loadFirePerimeters(signal),
+  );
+  const index = catalog.state.status === 'ready' ? catalog.state.data : EMPTY_FIRES;
+  const perimeters =
+    perimetersResource.state.status === 'ready' ? perimetersResource.state.data : null;
+  const realFires = useMemo(() => exportedSearchFires(index, perimeters), [index, perimeters]);
+  const countries = useMemo(
+    () =>
+      mock
+        ? [{ code: 'development', name: 'Development fixtures' }]
+        : [{ code: 'all', name: 'All countries' }, ...catalogCountries(realFires)],
+    [mock, realFires],
+  );
   const selectedCountry = countries.find((item) => item.code === country) ?? countries[0];
-  const firesResource = useResource(
-    selectedCountry ? `${mock}:${selectedCountry.code}` : null,
+  const mockFiresResource = useResource<CatalogFire[]>(
+    mock ? 'development-search-fires' : null,
     async (signal) => {
-      if (mock) {
-        const response = await json(`${config.dataBaseUrl}/demo/index.json`, signal);
-        return FireIndexSchema.parse(response).map((fire) => ({
-          id: fire.id,
-          name: fire.name.en,
-          year: fire.year,
-          center: fire.center_lonlat,
-          perimeter: null,
-          resultId: fire.id,
-        }));
-      }
-      return CatalogFiresSchema.parse(await json(`${base}${selectedCountry!.file}`, signal));
+      const response = await json(`${config.dataBaseUrl}/demo/index.json`, signal);
+      return FireIndexSchema.parse(response).map((fire) => ({
+        id: fire.id,
+        name: fire.name.en,
+        year: fire.year,
+        center: fire.center_lonlat,
+        perimeter: null,
+        resultId: fire.id,
+      }));
     },
   );
-  const zonesResource = useResource('search-zones', async (signal) => {
-    const data = await json(`${base}zones.json`, signal);
-    return data === null ? null : ZonesSchema.parse(data);
-  });
-  const zones = zonesResource.state.status === 'ready' ? zonesResource.state.data : null;
-  const fires = firesResource.state.status === 'ready' ? firesResource.state.data : EMPTY;
-  const selected = fires.find((fire) => fire.id === state.fireId);
+  const firesResource = mock ? mockFiresResource : catalog;
+  const localZones = useApplicabilityZones(!mock && !applicability);
+  const zonesResource = applicability ?? localZones;
+  const zones = !mock && zonesResource.state.status === 'ready' ? zonesResource.state.data : null;
+  const mockFires =
+    mockFiresResource.state.status === 'ready' ? mockFiresResource.state.data : EMPTY;
+  const fires = useMemo(
+    () =>
+      mock
+        ? mockFires
+        : realFires.filter(
+            (fire) => selectedCountry?.code === 'all' || fire.country === selectedCountry?.code,
+          ),
+    [mock, mockFires, realFires, selectedCountry?.code],
+  );
+  const selected = (mock ? fires : realFires).find((fire) => fire.id === state.fireId);
   const ownsRun = runOwner === `${mock}:${selected?.id}:${chosenSummerKey(summer)}`;
   const visibleRun = ownsRun ? run : null;
   const processing = ownsRun && busy;
@@ -114,37 +125,35 @@ export function FireSearch({
     .filter((match) => match.overlap !== null && match.overlap > 0)
     .map((match) => match.fire);
   const filtered = filterCatalog(matchingFires, query, year);
-  const matchesBoundary = selected !== undefined && matchingFires.includes(selected);
-  const summers = useResource(selected ? `${mock}:${selected.id}` : null, (signal) =>
-    mock ? Promise.resolve([2026]) : client.summers(selected!.id, signal),
+  const matchesBoundary = useMemo(() => {
+    try {
+      return selected != null && (boundaryOverlap(selected, polygon) ?? 0) > 0;
+    } catch {
+      return false;
+    }
+  }, [selected, polygon]);
+  const summers = useResource(selected ? `${mock}:${selected.id}` : null, () =>
+    Promise.resolve(mock ? [2026] : []),
   );
   const choices = summers.state.status === 'ready' ? summers.state.data : [];
   const chosenSummer = choices.includes(Number(summer)) ? Number(summer) : choices[0];
   const evaluated = useMemo(() => {
     try {
-      const boundary = polygon ?? fires.find((fire) => fire.id === state.fireId)?.perimeter;
-      return { share: boundary ? coverage(boundary, zones) : null, error: '' };
+      const boundary = polygon ?? selected?.perimeter;
+      return { value: boundary ? evaluateApplicability(boundary, zones) : null, error: '' };
     } catch {
       return {
-        share: null,
+        value: null,
         error: 'This polygon cannot be evaluated. Draw a simple boundary without crossings.',
       };
     }
-  }, [polygon, zones, fires, state.fireId]);
-  const selectedCoverage = useMemo(() => {
-    try {
-      const perimeter = fires.find((fire) => fire.id === state.fireId)?.perimeter;
-      return perimeter ? coverage(perimeter, zones) : null;
-    } catch {
-      return null;
-    }
-  }, [fires, state.fireId, zones]);
+  }, [polygon, zones, selected?.perimeter]);
   const analysisEnabled = canAnalyze({
     drawing,
     processing,
     summer: chosenSummer,
     mock,
-    selectedCoverage,
+    selectedCoverage: null,
     matchesBoundary,
   });
   const pick = useCallback(
@@ -194,7 +203,6 @@ export function FireSearch({
         ? [{ type: 'Feature' as const, geometry: fire.perimeter, properties: { fireId: fire.id } }]
         : [],
     );
-    features.push(...(zones?.features ?? []));
     if (polygon) features.push({ type: 'Feature', geometry: polygon, properties: {} });
     if (points.length > 1)
       features.push({
@@ -203,7 +211,7 @@ export function FireSearch({
         properties: {},
       });
     return mapView.showSearchGeometry({ type: 'FeatureCollection', features }, pick);
-  }, [mapView, fires, zones, points, polygon, pick]);
+  }, [mapView, fires, points, polygon, pick]);
   useEffect(
     () =>
       drawing && mapView
@@ -235,12 +243,9 @@ export function FireSearch({
       if (mock) {
         setRun(await simulateAnalysis(controller.signal, failMock, setRun));
       } else {
-        const result = await client.poll(
-          await client.start(selected.id, chosenSummer, controller.signal),
-          controller.signal,
-          setRun,
+        throw new Error(
+          'Analysis submission is unavailable: backend endpoints are not implemented.',
         );
-        setRun(result);
       }
     } catch (failure) {
       if (!controller.signal.aborted)
@@ -298,14 +303,14 @@ export function FireSearch({
         </select>
       </label>
       <label>
-        Fire name
+        Fire identifier, year or region
         <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} />
       </label>
       <label>
         Fire year
         <input type="number" value={year} onChange={(event) => setYear(event.target.value)} />
       </label>
-      {[catalog, firesResource].map((resource, index) =>
+      {[catalog, ...(mock ? [mockFiresResource] : [perimetersResource])].map((resource, index) =>
         resource.state.status === 'error' ? (
           <div role="alert" key={index}>
             <p>{resource.state.message}</p>
@@ -323,17 +328,51 @@ export function FireSearch({
       {firesResource.state.status === 'ready' && !filtered.length && (
         <p>
           {polygon
-            ? 'No catalog fire perimeters overlap this boundary and match these filters.'
+            ? !mock && perimetersResource.state.status === 'loading'
+              ? 'Loading known perimeters before checking this boundary.'
+              : !mock && !perimeters
+                ? 'Dataset matching cannot be evaluated because catalog perimeter geometry is unavailable. No absence of datasets is inferred.'
+                : 'No matching exported dataset was found under this boundary and the current filters. Missing perimeters cannot be checked. Clear or change filters to search other exports; no new prediction can be requested.'
             : 'No fires match these filters.'}
         </p>
       )}
       {polygon && boundaryMatches.some((match) => match.overlap === null) && (
         <p>Some fires have no usable perimeter and cannot be checked against this boundary.</p>
       )}
+      {polygon && matchingFires.length > 0 && (
+        <p>
+          Matching exports describe their original fire perimeters, not a new result clipped to this
+          drawing.
+        </p>
+      )}
+      {selected && !fires.includes(selected) && (
+        <p>
+          The selected fire is outside the country filter; its existing export remains available.
+        </p>
+      )}
+      {!mock && perimetersResource.state.status !== 'loading' && !perimeters && (
+        <p>
+          Catalog perimeter geometry is unavailable. Known exports can still be opened, but
+          intersections cannot be evaluated.
+        </p>
+      )}
+      {selected?.resultId && matchesBoundary && !drawing && (
+        <p>
+          <a href={precomputedHref(selected.resultId)}>
+            Open available exported data · {selected.name}
+          </a>
+          {selected.spatial === false &&
+            ' · Perimeter and summary only; no spatial dataset supplied.'}
+        </p>
+      )}
       <ul className={styles.fireList}>
         {filtered.map((fire) => (
           <li key={fire.id}>
             <a
+              aria-disabled={drawing || undefined}
+              onClick={(event) => {
+                if (drawing) event.preventDefault();
+              }}
               aria-current={selected?.id === fire.id ? 'true' : undefined}
               href={mapHref({
                 mode: 'search',
@@ -343,7 +382,15 @@ export function FireSearch({
               })}
             >
               {fire.name} · {fire.year}
-              <small>{fire.resultId ? 'Precomputed result available' : 'Catalog only'}</small>
+              <small>
+                {fire.resultId
+                  ? fire.spatial === false
+                    ? 'Perimeter and summary export available'
+                    : fire.spatial
+                      ? 'Spatial dataset available'
+                      : 'Precomputed result available'
+                  : 'No exported dataset available'}
+              </small>
               {polygon && (
                 <small>
                   {(
@@ -357,7 +404,10 @@ export function FireSearch({
         ))}
       </ul>
       {state.fireId && !selected && firesResource.state.status === 'ready' && (
-        <p role="status">This fire is not in the selected country catalog.</p>
+        <p role="status">
+          No exported dataset exists for this identifier in the supplied catalog. Choose a listed
+          fire.
+        </p>
       )}
       <fieldset>
         <legend>Selection boundary</legend>
@@ -397,19 +447,30 @@ export function FireSearch({
         )}
         {polygon && <button onClick={() => setPolygon(null)}>Clear polygon</button>}
       </fieldset>
-      <p role="status">
-        {drawing
-          ? 'Finish or cancel drawing before requesting analysis.'
-          : evaluated.error ||
-            (evaluated.share === null
-              ? 'Coverage cannot be evaluated: supply a boundary and applicability zones.'
-              : `${(evaluated.share * 100).toFixed(1)}% supported coverage · ${evaluated.share === 0 ? 'unsupported' : evaluated.share >= 1 - 1e-8 ? 'supported' : 'partially supported'}`)}
-      </p>
+      {drawing ? (
+        <p role="status">Finish or cancel drawing to evaluate this boundary.</p>
+      ) : (
+        <GeographicCoverage value={evaluated.value} error={evaluated.error} />
+      )}
+      {zonesResource.state.status === 'loading' && (
+        <p role="status">Loading supplied applicability zones…</p>
+      )}
+      {zonesResource.state.status === 'error' && (
+        <p role="alert">
+          Applicability zones are unavailable or invalid. No geographic coverage is assumed.
+        </p>
+      )}
       {zonesResource.state.status === 'error' && (
         <button onClick={zonesResource.retry}>Retry applicability zones</button>
       )}
       {selected && (
         <>
+          {!mock && (
+            <p role="status">
+              Analysis submission and observation-summer lookup are unavailable. The backend
+              currently exposes only a health check. Precomputed results can still be opened.
+            </p>
+          )}
           <h3>
             {selected.name} · {selected.year}
           </h3>
@@ -417,12 +478,10 @@ export function FireSearch({
             <p role="status">
               {!matchesBoundary
                 ? 'Selected fire does not have a verified overlap with this boundary. Choose a matching fire or clear the boundary.'
-                : selectedCoverage === null
-                  ? 'Selected-fire coverage cannot be evaluated: its perimeter or applicability zones are missing.'
-                  : `Selected fire: ${(selectedCoverage * 100).toFixed(1)}% supported coverage.`}
+                : 'An existing export can be investigated independently of geographic coverage. The coverage readout describes the drawn boundary, or this fire perimeter when no boundary is drawn.'}
             </p>
           )}
-          {selected.resultId && (
+          {selected.resultId && matchesBoundary && !drawing && (
             <a href={precomputedHref(selected.resultId)}>Open precomputed result</a>
           )}
           <label>
@@ -458,7 +517,7 @@ export function FireSearch({
             </label>
           )}
           <button disabled={!analysisEnabled} onClick={() => void analyze()}>
-            {mock ? 'Run development simulation' : 'Check cache / request analysis'}
+            {mock ? 'Run development simulation' : 'New analysis unavailable'}
           </button>
           {processing && (
             <button
@@ -493,7 +552,7 @@ export function FireSearch({
                 : 'Result ready.'}
             </p>
             {mock && selected?.resultId && (
-              <a href={precomputedHref(selected.resultId)}>Open existing development fixture</a>
+              <a href={precomputedHref(selected.resultId)}>Open existing precomputed data</a>
             )}
             {!mock && selected && (
               <button

@@ -156,7 +156,7 @@ export function PlanetView({
       )}
     >
       <h1 id="ei-title" ref={titleRef} tabIndex={-1} className="sr-only">
-        The Forest Remembers: explore forest recovery after Canadian fires
+        The Forest Remembers: explore forest recovery after historical fires
       </h1>
       <ContourGround className={cartography.ground} />
       <div aria-hidden="true" className={cartography.datum} />

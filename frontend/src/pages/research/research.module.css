@@ -317,6 +317,32 @@
 }
 
 /* Chapters: full-width sections, one reading column. */
+.methodGuide {
+  margin-block: 3rem;
+  padding: 1.5rem;
+  border: 1px solid var(--rule);
+  scroll-margin-top: calc(var(--nav-height) + 2rem);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+.methodGuide > * + * {
+  margin-top: 1.25rem;
+}
+.methodGuide details > * + * {
+  margin-top: 1rem;
+}
+.methodGuide summary {
+  cursor: pointer;
+  min-height: 44px;
+}
+.methodGuide a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.methodGuide :focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
 .chapter {
   scroll-margin-top: calc(var(--nav-height) + 3rem);
   padding-block: 6rem;

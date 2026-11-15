@@ -1,6 +1,7 @@
 import { useId, useMemo, useState } from 'react';
 import type { FireData } from '@/data/fireSchema';
 import { CellDetails } from './CellDetails';
+import { SpatialCellReadout } from './SpatialCellReadout';
 import {
   categorySummary,
   describeCell,
@@ -19,6 +20,7 @@ export function CellInspector({
   data,
   layer,
   cell,
+  timelineYear = null,
   onCell,
   onShowOnMap,
 }: {
@@ -26,6 +28,8 @@ export function CellInspector({
   layer: GridLayerId;
   /** Inspected cell index, or null before any cell is chosen. */
   cell: number | null;
+  /** The cell timeline's year while it is shown: the readout then follows it. */
+  timelineYear?: number | null;
   onCell: (index: number) => void;
   onShowOnMap?: (index: number) => void;
 }) {
@@ -52,40 +56,42 @@ export function CellInspector({
   return (
     <section className={styles.inspector} aria-labelledby={`${id}-title`}>
       <h3 id={`${id}-title`}>Cells without the map</h3>
-      <table className={styles.summary}>
-        <caption>
-          Cells per {GRID_LAYERS[layer].label.toLowerCase()} category and area (counts only)
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">Category</th>
-            {areas.map((a) => (
-              <th key={a} scope="col">
-                {areaName[a]}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {summary
-            .filter((r) => areas.some((a) => r.counts[a] > 0))
-            .map((r) => (
-              <tr key={r.label}>
-                <th scope="row">
-                  <span
-                    aria-hidden
-                    className={`${styles.swatch} ${r.token ? '' : styles.empty}`}
-                    style={r.token ? { background: `var(${r.token})` } : undefined}
-                  />
-                  {r.label}
+      {!data.bundle && (
+        <table className={styles.summary}>
+          <caption>
+            Cells per {GRID_LAYERS[layer].label.toLowerCase()} category and area (counts only)
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Category</th>
+              {areas.map((a) => (
+                <th key={a} scope="col">
+                  {areaName[a]}
                 </th>
-                {areas.map((a) => (
-                  <td key={a}>{r.counts[a].toLocaleString()}</td>
-                ))}
-              </tr>
-            ))}
-        </tbody>
-      </table>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {summary
+              .filter((r) => areas.some((a) => r.counts[a] > 0))
+              .map((r) => (
+                <tr key={r.label}>
+                  <th scope="row">
+                    <span
+                      aria-hidden
+                      className={`${styles.swatch} ${r.token ? '' : styles.empty}`}
+                      style={r.token ? { background: `var(${r.token})` } : undefined}
+                    />
+                    {r.label}
+                  </th>
+                  {areas.map((a) => (
+                    <td key={a}>{r.counts[a].toLocaleString()}</td>
+                  ))}
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      )}
 
       <fieldset className={styles.picker}>
         <legend>Inspect a cell</legend>
@@ -106,7 +112,9 @@ export function CellInspector({
         </div>
       </fieldset>
       <output className={styles.readout} aria-live="polite">
-        {described ? (
+        {data.bundle && current !== null ? (
+          <SpatialCellReadout data={data} index={current} year={timelineYear} />
+        ) : described ? (
           <CellDetails cell={described} titleClassName={styles.tooltipTitle} />
         ) : (
           'This grid has no supplied cells.'

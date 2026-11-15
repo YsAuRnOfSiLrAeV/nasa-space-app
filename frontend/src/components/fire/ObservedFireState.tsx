@@ -12,13 +12,47 @@ import styles from './FireResults.module.css';
 
 export function ObservedState({ data, missing }: { data: FireData; missing: string[] }) {
   const { result } = data;
+  if (data.bundle)
+    return (
+      <section className={styles.section}>
+        <p className={styles.kicker}>
+          Supplied forestrecovery {data.bundle.metadata.library_version} export
+        </p>
+        <h4>Forest state · summer {result.satellite_images.summer}</h4>
+        <dl className={styles.stats}>
+          <div>
+            <dt>Mean relative forest ranking score</dt>
+            <dd>{data.bundle.source.model1?.mean?.toFixed(3) ?? UNAVAILABLE}</dd>
+            <dd>Not a calibrated probability or recovery percentage.</dd>
+          </div>
+          <div>
+            <dt>Excluded share</dt>
+            <dd>{formatShare(data.bundle.source.model1?.excluded_share)}</dd>
+          </div>
+          <div>
+            <dt>Reference forest height</dt>
+            <dd>{result.neighbour_forest?.height_m ?? UNAVAILABLE} m</dd>
+            <dd>{result.neighbour_forest?.source}</dd>
+          </div>
+        </dl>
+        <p>
+          Cell height is modeled. GEDI canopy height is measured. Fire-level growth forecasts are
+          separate from the cell timeline.
+        </p>
+        {Object.entries(data.bundle.source.reliability)
+          .filter(([key]) => key !== 'model2')
+          .map(([key, text]) => (
+            <p key={key}>{text}</p>
+          ))}
+      </section>
+    );
   const model = result.model_result;
   const summer = result.satellite_images.summer;
   const forest = neighbourForest(result.neighbour_forest);
   const stages = stageSegments(model.stage_share);
   return (
     <section aria-labelledby="fire-observed-title" className={styles.section}>
-      <p className={styles.kicker}>Observation · not a forecast</p>
+      <p className={styles.kicker}>Current modeled state · not a measurement or forecast</p>
       <h4 id="fire-observed-title" className={styles.heading}>
         State in summer {summer}
       </h4>
@@ -32,13 +66,20 @@ export function ObservedState({ data, missing }: { data: FireData; missing: stri
           <dd data-value={stat(model.recovery_today_avg)}>
             {formatShare(model.recovery_today_avg)}
           </dd>
-          <dd className={styles.sub}>
-            Share of the neighbouring forest’s height · validated error{' '}
-            <span data-value={stat(model.error_vs_lidar_pct)}>
-              {formatError(model.error_vs_lidar_pct)}
-            </span>{' '}
-            versus GEDI lidar on unseen fires
-          </dd>
+          {model.accuracy ? (
+            <dd>
+              Share of reference forest height over valid burned-area cells. See the excluded share
+              and regional calibration context below.
+            </dd>
+          ) : (
+            <dd className={styles.sub}>
+              Share of the neighbouring forest’s height · validated error{' '}
+              <span data-value={stat(model.error_vs_lidar_pct)}>
+                {formatError(model.error_vs_lidar_pct)}
+              </span>{' '}
+              versus GEDI lidar on unseen fires
+            </dd>
+          )}
         </div>
         <div>
           <dt>Area recovered to 80%</dt>

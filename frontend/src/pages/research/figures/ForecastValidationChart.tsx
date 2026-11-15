@@ -101,20 +101,19 @@ export function ProvisionalCurve() {
     <div className={styles.provisional}>
       <div>
         <p className={styles.tag} data-warning>
-          Provisional · not confirmed by the model owner
+          Conceptual illustration · not a supplied fire forecast
         </p>
         <p className={styles.equation}>R(age) = 1 − exp(−age / τ)</p>
         <p>
-          R is expected recovery as a share of the neighbouring forest’s height and τ a time
-          constant exported per fire. The app infers this form from the exported parameters: it
-          reproduces the exported years to 80% (τ · ln 5). It is an age-only curve, so a fire’s
-          observed 2026 recovery estimate may sit above or below it.
+          This equation illustrates a saturating growth shape; τ sets its time scale. It is not
+          fitted here and is not a result for a selected fire. The real-data Explorer reads the
+          supplied recovery series and uncertainty bounds directly, without inferring an equation.
         </p>
       </div>
       <svg
         viewBox={`0 0 ${W} ${H}`}
         role="img"
-        aria-label="Shape of the provisional curve: recovery rises quickly, then levels off toward 100%, reaching 80% at about 1.6 times tau."
+        aria-label="Conceptual growth shape only: recovery rises and levels off. This is not a supplied fire forecast."
       >
         {[0, 0.5, 1].map((t) => (
           <g key={t}>

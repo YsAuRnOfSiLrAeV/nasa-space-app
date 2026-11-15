@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { OverlayToggles } from './FireControls';
+import { GridLayerPicker, OverlayToggles } from './FireControls';
 import type { OpticalStatus } from '@/hooks/useOpticalImage';
 
 const render = (optical: OpticalStatus) =>
@@ -14,6 +14,20 @@ const render = (optical: OpticalStatus) =>
   );
 
 describe('fire overlay availability', () => {
+  it('disables grid controls when no scientific values were supplied', () => {
+    const empty = { total: 1, valued: 0, outside: 0 };
+    const html = renderToStaticMarkup(
+      <GridLayerPicker
+        layer="probability"
+        coverage={{ probability: empty, stage: empty }}
+        onLayer={() => {}}
+      />,
+    );
+    expect([...html.matchAll(/<input[^>]*>/g)].every(([input]) => input.includes('disabled'))).toBe(
+      true,
+    );
+    expect(html).toContain('no values supplied');
+  });
   it.each([
     ['none', 'No optical image supplied'],
     ['loading', 'Loading optical image'],

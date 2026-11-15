@@ -17,17 +17,20 @@ export function ReliabilityChapter() {
           <div>
             <h3 className={styles.minorHead}>Geographic applicability zones</h3>
             <p>
-              A pipeline classification of place: inside the model’s region, state only, or outside
-              it. Not a probability. On the map, outside cells are grey.
+              Provider-supplied geographic regions: verified areas use solid outlines and stronger
+              fill; extrapolated areas use dashed outlines and lighter fill. Model-1 state, model-2
+              growth and model-2 scenario regions are separate classifications. Outside them, no
+              applicability claim is made. These are not probabilities or burn/reference masks.
             </p>
           </div>
           <div>
             <h3 className={styles.minorHead}>Relative score · p_forest_gt5</h3>
             <p>
-              The model’s output for forest above 5 m, shown in three bands:{' '}
-              {SCORE_BANDS.labels.join(' / ')} (below {SCORE_BANDS.breaks[0]},{' '}
-              {SCORE_BANDS.breaks[0]}–{SCORE_BANDS.breaks[1]}, {SCORE_BANDS.breaks[1]} and over on
-              the raw score). {SCORE_BANDS.status}.
+              The model’s output for forest above 5 m is a 0–1 ranking score. Legacy category views
+              use three bands on a 0–100 display scale: {SCORE_BANDS.labels.join(' / ')} (below{' '}
+              {SCORE_BANDS.breaks[0]}, {SCORE_BANDS.breaks[0]}–{SCORE_BANDS.breaks[1]},{' '}
+              {SCORE_BANDS.breaks[1]} and over on the display scale). {SCORE_BANDS.status}. The
+              real-data Explorer also shows the original continuous score; it remains uncalibrated.
             </p>
           </div>
         </div>

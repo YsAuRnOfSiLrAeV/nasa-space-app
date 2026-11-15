@@ -101,7 +101,8 @@ export function missingResults(result: FireResult): string[] {
   const missing: string[] = [];
   if (!isProvided(result.fire.area_ha)) missing.push('fire area');
   if (!isProvided(model.recovery_today_avg)) missing.push('whole-fire recovery');
-  if (!isProvided(model.error_vs_lidar_pct)) missing.push('validated model error');
+  if (!isProvided(model.error_vs_lidar_pct) && !model.accuracy)
+    missing.push('validated model error');
   if (!isProvided(model.area_recovered_80pct)) missing.push('area recovered to 80%');
   if (!model.stage_share) missing.push('forest-stage proportions');
   if (!isProvided(result.neighbour_forest?.height_m)) missing.push('neighbouring forest height');

@@ -19,11 +19,22 @@ import type {
   SourceSpecification,
 } from 'maplibre-gl';
 import type { FeatureCollection } from 'geojson';
+import type { ApplicabilityLayer, ApplicabilityZones } from '@/data/applicabilityZones';
+import {
+  SOURCE_CONFIDENCE,
+  CONFIDENCE_LAYERS,
+  LAYER_CONFIDENCE_VERIFIED,
+  LAYER_CONFIDENCE_EXTRAPOLATED,
+  LAYER_CONFIDENCE_SOLID,
+  LAYER_CONFIDENCE_DASHED,
+} from './confidenceLayers';
 import type { Manifest } from '@/data/schema';
 import { LAYER_POINT_GLOW, LAYER_POINT_SELECTED, LAYER_POINTS, SOURCE_POINTS } from './layers';
 import {
   FIRE_GRID_LAYERS,
   FIRE_GRID_SOURCES,
+  LAYER_CATALOG_PERIMETERS,
+  SOURCE_CATALOG_PERIMETERS,
   LAYER_FIRE_EXTENT,
   LAYER_FIRE_GEDI,
   LAYER_FIRE_GRID,
@@ -32,6 +43,7 @@ import {
   LAYER_FIRE_MARKERS,
   LAYER_FIRE_OPTICAL,
   LAYER_FIRE_PERIMETER,
+  LAYER_FIRE_PERIMETER_FILL,
   LAYER_FIRE_ZONE,
   LAYER_FIRE_ZONE_LINE,
   SOURCE_FIRE_EXTENT,
@@ -103,6 +115,9 @@ const selectedFilter = (id: string | null): ExpressionSpecification => [
 ];
 
 export class StudyMapController {
+  private fireGridKind: 'fill' | 'raster' | null = null;
+  /** The colour ramp the cell-value paint was last built for; null while cells show their own colours. */
+  private cellRamp: string | null = null;
   private readonly map: MapLibreMap;
   private bbox: Manifest['bbox'];
   private readonly reducedMotion: () => boolean;
@@ -110,6 +125,7 @@ export class StudyMapController {
   private readonly themeColor: (name: string, fallback: string) => string;
   private selectionClick: ((e: MapLayerMouseEvent) => void) | null = null;
   private markerClick: ((e: MapLayerMouseEvent) => void) | null = null;
+  private confidenceData: ApplicabilityZones | null = null;
   private readonly markerEnter = () => (this.map.getCanvas().style.cursor = 'pointer');
   private readonly markerLeave = () => (this.map.getCanvas().style.cursor = '');
 
@@ -167,12 +183,17 @@ export class StudyMapController {
 
   // ── Camera ────────────────────────────────────────────────────────────────
 
-  /** Centre on a place in the visible area, zooming in to at least `minZoom`. */
+  /**
+   * Centre on a place in the visible area, zooming in to at least `minZoom`.
+   * The place is offset to the middle of the uncovered area. Not `padding`: MapLibre
+   * keeps a flyTo padding on the map, and every later fit would then be padded twice.
+   */
   focus(center: [number, number], { minZoom = 0, durationMs = 1200 } = {}): void {
+    const pad = this.padding();
     this.map.flyTo({
       center,
       zoom: Math.max(this.map.getZoom(), minZoom),
-      padding: this.padding(),
+      offset: [((pad.left ?? 0) - (pad.right ?? 0)) / 2, ((pad.top ?? 0) - (pad.bottom ?? 0)) / 2],
       duration: this.duration(durationMs),
     });
   }
@@ -341,6 +362,31 @@ export class StudyMapController {
     this.map.on('click', LAYER_FIRE_MARKERS, this.markerClick);
   }
 
+  showCatalogPerimeters(data: FeatureCollection, selectedId: string | null): void {
+    const source = this.map.getSource<GeoJSONSource>(SOURCE_CATALOG_PERIMETERS);
+    if (source) source.setData(data);
+    else this.map.addSource(SOURCE_CATALOG_PERIMETERS, { type: 'geojson', data });
+    if (!this.map.getLayer(LAYER_CATALOG_PERIMETERS))
+      this.map.addLayer(
+        {
+          id: LAYER_CATALOG_PERIMETERS,
+          type: 'line',
+          source: SOURCE_CATALOG_PERIMETERS,
+          paint: {
+            'line-color': this.themeColor('--amber', '#f7b755'),
+            'line-width': 1,
+            'line-opacity': 0.55,
+          },
+        },
+        this.map.getLayer(LAYER_FIRE_MARKERS) ? LAYER_FIRE_MARKERS : undefined,
+      );
+    this.map.setFilter(LAYER_CATALOG_PERIMETERS, ['!=', ['get', 'id'], selectedId ?? '']);
+  }
+
+  hideCatalogPerimeters(): void {
+    this.removeLayers([LAYER_CATALOG_PERIMETERS], [SOURCE_CATALOG_PERIMETERS]);
+  }
+
   hideFireMarkers(): void {
     if (this.markerClick) this.map.off('click', LAYER_FIRE_MARKERS, this.markerClick);
     this.markerClick = null;
@@ -355,8 +401,14 @@ export class StudyMapController {
    */
   showFireGrid(scene: FireGridScene, colors: FireGridColors): void {
     const before = this.map.getLayer(LAYER_FIRE_MARKERS) ? LAYER_FIRE_MARKERS : undefined;
+    // Keep the bottom-to-top order of FIRE_GRID_LAYERS even when a layer arrives late
+    // (the optical image is added only once it has loaded): insert it under the next
+    // fire layer that already exists, not on top of the grid, perimeter and GEDI points.
     const add = (layer: LayerSpecification) => {
-      if (!this.map.getLayer(layer.id)) this.map.addLayer(layer, before);
+      if (this.map.getLayer(layer.id)) return;
+      const order: readonly string[] = FIRE_GRID_LAYERS;
+      const above = order.slice(order.indexOf(layer.id) + 1).find((id) => this.map.getLayer(id));
+      this.map.addLayer(layer, above ?? before);
     };
     const raster = (id: string, source: string, opacity: number): LayerSpecification => ({
       id,
@@ -375,19 +427,44 @@ export class StudyMapController {
       else this.map.addSource(id, { type: 'image', url, coordinates: corners });
       return true;
     };
-    const geojson = (id: string, data: FeatureCollection) => {
+    const geojson = (id: string, data: FeatureCollection, promoteId?: string) => {
       const existing = this.map.getSource<GeoJSONSource>(id);
       if (existing) existing.setData(data);
-      else this.map.addSource(id, { type: 'geojson', data } satisfies SourceSpecification);
+      else
+        this.map.addSource(id, {
+          type: 'geojson',
+          data,
+          ...(promoteId ? { promoteId } : {}),
+        } satisfies SourceSpecification);
     };
     const { corners } = scene;
 
-    if (image(SOURCE_FIRE_OPTICAL, scene.opticalImage, corners))
+    if (image(SOURCE_FIRE_OPTICAL, scene.opticalImage, scene.opticalCorners ?? corners))
       add(raster(LAYER_FIRE_OPTICAL, SOURCE_FIRE_OPTICAL, 1));
     else this.removeLayers([LAYER_FIRE_OPTICAL], [SOURCE_FIRE_OPTICAL]);
 
-    image(SOURCE_FIRE_GRID, scene.gridImage, corners);
-    add(raster(LAYER_FIRE_GRID, SOURCE_FIRE_GRID, 0.88));
+    const expectedType = scene.cellGeometry ? 'fill' : 'raster';
+    if (this.fireGridKind !== null && this.fireGridKind !== expectedType) {
+      this.removeLayers([LAYER_FIRE_GRID], [SOURCE_FIRE_GRID]);
+      this.cellRamp = null;
+    }
+    this.fireGridKind = expectedType;
+    if (scene.cellGeometry) {
+      // `i` is each cell's identity in every supplied file: it addresses the cell's feature state.
+      geojson(SOURCE_FIRE_GRID, scene.cellGeometry, 'i');
+      add({
+        id: LAYER_FIRE_GRID,
+        type: 'fill',
+        source: SOURCE_FIRE_GRID,
+        paint: {
+          'fill-color': ['get', '_displayColor'],
+          'fill-opacity': ['case', ['==', ['get', '_displayColor'], 'transparent'], 0, 0.8],
+        },
+      });
+    } else {
+      image(SOURCE_FIRE_GRID, scene.gridImage, corners);
+      add(raster(LAYER_FIRE_GRID, SOURCE_FIRE_GRID, 0.88));
+    }
 
     if (image(SOURCE_FIRE_ZONE, scene.zoneImage, corners))
       add(raster(LAYER_FIRE_ZONE, SOURCE_FIRE_ZONE, 1));
@@ -440,6 +517,12 @@ export class StudyMapController {
       type: 'line',
       source: SOURCE_FIRE_PERIMETER,
       paint: { 'line-color': colors.perimeter, 'line-width': 2.25 },
+    });
+    add({
+      id: LAYER_FIRE_PERIMETER_FILL,
+      type: 'fill',
+      source: SOURCE_FIRE_PERIMETER,
+      paint: { 'fill-color': colors.perimeter, 'fill-opacity': 0.035 },
     });
 
     geojson(SOURCE_FIRE_GEDI, {
@@ -496,10 +579,58 @@ export class StudyMapController {
     show(LAYER_FIRE_ZONE, visible.zone);
     show(LAYER_FIRE_ZONE_LINE, visible.zone);
     show(LAYER_FIRE_PERIMETER, visible.perimeter);
+    show(LAYER_FIRE_PERIMETER_FILL, visible.perimeter);
+    show(LAYER_FIRE_GRID, visible.cells !== false);
+    show(LAYER_FIRE_EXTENT, visible.cells !== false);
+    show(LAYER_FIRE_HIGHLIGHT, visible.cells !== false);
     show(LAYER_FIRE_GEDI, visible.gedi);
   }
 
+  /**
+   * Recolour the supplied cells from one display value per cell (normalized 0–100, in the cells' own
+   * order; null is a cell without a value), or return to the layer's colours with
+   * `null`. The values travel as feature state: the polygons are neither re-sent nor
+   * re-tiled, so stepping through years costs one repaint.
+   */
+  setFireCellValues(
+    values: readonly (number | null)[] | null,
+    [low, high]: readonly [string, string] = ['#3d6fa8', '#d6ecff'],
+  ): void {
+    if (this.fireGridKind !== 'fill' || !this.map.getLayer(LAYER_FIRE_GRID)) return;
+    if (values === null) {
+      if (this.cellRamp !== null) this.map.removeFeatureState({ source: SOURCE_FIRE_GRID });
+      return;
+    }
+    const ramp = `${low} ${high}`;
+    if (this.cellRamp !== ramp) {
+      // State `v`: unset shows the layer's own colour, -1 is a missing value, 0+ a percentage.
+      const value: ExpressionSpecification = ['coalesce', ['feature-state', 'v'], -2];
+      this.map.setPaintProperty(LAYER_FIRE_GRID, 'fill-color', [
+        'case',
+        ['>=', value, 0],
+        ['interpolate', ['linear'], value, 0, low, 100, high],
+        ['to-color', ['get', '_displayColor']],
+      ]);
+      this.map.setPaintProperty(LAYER_FIRE_GRID, 'fill-opacity', [
+        'case',
+        ['>=', value, 0],
+        0.8,
+        ['==', value, -1],
+        0,
+        ['==', ['get', '_displayColor'], 'transparent'],
+        0,
+        0.8,
+      ]);
+      this.cellRamp = ramp;
+    }
+    values.forEach((cell, id) =>
+      this.map.setFeatureState({ source: SOURCE_FIRE_GRID, id }, { v: cell ?? -1 }),
+    );
+  }
+
   clearFireGrid(): void {
+    this.fireGridKind = null;
+    this.cellRamp = null;
     this.removeLayers([...FIRE_GRID_LAYERS], [...FIRE_GRID_SOURCES]);
   }
 
@@ -514,6 +645,11 @@ export class StudyMapController {
     };
     const emit = (type: 'move' | 'click') => (e: MapMouseEvent) =>
       listener({
+        ...(this.map.getLayer(LAYER_FIRE_PERIMETER_FILL) &&
+        this.map.getLayoutProperty(LAYER_FIRE_PERIMETER_FILL, 'visibility') !== 'none' &&
+        this.map.queryRenderedFeatures(e.point, { layers: [LAYER_FIRE_PERIMETER_FILL] }).length
+          ? { perimeterHit: true }
+          : {}),
         type,
         lngLat: [e.lngLat.lng, e.lngLat.lat],
         point: { x: e.point.x, y: e.point.y },
@@ -549,8 +685,73 @@ export class StudyMapController {
     return this.reducedMotion() ? 0 : ms;
   }
 
+  showConfidenceZones(data: ApplicabilityZones, classification: ApplicabilityLayer): void {
+    const source = this.map.getSource<GeoJSONSource>(SOURCE_CONFIDENCE);
+    if (!source) this.map.addSource(SOURCE_CONFIDENCE, { type: 'geojson', data });
+    else if (this.confidenceData !== data) source.setData(data);
+    this.confidenceData = data;
+    const before =
+      FIRE_GRID_LAYERS.find((id) => this.map.getLayer(id)) ??
+      (this.map.getLayer(LAYER_FIRE_MARKERS) ? LAYER_FIRE_MARKERS : undefined);
+    const color: ExpressionSpecification = [
+      'coalesce',
+      ['get', 'color'],
+      classification === 'model2_scenario' ? '#d4b87c' : '#6aa8dc',
+    ];
+    const layers: LayerSpecification[] = [
+      {
+        id: LAYER_CONFIDENCE_VERIFIED,
+        type: 'fill',
+        source: SOURCE_CONFIDENCE,
+        paint: { 'fill-color': color, 'fill-opacity': ['coalesce', ['get', 'opacity'], 0.15] },
+      },
+      {
+        id: LAYER_CONFIDENCE_EXTRAPOLATED,
+        type: 'fill',
+        source: SOURCE_CONFIDENCE,
+        paint: { 'fill-color': color, 'fill-opacity': ['coalesce', ['get', 'opacity'], 0.05] },
+      },
+      {
+        id: LAYER_CONFIDENCE_SOLID,
+        type: 'line',
+        source: SOURCE_CONFIDENCE,
+        paint: { 'line-color': color, 'line-width': 1.2 },
+      },
+      {
+        id: LAYER_CONFIDENCE_DASHED,
+        type: 'line',
+        source: SOURCE_CONFIDENCE,
+        paint: { 'line-color': color, 'line-width': 1.2, 'line-dasharray': [3, 3] },
+      },
+    ];
+    for (const layer of layers) {
+      if (!this.map.getLayer(layer.id)) this.map.addLayer(layer, before);
+      else
+        this.map.setPaintProperty(
+          layer.id,
+          layer.type === 'fill' ? 'fill-color' : 'line-color',
+          color,
+        );
+      const status =
+        layer.id === LAYER_CONFIDENCE_EXTRAPOLATED || layer.id === LAYER_CONFIDENCE_DASHED
+          ? 'extrapolated'
+          : 'verified';
+      this.map.setFilter(layer.id, [
+        'all',
+        ['==', ['get', 'layer'], classification],
+        ['==', ['get', 'status'], status],
+      ]);
+    }
+  }
+
+  clearConfidenceZones(): void {
+    this.removeLayers([...CONFIDENCE_LAYERS], [SOURCE_CONFIDENCE]);
+    this.confidenceData = null;
+  }
+
   showSearchGeometry(data: FeatureCollection, onPick: (id: string) => void): () => void {
     const source = 'search-geometry';
+    const fill = 'search-geometry-fill';
     if (this.map.getSource(source)) (this.map.getSource(source) as GeoJSONSource).setData(data);
     else {
       this.map.addSource(source, { type: 'geojson', data });
@@ -561,14 +762,27 @@ export class StudyMapController {
         paint: { 'line-color': '#d4b87c', 'line-width': 2 },
       });
     }
+    if (!this.map.getLayer(fill))
+      this.map.addLayer(
+        {
+          id: fill,
+          type: 'fill',
+          source,
+          filter: ['has', 'fireId'],
+          paint: { 'fill-color': '#d4b87c', 'fill-opacity': 0.035 },
+        },
+        source,
+      );
     const click = (event: MapLayerMouseEvent) => {
       const id = event.features?.[0]?.properties?.fireId;
       if (typeof id === 'string') onPick(id);
     };
     this.map.on('click', source, click);
+    this.map.on('click', fill, click);
     return () => {
       this.map.off('click', source, click);
-      this.removeLayers([source], [source]);
+      this.map.off('click', fill, click);
+      this.removeLayers([fill, source], [source]);
     };
   }
 

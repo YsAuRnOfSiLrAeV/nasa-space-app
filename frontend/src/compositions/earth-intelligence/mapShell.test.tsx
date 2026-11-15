@@ -67,7 +67,8 @@ describe('Map shell accessible states', () => {
         createElement(SiteNav, { current: 'explore' }),
       ),
     );
-    expect(html).toContain('How We Researched');
+    expect(html).toContain('Methodology');
+    expect(html).toContain('href="#/research"');
     expect(html).toContain('#/?view=explore&amp;mode=search');
     expect(html).toContain('aria-current="true"');
     expect(html).not.toContain('#/analyze');

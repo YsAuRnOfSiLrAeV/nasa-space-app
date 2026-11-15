@@ -1,25 +1,49 @@
-# Find Your Fire integration
+# Find Your Fire — real exported catalog
 
-Search reuses the persistent map and shared fire investigation. No production catalog or applicability boundaries are bundled. In development, enable “Development-only mock services” to search the existing labelled demo entries and simulate success or failure. Simulation never generates scientific results. Production builds omit this switch.
+Phase 8 connects the existing search, drawing and shared investigation workflow to all 80 supplied fires. It preserves the persistent map, route handling, polygon tool, result loader and development-only mock processing.
 
-## Static files (provisional)
+## Data and discovery
 
-Publish `public/data/catalog/index.json` with `{ "countries": [{ "code": "CA", "name": "Canada", "file": "ca.json" }] }`. The country file is an array of records with `id`, `name`, `year`, `center: [longitude, latitude]`, `perimeter: Polygon | MultiPolygon | null`, and `resultId: string | null`. Supply actual coordinates. `resultId` identifies a fire in the existing demo index; catalog-only records use null. Relative paths are validated. Country and fire selection are preserved in hash URLs.
+- The current country selector and identifier/year/region search use the same validated bundle index as Examples. All countries is the default. Supplied Canadian province codes are grouped under Canada; other supplied region codes identify their countries.
+- Locations and perimeters come from the source metadata and the lightweight `bundle-v2/perimeters.geojson` collection. No point buffers, approximate fire boundaries or new fire records are generated.
+- 37 fires have spatial datasets; 43 have perimeter/summary exports. Cards distinguish these capabilities. Detailed resources load only when a known fire is selected.
+- Perimeter interiors and outlines can select known fires. Existing exports open through the shared Examples investigation route; Search selection and country remain shareable in the URL. Browser Back can return to Search.
 
-Optional `public/data/catalog/zones.json` is a GeoJSON FeatureCollection of Polygon/MultiPolygon features. Each feature needs provider-approved properties `{ "label": "provider label", "supported": true }`. This is an explicit provisional adapter, not a mapping from scientific confidence codes. No meaning is assigned to codes 0/1/2. Only explicitly supported polygons count towards coverage; overlapping areas are unioned before intersection. Missing zones leave coverage unknown and disable real analysis requests. Zero, nonzero partial, and complete spatial overlap are reported without a scientific cutoff.
+## Draw and intersect
 
-## API (provisional)
+The existing vertex drawing, keyboard Add map centre, Finish, Cancel, Escape and Clear interactions remain. Invalid/self-crossing/zero-area boundaries are rejected. Finishing a polygon filters catalog fires by positive geographic intersection, including holes and multipolygons. Boundary contact alone is not an intersection with positive area.
 
-`VITE_API_URL` configures the API base; development otherwise uses the existing `/api` proxy. Wire shapes are isolated in `src/services/search/contracts.ts` and `AnalysisClient.ts`:
+The list reports the fraction of each original fire perimeter inside the drawing. An existing export describes its original fire, not a new prediction clipped to the drawing. Result opening is withheld for an unmatched current fire while a drawing is active. Missing or mismatched perimeter geometry remains unknown, with an explanation; coordinates are never substituted for a polygon.
 
-- `GET /summers?fire_id=...`: `{ "summers": [2026] }`.
-- `POST /runs`: `{ "fire_id": "supplied-id", "summer": 2026 }`.
-- POST response and `GET /runs/{id}` response: pending `{ "status": "pending", "id": "run-id", "step": "arbitrary backend text", "progress": 0.5 }`; complete `{ "status": "complete", "result": "https://host/fire/result.json" }`; failed `{ "status": "failed", "code": "PROVIDER_CODE", "message": "optional explanation" }`.
+No matching export under the current boundary/country/query/year filters produces an explicit unavailable-data message. Geographic coverage and dataset availability are separate: an area inside a model region can still have no exported dataset.
 
-The POST doubles as the cache lookup and can immediately return complete. No progress vocabulary is assumed. Requests time out after 20 seconds; polling stops after ten minutes, on cancellation, selection changes, or leaving Search. Result and cell responses use existing Zod contracts and grid-length validation. The selected fire id must match the result id. Result assets resolve relative to the result URL. Cross-origin servers must allow browser access.
+## Geographic applicability
+
+`confidence_zones.geojson` is copied unchanged from the supplied frontend_katya export. Its meanings are documented by the supplied `BUNDLE_FORMAT.md`:
+
+| Source layer/status                      | UI meaning                                                              |
+| ---------------------------------------- | ----------------------------------------------------------------------- |
+| `model1_region`, tier 1 / `verified`     | Model-1 verified geographic overlap                                     |
+| `model1_region`, tier 2 / `extrapolated` | Extrapolated overlap, not directly validated                            |
+| `model2_growth`, `verified`              | Geographic area where the supplied growth forecast was validated        |
+| `model2_scenario`, `verified`            | Geographic scenario coverage only; no computation capability is implied |
+
+Coverage is reported for the finished drawing, or for the selected fire perimeter when no drawing is present. Model-1 extrapolated-only coverage excludes verified overlap, so overlapping zones are not double counted. Outside model-1 regions means no applicability claim, not a numerical confidence score. Missing zone layers remain unknown; absent, malformed or failed zone files never become 0% or 100% support.
+
+Provider boundaries are approximate. Percentages describe geometric overlap, not calibrated confidence, model accuracy, export availability or backend authorization. Pipeline confidence codes 0/1/2 and burn/reference masks are not reinterpreted. The shared Confidence zones controls now display verified/extrapolated regions and separate model classifications; see [confidence-methodology.md](confidence-methodology.md).
+
+Intersections prune distant original polygons, clip locally, then union overlaps. This avoids unioning continent-scale geometry on every selection while preserving original rings, holes and exact intersection semantics.
+
+## Processing capability
+
+The local backend exposes `/health` only. Real summer lookup and new analysis remain disabled. Production Search does not call `/summers`, `/runs` or polling endpoints. It opens existing exports only.
+
+Development-only mocks remain explicitly labeled simulations and never create scientific results. The provisional API client and wire contracts remain test preparation, not a production promise.
 
 ## Verification
 
-The drawn boundary selects catalog fires by positive perimeter overlap; the list reports the percentage of each fire inside it. Fires with no usable perimeter cannot be matched spatially. Drawing does not change the analysis area: requests always analyze the selected catalog fire using its id and summer. The selected fire's own perimeter is checked against applicability zones before real requests are enabled. Requests are disabled during drawing, and precomputed results open in the shared Examples route using the result id, which may differ from the catalog id. Browser Back returns to the Search selection.
+Regression coverage includes all 80 catalog associations and coordinates; country/query filtering; real full/partial/no perimeter intersections; missing/mismatched geometry; source-data loading and shared result routing; verified/extrapolated/outside coverage without double counting; separate growth/scenario coverage; missing/malformed zones; disabled real processing; polygon picking and drawing cleanup. Source-zone copying is checked against the original file.
 
-Geometry tests use explicit synthetic rectangles and holes, including overlapping coverage zones. Tests also cover request encoding, response rejection, and aborted delays. Desktop/mobile browser verification requires an available browser automation host; it was unavailable during implementation. Do not treat source checks as visual verification.
+Full desktop/mobile browser acceptance remains NOT VERIFIED while the browser automation host is unavailable. Manual acceptance should cover search → perimeter selection → shared result, drawing and cancellation, real matches/no matches, known perimeter-only exports, model-specific coverage, missing zones, switching to Examples, URL reload and Back/Forward. Automated geometry/data checks do not establish visual acceptance.
+
+No backend changes, invented scientific values, new dependencies or automatic commits are introduced.

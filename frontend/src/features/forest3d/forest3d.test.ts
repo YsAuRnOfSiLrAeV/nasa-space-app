@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { contourSegments, createHeightField, rng } from './heightField';
-import { ILLUSTRATIVE_STAND, standFromInput } from './recoveryAdapter';
+import { ILLUSTRATIVE_STAND } from './recoveryAdapter';
 import { scatterPlants } from './scatter';
 
 describe('forest 3D: synthetic terrain', () => {
@@ -62,10 +62,6 @@ describe('forest 3D: plant scatter', () => {
 });
 
 describe('forest 3D: adapter', () => {
-  it('keeps the illustrative stand until recovery inputs are wired', () => {
-    expect(standFromInput({ recoveryShare: 0.4, year: 2030 })).toBe(ILLUSTRATIVE_STAND);
-  });
-
   it('rng is reproducible', () => {
     const a = rng(9);
     const b = rng(9);

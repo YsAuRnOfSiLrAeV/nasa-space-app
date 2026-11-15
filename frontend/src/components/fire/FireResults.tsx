@@ -4,6 +4,9 @@ import { type ForecastStatus } from '../../domain/fire/growthForecast';
 import styles from './FireResults.module.css';
 
 import { ForecastSection } from './FireForecast';
+import { SuppliedForecastSummary } from './SuppliedForecastSummary';
+import { FireAccuracyContext } from './FireAccuracyContext';
+import { PipelineForecastSummary } from './PipelineForecastSummary';
 import { ObservedState } from './ObservedFireState';
 
 export function FireResults({
@@ -23,10 +26,20 @@ export function FireResults({
   return (
     <div className={styles.results}>
       <ObservedState data={data} missing={missing} />
+      {!data.bundle && <FireAccuracyContext data={data} />}
+      {!data.bundle && <PipelineForecastSummary data={data} />}
+      {!data.bundle && forecast.status === 'none' && (
+        <p>No fire-level forecast was supplied for this export. No forecast is inferred.</p>
+      )}
+      {data.bundle && <SuppliedForecastSummary data={data} />}
       {forecast.status === 'valid' && (
         <ForecastSection
           curve={forecast.curve}
-          observed={result.model_result.recovery_today_avg}
+          observed={
+            data.bundle
+              ? (data.bundle.source.model2.now_recovery ?? null)
+              : result.model_result.recovery_today_avg
+          }
           year={year}
         />
       )}

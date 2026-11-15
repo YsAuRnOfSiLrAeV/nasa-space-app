@@ -47,7 +47,7 @@ export function SiteNav({
       items={[
         {
           id: 'research',
-          label: 'How We Researched',
+          label: 'Methodology',
           href: RESEARCH_HREF,
           current: current === 'research',
         },

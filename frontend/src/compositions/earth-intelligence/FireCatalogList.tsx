@@ -1,8 +1,8 @@
-import { mapHref } from '@/app/route';
 import type { DemoFire } from '@/data/fireSchema';
-import { formatShare, isProvided } from '@/domain/fire/fireSummary';
+import { filterFireCatalog } from '@/domain/fire/catalogSearch';
 import { EMPTY_FIRES, type FireCatalog } from '@/hooks/useFireCatalog';
-import type { MouseEvent } from 'react';
+import { useState } from 'react';
+import { FireCatalogItem } from './FireCatalogItem';
 import styles from './MapShell.module.css';
 
 /** The example-fire catalog: its loading, error and empty states, then the fires. */
@@ -16,6 +16,12 @@ export function FireCatalogList({
   onSelect: (fire: DemoFire) => void;
 }) {
   const fires = catalog.state.status === 'ready' ? catalog.state.data : EMPTY_FIRES;
+  const [query, setQuery] = useState('');
+  const [region, setRegion] = useState('');
+  const [year, setYear] = useState('');
+  const matches = filterFireCatalog(fires, query, region, year);
+  const regions = [...new Set(fires.flatMap((fire) => (fire.region ? [fire.region] : [])))].sort();
+  const years = [...new Set(fires.map((fire) => fire.year))].sort((a, b) => b - a);
   return (
     <>
       {catalog.state.status === 'loading' && <p role="status">Loading available fires…</p>}
@@ -30,8 +36,42 @@ export function FireCatalogList({
       {catalog.state.status === 'ready' && fires.length === 0 && (
         <p role="status">No example fires have been published yet. The map remains available.</p>
       )}
+      {catalog.state.status === 'ready' && fires.length > 0 && (
+        <div className={styles.search}>
+          <label>
+            Search identifier, year or region
+            <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} />
+          </label>
+          <label>
+            Region
+            <select value={region} onChange={(event) => setRegion(event.target.value)}>
+              <option value="">All regions</option>
+              {regions.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Fire year
+            <select value={year} onChange={(event) => setYear(event.target.value)}>
+              <option value="">All years</option>
+              {years.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p role="status">
+            {matches.length} of {fires.length} fires
+            {matches.length === 0 ? ' · No matching fires. Adjust the filters.' : ''}
+          </p>
+        </div>
+      )}
       <ul className={styles.fireList} aria-label="Available example fires">
-        {fires.map((fire) => (
+        {matches.map((fire) => (
           <FireCatalogItem
             key={fire.id}
             fire={fire}
@@ -41,43 +81,5 @@ export function FireCatalogList({
         ))}
       </ul>
     </>
-  );
-}
-
-/** A plain click selects the fire in place; modified clicks keep the link's own behaviour. */
-const isPlainClick = (event: MouseEvent) =>
-  !(event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey);
-
-function FireCatalogItem({
-  fire,
-  current,
-  onSelect,
-}: {
-  fire: DemoFire;
-  current: boolean;
-  onSelect: (fire: DemoFire) => void;
-}) {
-  return (
-    <li>
-      <a
-        href={mapHref({ mode: 'examples', presentation: 'fire', fireId: fire.id })}
-        aria-current={current ? 'true' : undefined}
-        onClick={(event) => {
-          if (!isPlainClick(event)) return;
-          event.preventDefault();
-          onSelect(fire);
-        }}
-      >
-        <span>
-          {fire.name.en} <small>· {fire.year}</small>
-        </span>
-        <small>
-          {isProvided(fire.recovery_today_avg)
-            ? `${formatShare(fire.recovery_today_avg)} recovery`
-            : 'Recovery not supplied'}{' '}
-          · Summer {fire.summer}
-        </small>
-      </a>
-    </li>
   );
 }

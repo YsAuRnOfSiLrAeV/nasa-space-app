@@ -3,5 +3,13 @@
  * structure. Import only through this entry (or lazily), never from the
  * landing globe or the map, so the feature can be developed and removed alone.
  */
-export { ForestViewer } from './ForestViewer';
-export type { ForestStandInput, StandParams } from './recoveryAdapter';
+export { ForestViewer, type ViewerLabel } from './ForestViewer';
+export {
+  GROWTH_STAND,
+  ILLUSTRATIVE_STAND,
+  MATURE_GROWTH,
+  REFERENCE_GROWTH,
+  growthFromRecovery,
+  standFromInput,
+} from './recoveryAdapter';
+export type { ForestStandInput, GrowthParams, StandParams } from './recoveryAdapter';
