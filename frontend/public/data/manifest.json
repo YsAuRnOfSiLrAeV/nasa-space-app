@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "reference_year": 2026,
+  "stage_breaks_m": [
+    5,
+    10
+  ],
+  "sources": [
+    {
+      "file": "data/raw/nisar_ontario.csv",
+      "sha256": "9b63a6c91922f54248c4a63d479bf161b811bd049462272a84fc44c77e244e55",
+      "rows": 282
+    }
+  ],
+  "counts": {
+    "points": 282,
+    "burned": 132,
+    "unburned": 150,
+    "burned_groups": 10,
+    "by_lidar_stage": [
+      68,
+      65,
+      149
+    ]
+  },
+  "sites": [
+    "ontario"
+  ],
+  "fire_years": [
+    2002,
+    2003,
+    2006,
+    2011
+  ],
+  "nisar_dates": [
+    "2026-07-13",
+    "2026-07-18",
+    "2026-07-20"
+  ],
+  "bbox": [
+    -95.499786,
+    49.560616,
+    -92.507497,
+    51.501875
+  ]
+}

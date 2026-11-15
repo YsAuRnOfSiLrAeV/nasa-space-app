@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "fire": {
+    "id": "bc_2003_490",
+    "name": {
+      "uk": "Британська Колумбія",
+      "en": "British Columbia"
+    },
+    "year": 2003,
+    "area_ha": 27137,
+    "perimeter": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            -120.4,
+            51.2
+          ],
+          [
+            -120.05,
+            51.21
+          ],
+          [
+            -120.02,
+            51.03
+          ],
+          [
+            -120.38,
+            51.01
+          ],
+          [
+            -120.4,
+            51.2
+          ]
+        ]
+      ]
+    }
+  },
+  "satellite_images": {
+    "summer": 2026,
+    "nisar": {
+      "date": "2026-07-18",
+      "fire_covered": 0.97
+    },
+    "sentinel1": {
+      "from": "2026-07-10",
+      "to": "2026-07-25",
+      "scenes": 4
+    },
+    "sentinel2": {
+      "from": "2026-07-01",
+      "to": "2026-08-15"
+    }
+  },
+  "map_grid": {
+    "columns": 91,
+    "rows": 98,
+    "cell_size_m": 360,
+    "corners_lonlat": [
+      [
+        -120.45,
+        51.32
+      ],
+      [
+        -119.98,
+        51.32
+      ],
+      [
+        -119.98,
+        50.97
+      ],
+      [
+        -120.45,
+        50.97
+      ]
+    ]
+  },
+  "neighbour_forest": {
+    "height_m": 19.1,
+    "source": "gedi"
+  },
+  "model_result": {
+    "model_version": "forestrecovery 0.7.0",
+    "region": "continental",
+    "recovery_today_avg": 0.36,
+    "area_recovered_80pct": 0.0,
+    "stage_share": [
+      0.41,
+      0.37,
+      0.22
+    ],
+    "error_vs_lidar_pct": 10
+  },
+  "growth_forecast": {
+    "method": "saturating_exp",
+    "tau": 25.2,
+    "years_to_80pct": 40.6,
+    "year_80pct": 2044,
+    "reliable_age": [
+      9,
+      35
+    ]
+  },
+  "comparison": {
+    "optics": 0.95,
+    "model": 0.36,
+    "lidar": 0.35,
+    "lidar_points_in_fire": 25
+  },
+  "lidar_points": [
+    {
+      "lon": -120.21,
+      "lat": 51.15,
+      "height_m": 6.7
+    },
+    {
+      "lon": -120.17,
+      "lat": 51.12,
+      "height_m": 10.9
+    }
+  ],
+  "files": {
+    "cells": "cells.json",
+    "optical_image": null
+  },
+  "warnings": [
+    "AGE_OUT_OF_RANGE"
+  ]
+}

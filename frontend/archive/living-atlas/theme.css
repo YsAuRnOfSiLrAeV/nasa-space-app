@@ -1,0 +1,114 @@
+/*
+ * Theme: Living Atlas (default)
+ * Moodboard p06 · p07 · p08 · p09 · p10: an atlas of forest, fire and recovery.
+ * The map is the page: ivory/sage atlas map with real terrain relief, italic
+ * hydrography, a condensed display title set on the map (p06), ivory call-outs
+ * with leader lines (p10) on real burn-scar groups, burnt-orange contour rings
+ * reserved for fire (p09), square field-note cards, one deep-moss figures block.
+ *
+ * Variables only. Layout lives in src/compositions/living-atlas/.
+ */
+:root[data-theme='living-atlas'] {
+  color-scheme: light;
+
+  /* Surfaces & text */
+  --background: #f4f0e6;
+  --foreground: #22281f;
+  --card: #faf7f0;
+  --card-foreground: #22281f;
+  --popover: #fffdf8;
+  --popover-foreground: #22281f;
+  --primary: #2f6b4f;
+  --primary-foreground: #faf7f0;
+  --secondary: #ebe6d8;
+  --secondary-foreground: #22281f;
+  --muted: #ebe6d8;
+  --muted-foreground: #66705f;
+  --accent: #e4dfcf;
+  --accent-foreground: #22281f;
+  --destructive: #a8452f;
+  --border: rgb(34 40 31 / 0.12);
+  --input: rgb(34 40 31 / 0.2);
+  --ring: #4a6b85;
+
+  /* Domain */
+  --highlight: #2f6b4f;
+  --faint: #9aa08f;
+  --rule: rgb(34 40 31 / 0.16);
+  --forest: #2f6b4f;
+  --satellite: #4a6b85;
+  --amber: #b5531f;
+  /* Ordinal ramp, validated (--ordinal, light, surface #f2eee3). Taller = darker */
+  --stage-0: #7fa889;
+  --stage-1: #467f5b;
+  --stage-2: #204c34;
+  --chart-1: #4a6b85;
+  --chart-2: #2f6b4f;
+  --chart-3: #a07a2c;
+  --chart-4: #a8452f;
+  --chart-5: #66705f;
+
+  /* Typography: Anton editorial display (p06 condensed headline), Inter for the
+     interface, JetBrains Mono for coordinates and measurements, a system serif
+     for the italic field-note voice. */
+  --font-ui: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Anton', 'Bahnschrift Condensed', 'Arial Narrow', sans-serif;
+  --font-section: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-label: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-numeric: 'Anton', 'Bahnschrift Condensed', 'Arial Narrow', sans-serif;
+  --font-coord: 'JetBrains Mono Variable', ui-monospace, monospace;
+  --font-data: 'JetBrains Mono Variable', ui-monospace, monospace;
+  --font-prose: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+  --display-size: clamp(2.75rem, 6vw, 5.25rem);
+  --display-weight: 400;
+  --display-tracking: 0.005em;
+  --display-leading: 0.9;
+  --display-transform: uppercase;
+  --eyebrow-font: var(--font-prose);
+  --eyebrow-weight: 400;
+  --eyebrow-tracking: 0.01em;
+  --eyebrow-transform: none;
+  --eyebrow-style: italic;
+  --eyebrow-size: 0.8125rem;
+  --figure-size: 2.375rem;
+  --figure-weight: 400;
+  --figure-tracking: 0.01em;
+
+  /* Shape & layout: narrow annotation panel, map has priority */
+  --radius: 0rem;
+  --panel-width: 330px;
+  --panel-bg: #f6f3ea;
+  --panel-shadow: 0 1px 0 rgb(34 40 31 / 0.06), 0 12px 32px -18px rgb(40 50 30 / 0.35);
+  --section-gap: 1.75rem;
+  --chart-height: 136px;
+  --chart-grid-dash: 1 3;
+  --chart-reference: #b5531f;
+  --chart-point-opacity: 0.75;
+
+  /* Atmosphere & decorative details */
+  --app-backdrop: #efeadd;
+  --map-overlay: none;
+
+  /* Map: the atlas */
+  --map-background: #efeadd;
+  --map-water: #c9d6db;
+  --map-water-opacity: 1;
+  --map-waterway: #a9bcc5;
+  --map-road: #e3dccb;
+  --map-road-opacity: 1;
+  --map-boundary: #8a8f7c;
+  --map-label: #5d6555;
+  --map-water-label: #4a6b85;
+  --map-label-halo: #efeadd;
+  --map-imagery-opacity: 0;
+  --map-imagery-saturation: 0;
+  --map-imagery-brightness: 1;
+  --map-imagery-contrast: 0;
+  --map-hillshade-exaggeration: 0.6;
+  --map-hillshade-shadow: #6b6650;
+  --map-hillshade-highlight: #fbf8f0;
+  --map-water-label-italic: 1;
+  --map-point-stroke: #efeadd;
+  --map-point-scale: 1.1;
+  --map-control-icon-filter: none;
+}

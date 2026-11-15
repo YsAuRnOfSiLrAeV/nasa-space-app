@@ -1,0 +1,218 @@
+/*
+ * Global styles: base element styles, shared semantic utilities, and styling for
+ * third-party DOM (MapLibre controls/popups). Everything reads theme variables;
+ * nothing here is theme-specific, so there is exactly one copy of component CSS.
+ */
+
+@custom-variant dark (&:is(.dark *));
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  html {
+    @apply font-sans;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* ── Shared semantic utilities (shape driven entirely by theme variables) ───── */
+
+/** Small label above a heading. */
+@utility eyebrow {
+  font-family: var(--eyebrow-font);
+  font-weight: var(--eyebrow-weight);
+  letter-spacing: var(--eyebrow-tracking);
+  font-size: var(--eyebrow-size);
+  font-style: var(--eyebrow-style);
+  line-height: 1.4;
+  text-transform: var(--eyebrow-transform);
+  color: var(--highlight);
+}
+
+/** The product/page title. */
+@utility display-title {
+  font-family: var(--font-display);
+  font-size: var(--display-size);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+  line-height: var(--display-leading);
+  text-transform: var(--display-transform);
+  color: var(--foreground);
+  text-wrap: balance;
+}
+
+/** Explanatory prose (serif in Editorial, UI sans elsewhere). */
+@utility prose-text {
+  font-family: var(--font-prose);
+  color: var(--muted-foreground);
+}
+
+/* Type roles (families come from the theme: see REQUIRED_THEME_VARS). */
+@utility type-section {
+  font-family: var(--font-section);
+}
+@utility type-label {
+  font-family: var(--font-label);
+}
+@utility type-numeric {
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+}
+@utility type-coord {
+  font-family: var(--font-coord);
+  font-variant-numeric: tabular-nums;
+}
+
+/** Large numerical indicator (Anton in Living Atlas, light mono / grotesk elsewhere). */
+@utility key-figure {
+  font-family: var(--font-numeric);
+  font-size: var(--figure-size);
+  font-weight: var(--figure-weight);
+  letter-spacing: var(--figure-tracking);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--foreground);
+}
+
+/** Full-bleed overlay above the map for theme atmosphere (vignette, scan lines). */
+@utility map-atmosphere {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--map-overlay);
+}
+
+/* ── MapLibre controls & popups ─────────────────────────────────────────────── */
+
+.maplibregl-map {
+  font-family: var(--font-ui);
+}
+
+/* Keep controls clear of whatever the active composition puts over the map.
+   --occluded-* are measured at runtime (useOccludedInsets), not set by themes. */
+.maplibregl-ctrl-top-right {
+  top: var(--occluded-top, 0px);
+  right: var(--occluded-right, 0px);
+}
+.maplibregl-ctrl-top-left {
+  top: var(--occluded-top, 0px);
+  left: var(--occluded-left, 0px);
+}
+.maplibregl-ctrl-bottom-right {
+  bottom: var(--occluded-bottom, 0px);
+  right: var(--occluded-right, 0px);
+}
+.maplibregl-ctrl-bottom-left {
+  bottom: var(--occluded-bottom, 0px);
+  left: var(--occluded-left, 0px);
+}
+
+.maplibregl-ctrl-group {
+  background: var(--popover) !important;
+  border: 1px solid var(--border);
+  border-radius: var(--radius) !important;
+  box-shadow: none !important;
+}
+.maplibregl-ctrl-group button + button {
+  border-top-color: var(--border) !important;
+}
+.maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: var(--map-control-icon-filter);
+}
+.maplibregl-ctrl-group button:hover {
+  background-color: var(--accent) !important;
+}
+
+.maplibregl-ctrl-attrib,
+.maplibregl-ctrl-attrib.maplibregl-compact {
+  background: color-mix(in srgb, var(--background) 82%, transparent) !important;
+  color: var(--muted-foreground);
+}
+.maplibregl-ctrl-attrib a {
+  color: var(--muted-foreground);
+}
+.maplibregl-ctrl-attrib-button {
+  filter: var(--map-control-icon-filter);
+}
+
+.maplibregl-ctrl-scale {
+  background: transparent;
+  border-color: var(--muted-foreground);
+  color: var(--muted-foreground);
+  font-family: var(--font-data);
+}
+
+.maplibregl-popup-content {
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  box-shadow: 0 12px 32px -12px rgb(0 0 0 / 0.45);
+}
+.maplibregl-popup-close-button {
+  color: var(--muted-foreground);
+}
+.maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--popover);
+}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--popover);
+}
+.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--popover);
+}
+.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--popover);
+}
+
+/* Recharts makes each chart keyboard-focusable (arrow keys move the tooltip) but
+   removes the outline; give it the same visible ring as every other control. */
+.recharts-surface:focus-visible,
+.recharts-wrapper:focus-visible {
+  outline: 2px solid var(--ring) !important;
+  outline-offset: 2px;
+}
+
+/* Touch screens: every control gets at least a 44 px target. */
+@media (pointer: coarse) {
+  button,
+  [role='button'],
+  [role='radio'],
+  label:has(> input) {
+    min-height: 44px;
+  }
+  .maplibregl-ctrl-group button {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

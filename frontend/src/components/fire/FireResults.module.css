@@ -1,0 +1,305 @@
+.results > * + * {
+  margin-top: 1rem;
+}
+.section {
+  display: grid;
+  gap: 0.75rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 0.75rem;
+}
+.kicker {
+  font: 500 0.625rem/1.4 var(--font-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.section > .kicker + .heading {
+  margin-top: -0.6rem;
+}
+.heading {
+  font: 500 0.875rem/1.35 var(--font-section);
+  color: var(--foreground);
+}
+.subheading {
+  font: 500 0.75rem/1.4 var(--font-section);
+  color: var(--foreground);
+}
+.block {
+  display: grid;
+  gap: 0.4rem;
+}
+.sub {
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+}
+.missing {
+  border: 1px dashed var(--rule-strong);
+  padding: 0.5rem 0.625rem;
+  font-size: 0.75rem;
+}
+.figure {
+  font: 400 0.75rem/1.4 var(--font-data);
+  color: var(--foreground);
+}
+
+.stats {
+  display: grid;
+  gap: 0.6rem;
+}
+.stats dt {
+  font: 500 0.6875rem/1.4 var(--font-label);
+  color: var(--muted-foreground);
+}
+.stats dd:first-of-type {
+  font: 400 1.25rem/1.2 var(--font-data);
+  color: var(--foreground);
+}
+
+.stageBar {
+  display: flex;
+  gap: 2px;
+  height: 12px;
+  background: var(--rule);
+}
+.stageBar > span {
+  min-width: 2px;
+}
+.stageKey {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+}
+.stageKey li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.stageKey .figure {
+  margin-left: auto;
+}
+.swatch {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--rule-strong);
+}
+
+.compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+.compare th,
+.compare td {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--rule);
+  text-align: start;
+  font-weight: 400;
+  vertical-align: middle;
+}
+.compare th small {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 0.625rem;
+}
+.compare td {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.compareTrack {
+  display: block;
+  width: 72px;
+  height: 4px;
+  background: var(--rule);
+}
+.compareTrack > span {
+  display: block;
+  height: 100%;
+  background: var(--muted-foreground);
+}
+.compare .figure {
+  min-width: 2.5rem;
+  text-align: end;
+}
+
+.chart {
+  display: grid;
+  gap: 0.5rem;
+}
+.chart svg {
+  display: block;
+  overflow: visible;
+}
+.estimate {
+  display: grid;
+  gap: 0.5rem;
+  border: 1px solid var(--rule-strong);
+  padding: 0.625rem 0.75rem;
+}
+.estimateYear {
+  font: 500 0.75rem/1 var(--font-data);
+  color: var(--foreground);
+}
+
+.details {
+  border-top: 1px solid var(--rule);
+  padding-top: 0.5rem;
+}
+.details summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font: 500 0.75rem/1.4 var(--font-section);
+  color: var(--foreground);
+}
+.details > * + * {
+  margin-top: 0.6rem;
+}
+.details p {
+  font-size: 0.75rem;
+}
+.meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+}
+.meta dt {
+  color: var(--muted-foreground);
+}
+.meta dd {
+  font: 400 0.6875rem/1.5 var(--font-data);
+  overflow-wrap: anywhere;
+}
+.list {
+  display: grid;
+  gap: 0.3rem;
+  padding-left: 1rem;
+  list-style: disc;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+/* Forecast year bar: bottom of the map, clear of the panel (column or phone sheet). */
+.yearBar {
+  position: absolute;
+  z-index: 20;
+  left: 20px;
+  right: calc(var(--panel-width, 360px) + 40px);
+  bottom: 20px;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.6rem 0.9rem 0.5rem;
+  background: var(--panel-bg);
+  border: 1px solid var(--rule-strong);
+  font-size: 0.75rem;
+  color: var(--foreground);
+}
+/* The same slider inside the selected fire's bottom bar: no position or frame of its own. */
+.yearBarEmbedded {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--foreground);
+}
+.yearBarEmbedded input[type='range'] {
+  width: 100%;
+  min-height: 28px;
+  accent-color: var(--signal);
+}
+.yearBarEmbedded input[type='range']:focus-visible,
+.yearBarEmbedded button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.yearBarHead,
+.yearBarFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.yearBarHead label {
+  font: 500 0.6875rem/1.4 var(--font-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+/* The year readout and its "Back to" action, together at the right of the head row. */
+.yearBarHeadRight {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.yearBarHeadRight button {
+  min-height: 28px;
+  font: 500 0.6875rem/1.5 var(--font-label);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  color: var(--foreground);
+}
+.yearBarHeadRight button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.yearBarValue {
+  font: 600 1.25rem/1.2 var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+/* A quiet flag before the readout, e.g. a year outside the validated ages. */
+.yearBarFlag {
+  margin-right: 1.5rem;
+  font: 400 0.6875rem/1 var(--font-label);
+  letter-spacing: 0.04em;
+  color: var(--muted-foreground);
+  vertical-align: middle;
+}
+.yearBar input[type='range'] {
+  width: 100%;
+  min-height: 28px;
+  accent-color: var(--signal);
+}
+.yearBar input[type='range']:focus-visible,
+.yearBar button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.yearBarFoot {
+  min-height: 28px;
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+}
+.yearBarFoot button {
+  min-height: 28px;
+  font: 500 0.6875rem/1.5 var(--font-label);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  color: var(--foreground);
+}
+.shortNote {
+  display: none;
+}
+@media (max-width: 767.98px) {
+  .longNote {
+    display: none;
+  }
+  .shortNote {
+    display: inline;
+  }
+  .yearBarHead label {
+    font-size: 0.625rem;
+  }
+  .yearBarValue {
+    font-size: 1rem;
+  }
+  .yearBar {
+    left: 12px;
+    right: 12px;
+    /* The panel is a bottom sheet from 55%; sit just above it. */
+    bottom: calc(45% + 8px);
+    padding: 0.4rem 0.7rem 0.3rem;
+  }
+}

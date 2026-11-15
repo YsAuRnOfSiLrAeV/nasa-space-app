@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "fire": {
+    "id": "ontario_1988_fixture",
+    "name": {
+      "en": "Ontario (dev fixture)",
+      "uk": ""
+    },
+    "year": 1988,
+    "area_ha": null,
+    "perimeter": null
+  },
+  "satellite_images": {
+    "summer": 2026
+  },
+  "map_grid": {
+    "columns": 56,
+    "rows": 52,
+    "cell_size_m": 360,
+    "corners_lonlat": [
+      [
+        -87.64266,
+        50.68465
+      ],
+      [
+        -87.35734,
+        50.68465
+      ],
+      [
+        -87.35734,
+        50.51535
+      ],
+      [
+        -87.64266,
+        50.51535
+      ]
+    ]
+  },
+  "neighbour_forest": null,
+  "model_result": {
+    "model_version": "development fixture (no model)",
+    "region": "not applicable",
+    "recovery_today_avg": null,
+    "area_recovered_80pct": null,
+    "stage_share": null,
+    "error_vs_lidar_pct": null
+  },
+  "lidar_points": [],
+  "files": {
+    "cells": "cells.json",
+    "optical_image": null
+  },
+  "warnings": [
+    "DEVELOPMENT_FIXTURE"
+  ]
+}

@@ -1,0 +1,623 @@
+{
+  "schema_version": 1,
+  "group_id": "2002_205_-376",
+  "fire_year": 2002,
+  "bbox": [
+    -94.0159,
+    51.337,
+    -93.8089,
+    51.4662
+  ],
+  "season": {
+    "from": "07-01",
+    "to": "08-31"
+  },
+  "years": [
+    2000,
+    2026
+  ],
+  "reference": {
+    "point_ids": [
+      "ontario-2310942a",
+      "ontario-c68fc1ff",
+      "ontario-5ccb3206",
+      "ontario-361af8bb",
+      "ontario-9924ac8f",
+      "ontario-eb84b67b",
+      "ontario-9fc96037",
+      "ontario-b0fc3a93",
+      "ontario-23990a26",
+      "ontario-5f8be300",
+      "ontario-ee1e9918",
+      "ontario-a46c4de3",
+      "ontario-50005f61",
+      "ontario-1a7114c7",
+      "ontario-2ff5d596",
+      "ontario-58242f60",
+      "ontario-4fb263aa",
+      "ontario-e0a66af1"
+    ],
+    "max_distance_km": 40
+  },
+  "source": {
+    "collection": "MOD13Q1.061",
+    "access": "NASA AppEEARS",
+    "citation": "NASA LP DAAC · MODIS/Terra MOD13Q1 Version 6.1",
+    "doi": [
+      "10.5067/MODIS/MOD13Q1.061"
+    ],
+    "method": "July–August MODIS 250 m, 16-day composites. Each point’s median accepted NDVI, then the median across points. MODIS and Landsat records are processed and displayed separately.",
+    "quality_policy": "MOD13Q1 pixel reliability = 0 (good data); fill values excluded; valid NDVI −0.2 to 1."
+  },
+  "scenes": [],
+  "images": [],
+  "ndvi": [
+    {
+      "year": 2000,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.7316750000000001,
+        "n_points": 30,
+        "n_obs": 119
+      },
+      "reference": {
+        "median": 0.77075,
+        "n_points": 18,
+        "n_obs": 72
+      },
+      "quality": {
+        "accepted": 191,
+        "rejected": 1,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2001,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.7610250000000001,
+        "n_points": 30,
+        "n_obs": 112
+      },
+      "reference": {
+        "median": 0.7844249999999999,
+        "n_points": 18,
+        "n_obs": 72
+      },
+      "quality": {
+        "accepted": 184,
+        "rejected": 8,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2002,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.5124,
+        "n_points": 30,
+        "n_obs": 113
+      },
+      "reference": {
+        "median": 0.77685,
+        "n_points": 18,
+        "n_obs": 67
+      },
+      "quality": {
+        "accepted": 180,
+        "rejected": 12,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2003,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.47585,
+        "n_points": 30,
+        "n_obs": 90
+      },
+      "reference": {
+        "median": 0.7861499999999999,
+        "n_points": 18,
+        "n_obs": 61
+      },
+      "quality": {
+        "accepted": 151,
+        "rejected": 41,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2004,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.5764499999999999,
+        "n_points": 30,
+        "n_obs": 92
+      },
+      "reference": {
+        "median": 0.7769999999999999,
+        "n_points": 18,
+        "n_obs": 59
+      },
+      "quality": {
+        "accepted": 151,
+        "rejected": 41,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2005,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.5941500000000001,
+        "n_points": 30,
+        "n_obs": 120
+      },
+      "reference": {
+        "median": 0.7765,
+        "n_points": 18,
+        "n_obs": 71
+      },
+      "quality": {
+        "accepted": 191,
+        "rejected": 1,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2006,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.6105,
+        "n_points": 30,
+        "n_obs": 120
+      },
+      "reference": {
+        "median": 0.7746,
+        "n_points": 18,
+        "n_obs": 72
+      },
+      "quality": {
+        "accepted": 192,
+        "rejected": 0,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2007,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.6355500000000001,
+        "n_points": 30,
+        "n_obs": 120
+      },
+      "reference": {
+        "median": 0.8103750000000001,
+        "n_points": 18,
+        "n_obs": 65
+      },
+      "quality": {
+        "accepted": 185,
+        "rejected": 7,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2008,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.6544749999999999,
+        "n_points": 30,
+        "n_obs": 119
+      },
+      "reference": {
+        "median": 0.7924249999999999,
+        "n_points": 18,
+        "n_obs": 65
+      },
+      "quality": {
+        "accepted": 184,
+        "rejected": 8,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2009,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.648625,
+        "n_points": 30,
+        "n_obs": 120
+      },
+      "reference": {
+        "median": 0.7671749999999999,
+        "n_points": 18,
+        "n_obs": 72
+      },
+      "quality": {
+        "accepted": 192,
+        "rejected": 0,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2010,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.65255,
+        "n_points": 30,
+        "n_obs": 85
+      },
+      "reference": {
+        "median": 0.778675,
+        "n_points": 18,
+        "n_obs": 60
+      },
+      "quality": {
+        "accepted": 145,
+        "rejected": 47,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2011,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.6676,
+        "n_points": 30,
+        "n_obs": 109
+      },
+      "reference": {
+        "median": 0.768225,
+        "n_points": 18,
+        "n_obs": 64
+      },
+      "quality": {
+        "accepted": 173,
+        "rejected": 19,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2012,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.6976,
+        "n_points": 30,
+        "n_obs": 120
+      },
+      "reference": {
+        "median": 0.784525,
+        "n_points": 18,
+        "n_obs": 72
+      },
+      "quality": {
+        "accepted": 192,
+        "rejected": 0,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2013,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.706675,
+        "n_points": 30,
+        "n_obs": 115
+      },
+      "reference": {
+        "median": 0.760775,
+        "n_points": 18,
+        "n_obs": 58
+      },
+      "quality": {
+        "accepted": 173,
+        "rejected": 19,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2014,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.7349,
+        "n_points": 30,
+        "n_obs": 107
+      },
+      "reference": {
+        "median": 0.7774,
+        "n_points": 18,
+        "n_obs": 51
+      },
+      "quality": {
+        "accepted": 158,
+        "rejected": 34,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2015,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.750575,
+        "n_points": 30,
+        "n_obs": 84
+      },
+      "reference": {
+        "median": 0.7806,
+        "n_points": 18,
+        "n_obs": 54
+      },
+      "quality": {
+        "accepted": 138,
+        "rejected": 54,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2016,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.77875,
+        "n_points": 30,
+        "n_obs": 81
+      },
+      "reference": {
+        "median": 0.77125,
+        "n_points": 18,
+        "n_obs": 64
+      },
+      "quality": {
+        "accepted": 145,
+        "rejected": 47,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2017,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.7781750000000001,
+        "n_points": 30,
+        "n_obs": 116
+      },
+      "reference": {
+        "median": 0.80795,
+        "n_points": 18,
+        "n_obs": 71
+      },
+      "quality": {
+        "accepted": 187,
+        "rejected": 5,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2018,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.7322,
+        "n_points": 30,
+        "n_obs": 116
+      },
+      "reference": {
+        "median": 0.74425,
+        "n_points": 18,
+        "n_obs": 67
+      },
+      "quality": {
+        "accepted": 183,
+        "rejected": 9,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2019,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.747025,
+        "n_points": 30,
+        "n_obs": 109
+      },
+      "reference": {
+        "median": 0.75935,
+        "n_points": 18,
+        "n_obs": 65
+      },
+      "quality": {
+        "accepted": 174,
+        "rejected": 18,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2020,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.7659,
+        "n_points": 30,
+        "n_obs": 120
+      },
+      "reference": {
+        "median": 0.7954749999999999,
+        "n_points": 18,
+        "n_obs": 71
+      },
+      "quality": {
+        "accepted": 191,
+        "rejected": 1,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2021,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.80255,
+        "n_points": 30,
+        "n_obs": 77
+      },
+      "reference": {
+        "median": 0.81185,
+        "n_points": 18,
+        "n_obs": 41
+      },
+      "quality": {
+        "accepted": 118,
+        "rejected": 74,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2022,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.75495,
+        "n_points": 30,
+        "n_obs": 120
+      },
+      "reference": {
+        "median": 0.7853749999999999,
+        "n_points": 18,
+        "n_obs": 72
+      },
+      "quality": {
+        "accepted": 192,
+        "rejected": 0,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2023,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.7381500000000001,
+        "n_points": 30,
+        "n_obs": 109
+      },
+      "reference": {
+        "median": 0.747675,
+        "n_points": 18,
+        "n_obs": 65
+      },
+      "quality": {
+        "accepted": 174,
+        "rejected": 18,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2024,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.788975,
+        "n_points": 30,
+        "n_obs": 117
+      },
+      "reference": {
+        "median": 0.785825,
+        "n_points": 18,
+        "n_obs": 69
+      },
+      "quality": {
+        "accepted": 186,
+        "rejected": 6,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2025,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.7975,
+        "n_points": 30,
+        "n_obs": 93
+      },
+      "reference": {
+        "median": 0.7931250000000001,
+        "n_points": 18,
+        "n_obs": 55
+      },
+      "quality": {
+        "accepted": 148,
+        "rejected": 44,
+        "missing": 0
+      }
+    },
+    {
+      "year": 2026,
+      "platforms": [
+        "modis-terra"
+      ],
+      "burned": {
+        "median": 0.8275,
+        "n_points": 30,
+        "n_obs": 110
+      },
+      "reference": {
+        "median": 0.809625,
+        "n_points": 18,
+        "n_obs": 59
+      },
+      "quality": {
+        "accepted": 169,
+        "rejected": 23,
+        "missing": 0
+      }
+    }
+  ]
+}

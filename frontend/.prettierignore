@@ -1,0 +1,9 @@
+dist
+node_modules
+public/data
+plan_documentation
+package-lock.json
+public/map
+data/reference
+data/raw/landsat
+data/raw/appeears
