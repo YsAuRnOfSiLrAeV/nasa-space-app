@@ -100,3 +100,40 @@ def test_too_few_shots_give_no_lidar_value(grid, zones):
 def test_no_gedi_north_of_coverage(grid, zones):
     assert fire_stats.lidar_in_burn(None, zones, grid, 17.5) == {"lidar": None, "points_in_fire": 0, "points": []}
 
+
+
+def test_lidar_shot_mask_follows_the_training_label_rules():
+    shape = (1, 8)
+    layers = {
+        "slope": np.full(shape, 4.0),
+        "edge_m": np.full(shape, 500.0),
+        "ndvi": np.full(shape, 0.7),
+        "worldcover": np.full(shape, 10.0),
+        "loss_year": np.zeros(shape),
+        "last_fire": np.zeros(shape),
+    }
+    layers["slope"][0, 1] = 12.0          # steep
+    layers["edge_m"][0, 2] = 60.0         # too close to the perimeter
+    layers["ndvi"][0, 3] = 0.1            # bare
+    layers["worldcover"][0, 4] = 40.0     # cropland
+    layers["loss_year"][0, 5] = 15        # logged in 2015, long after the fire
+    layers["loss_year"][0, 6] = 4         # loss in 2004 is the 2003 fire itself
+    layers["last_fire"][0, 7] = 2017      # burned again
+
+    usable = fire_stats.lidar_shot_mask(2003, **layers)
+
+    assert usable[0].tolist() == [True, False, False, False, False, False, True, False]
+
+
+def test_lidar_in_burn_uses_only_usable_shots(grid, zones):
+    heights = np.full(grid.shape, np.nan)
+    rows, cols = np.nonzero(zones == ZONE_BURN)
+    heights[rows[::50], cols[::50]] = 7.0
+    heights[rows[25::50], cols[25::50]] = 25.0     # shots on steep ground, too tall
+    usable = np.ones(grid.shape, dtype=bool)
+    usable[rows[25::50], cols[25::50]] = False
+
+    result = fire_stats.lidar_in_burn(heights, zones, grid, reference_height_m=17.5, usable=usable)
+
+    assert result["lidar"] == pytest.approx(0.4)
+    assert result["points_in_fire"] == len(rows[::50])

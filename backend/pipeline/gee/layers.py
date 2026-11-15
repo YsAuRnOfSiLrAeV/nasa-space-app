@@ -3,6 +3,7 @@
 - Sentinel-1 GRD, IW, ascending, Jul 10-24, median, focalMean 30 m -> s1_VH, s1_VV (dB)
 - Sentinel-2 SR Harmonized, Jul 1 - Aug 14, cloud < 20%, median, (B8-B4)/(B8+B4) -> NDVI
 - WorldCover (water / forest mask), Hansen (forest loss), MODIS + NBAC (fire history)
+- Copernicus DEM GLO-30 -> elev (m), slope (degrees)
 
 Only month/day are fixed, the year is a parameter.
 TODO: take the windows from forestrecovery.feature_spec() once it is implemented.
@@ -27,6 +28,13 @@ S1_PIXEL_M = 10
 WORLDCOVER = "worldcover"  # ESA class: 10 trees, 80 water
 FOREST_LOSS = "forest_loss"  # 1 where Hansen recorded any forest loss (logging, fire, ...)
 BURNED = "burned"  # 1 inside a known fire: MODIS since 2001 or an NBAC perimeter since 1972
+LOSS_YEAR = "loss_year"  # Hansen year of forest loss minus 2000 (1 = 2001), 0 = no loss
+LAST_FIRE = "last_fire"  # year of the last MODIS burn since 2001, 0 = none
+
+# Terrain layer names, as in the forecast model's covariates.
+ELEV = "elev"
+SLOPE = "slope"
+DEM = "COPERNICUS/DEM/GLO30"
 
 HANSEN = "UMD/hansen/global_forest_change_2025_v1_13"
 NBAC = "projects/sat-io/open-datasets/CA_FOREST/NBAC/nbac_1972_2023_20240530"
@@ -71,23 +79,31 @@ def optical_rgb(grid: Grid, year: int) -> dict:
 
 
 def masks(grid: Grid, year: int) -> dict:
-    """Return WorldCover / Hansen / fire history layers on `grid` (used by zones.py)."""
+    """Return WorldCover / Hansen / fire history layers on `grid` (zones.py, and the lidar shot filter in fire_stats.py)."""
     ee = client.session()
     worldcover = ee.ImageCollection("ESA/WorldCover/v200").first().rename(WORLDCOVER)
     forest_loss = ee.Image(HANSEN).select("lossyear").gt(0).unmask(0).rename(FOREST_LOSS)
-    modis = (
-        ee.ImageCollection("MODIS/061/MCD64A1")
-        .filterDate(f"{MODIS_FIRST_YEAR}-01-01", f"{year + 1}-01-01")
-        .select("BurnDate")
-        .max()
-        .gt(0)
-        .unmask(0)
-    )
+    loss_year = ee.Image(HANSEN).select("lossyear").unmask(0).rename(LOSS_YEAR)
+
+    def burn_year(month):
+        burned_cells = month.select("BurnDate").gt(0)
+        return burned_cells.multiply(ee.Date(month.get("system:time_start")).get("year")).toInt()
+
+    modis_months = ee.ImageCollection("MODIS/061/MCD64A1").filterDate(f"{MODIS_FIRST_YEAR}-01-01", f"{year + 1}-01-01")
+    last_fire = modis_months.map(burn_year).max().unmask(0).rename(LAST_FIRE)
     # MODIS starts in 2001; NBAC perimeters add the fires of 1972-2000, whose forest is still young.
     nbac = ee.Image(0).paint(ee.FeatureCollection(NBAC).filterBounds(client.region(grid)), 1)
-    burned = modis.Or(nbac).rename(BURNED)
-    image = worldcover.addBands(forest_loss).addBands(burned)
-    return client.fetch(image, grid, [WORLDCOVER, FOREST_LOSS, BURNED])
+    burned = last_fire.gt(0).Or(nbac).rename(BURNED)
+    image = worldcover.addBands(forest_loss).addBands(burned).addBands(loss_year).addBands(last_fire)
+    return client.fetch(image, grid, [WORLDCOVER, FOREST_LOSS, BURNED, LOSS_YEAR, LAST_FIRE])
+
+
+def terrain(grid: Grid) -> dict:
+    """Return {"elev": metres, "slope": degrees} on `grid`, from the DEM used in training."""
+    ee = client.session()
+    dem = ee.ImageCollection(DEM).select("DEM").mosaic().setDefaultProjection("EPSG:4326", None, 30)
+    image = dem.rename(ELEV).addBands(ee.Terrain.slope(dem).rename(SLOPE))
+    return client.fetch(image, grid, [ELEV, SLOPE])
 
 
 def satellite_images(grid: Grid, year: int) -> dict:

@@ -12,7 +12,8 @@ The same kind of reduction gives the fire totals written to result.json:
     stage_share       model_result.stage_share, from the state model's stage map
     coverage          satellite_images.nisar.fire_covered
     optics_recovery   comparison.optics
-    lidar_in_burn     comparison.lidar and lidar_points, from the GEDI shots inside the burn
+    lidar_shot_mask   which GEDI shots inside the burn are fit to compare with the model
+    lidar_in_burn     comparison.lidar and lidar_points, from those shots
 
 All functions take maps on the fire grid and the zones map (ZONE_BURN,
 ZONE_REFERENCE, NaN for excluded cells).
@@ -41,6 +42,12 @@ STAGES = 3                    # model stages: 0 under 5 m, 1 5-10 m, 2 over 10 m
 MIN_NISAR_COVERAGE = 0.8      # below this share of the burn zone, the fire result gets a warning
 MIN_LIDAR_SHOTS = 10          # fewer GEDI shots in the burn give no lidar recovery (as in model validation)
 MAX_LIDAR_POINTS = 300        # points written to result.json for the map, spread over the burn
+
+# Shots inside the burn are filtered as the model's training labels were.
+MAX_LIDAR_SLOPE_DEG = 10      # on steeper ground the terrain inflates rh98
+MIN_LIDAR_EDGE_M = 100        # training sampled inside the perimeter shrunk by 100 m
+MIN_LIDAR_NDVI = 0.2
+NOT_FOREST_COVER = (40, 50, 70, 80, 90, 95)  # WorldCover: cropland, built-up, snow, water, wetland, mangroves
 
 
 def fire_mask(polygon: BaseGeometry | dict, grid: Grid) -> np.ndarray:
@@ -100,16 +107,56 @@ def optics_recovery(ndvi: np.ndarray, zones: np.ndarray) -> float | None:
     return round(float(np.median(burn)) / reference_median, 4)
 
 
-def lidar_in_burn(heights: np.ndarray | None, zones: np.ndarray, grid: Grid, reference_height_m: float | None) -> dict:
+def lidar_shot_mask(
+    fire_year: int,
+    *,
+    slope: np.ndarray,
+    edge_m: np.ndarray,
+    ndvi: np.ndarray,
+    worldcover: np.ndarray,
+    loss_year: np.ndarray,
+    last_fire: np.ndarray,
+) -> np.ndarray:
+    """Cells where a GEDI shot counts for the lidar comparison, by the rules of the training labels.
+
+    Kept: gentle slope, at least 100 m inside the perimeter, green vegetation, land cover that can
+    be forest, no Hansen forest loss other than the fire itself (fire year +-1), no later fire.
+    Cells without a value in any layer are dropped.
+    """
+    with np.errstate(invalid="ignore"):
+        other_loss = (loss_year > 0) & (np.abs(loss_year + 2000 - fire_year) > 1)
+        return (
+            (slope < MAX_LIDAR_SLOPE_DEG)
+            & (edge_m >= MIN_LIDAR_EDGE_M)
+            & (ndvi > MIN_LIDAR_NDVI)
+            & np.isfinite(worldcover)
+            & ~np.isin(worldcover, NOT_FOREST_COVER)
+            & np.isfinite(loss_year)
+            & ~other_loss
+            & ~(last_fire > fire_year)
+        )
+
+
+def lidar_in_burn(
+    heights: np.ndarray | None,
+    zones: np.ndarray,
+    grid: Grid,
+    reference_height_m: float | None,
+    usable: np.ndarray | None = None,
+) -> dict:
     """GEDI shots inside the burn: {"lidar", "points_in_fire", "points"} for result.json.
 
     lidar is the mean shot height over the neighbour forest height, the same measure as the model's
-    recovery. It is None with fewer than MIN_LIDAR_SHOTS shots. GEDI flew 2019-2023, so it shows
-    the burn a few years before the satellite images.
+    recovery. It is None with fewer than MIN_LIDAR_SHOTS shots. ``usable`` (from lidar_shot_mask)
+    keeps only the shots fit for the comparison. GEDI flew 2019-2023, so it shows the burn a few
+    years before the satellite images.
     """
     if heights is None:
         return {"lidar": None, "points_in_fire": 0, "points": []}
-    rows, cols = np.nonzero((zones == ZONE_BURN) & np.isfinite(heights))
+    shots = (zones == ZONE_BURN) & np.isfinite(heights)
+    if usable is not None:
+        shots &= usable
+    rows, cols = np.nonzero(shots)
     values = heights[rows, cols]
     lidar = None
     if values.size >= MIN_LIDAR_SHOTS and reference_height_m:

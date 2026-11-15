@@ -43,7 +43,9 @@ def offline(monkeypatch):
     monkeypatch.setattr(layers, "ndvi", lambda grid, summer: {NDVI: full(grid, 0.77)})
     monkeypatch.setattr(layers, "masks", lambda grid, summer: {
         layers.WORLDCOVER: full(grid, 10.0), layers.FOREST_LOSS: full(grid, 0.0), layers.BURNED: full(grid, 0.0),
+        layers.LOSS_YEAR: full(grid, 0.0), layers.LAST_FIRE: full(grid, 0.0),
     })
+    monkeypatch.setattr(layers, "terrain", lambda grid: {layers.ELEV: full(grid, 600.0), layers.SLOPE: full(grid, 4.0)})
     monkeypatch.setattr(layers, "satellite_images", lambda grid, summer: {
         "sentinel1": {"from": "2026-07-10", "to": "2026-07-24", "scenes": 3},
         "sentinel2": {"from": "2026-07-01", "to": "2026-08-14", "scenes": 10},
@@ -90,7 +92,7 @@ def test_run_writes_a_complete_result(offline, tmp_path):
     growth = result["growth_forecast"]
     assert growth["year_80pct"] > 2003 and len(growth["interval_80_now"]) == 2
     assert len(growth["series"]["years"]) == len(growth["series"]["recovery"])
-    assert "MISSING_COVARIATES_USING_AVERAGES" in result["warnings"]  # no slope, soil or dNBR layers yet
+    assert "MISSING_COVARIATES_USING_AVERAGES" in result["warnings"]  # no soil or dNBR layers yet
 
     n = result["map_grid"]["columns"] * result["map_grid"]["rows"]
     assert set(cells) == {"model", "map", "optics"}

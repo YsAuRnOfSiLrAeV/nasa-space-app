@@ -1,4 +1,5 @@
 """GEDI lidar heights: the reference ("100% recovery") forest height, and the shots for the burn.
+The shots inside the burn get the extra filters of the training labels in fire_stats.lidar_shot_mask.
 
 ``shot_heights`` downloads the good GEDI shots on the grid once. ``reference_height`` takes the
 median rh98 of good-quality GEDI shots over the reference forest (zones.py: the 1.5-6 km ring

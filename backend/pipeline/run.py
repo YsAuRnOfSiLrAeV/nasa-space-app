@@ -10,11 +10,13 @@
                    Sentinel-1 VH, VV
                    NDVI
                    masks -> zones -> GEDI shots -> neighbour forest height
+                   elevation and slope
                    scene counts for result.json
                    Sentinel-2 colour picture on the display grid (optional)
     3. state     cell table -> input check -> state model -> maps            cell_features.py, model.py
     4. numbers   distance to edge, covariates, stage shares, coverage,      fire_stats.py
-                 optics, GEDI lidar inside the burn
+                 optics, GEDI lidar inside the burn (shots filtered as the
+                 training labels were)
     5. forecast  fire recovery and growth forecast                          model.py
     6. files     result.json, cells.json, index.json                        export.py
 
@@ -82,10 +84,21 @@ def run(fire: Fire, summer: int, out_dir: Path | str, on_step: Callable[[str], N
 
     step("numbers")
     inside = fire_stats.fire_mask(fire.perimeter, grid)
-    covariates = fire_stats.covariates({fire_stats.DIST_EDGE: fire_stats.distance_to_edge(inside)}, zones)
+    edge_m = fire_stats.distance_to_edge(inside)
+    covariates = fire_stats.covariates({fire_stats.DIST_EDGE: edge_m, **data["terrain"]}, zones)
     nisar_coverage = fire_stats.coverage(data["nisar"].layers[NISAR_HV], zones)
     ndvi = data["ndvi"][NDVI]
-    lidar = fire_stats.lidar_in_burn(data["gedi"], zones, grid, data["reference"]["height_m"])
+    masks = data["masks"]
+    usable_shots = fire_stats.lidar_shot_mask(
+        fire.year,
+        slope=data["terrain"][layers.SLOPE],
+        edge_m=edge_m,
+        ndvi=ndvi,
+        worldcover=masks[layers.WORLDCOVER],
+        loss_year=masks[layers.LOSS_YEAR],
+        last_fire=masks[layers.LAST_FIRE],
+    )
+    lidar = fire_stats.lidar_in_burn(data["gedi"], zones, grid, data["reference"]["height_m"], usable=usable_shots)
 
     step("forecast")
     reference_m = data["reference"]["height_m"]
@@ -140,14 +153,14 @@ def run(fire: Fire, summer: int, out_dir: Path | str, on_step: Callable[[str], N
 
 
 def _fetch_data(fire: Fire, grid: Grid, summer: int, display: Grid) -> dict:
-    """All satellite data for the fire. The six downloads do not depend on each other and run at once."""
+    """All satellite data for the fire. The downloads do not depend on each other and run at once."""
     client.session()  # log in to Earth Engine once, before the threads start
 
     def zones_and_reference():
         masks = layers.masks(grid, summer)
         z = zone_maps.make_zones(fire.perimeter, grid, masks)
         heights = gedi.shot_heights(fire.perimeter, grid)
-        return z, heights, gedi.reference_height(fire.perimeter, grid, z, heights=heights)
+        return masks, z, heights, gedi.reference_height(fire.perimeter, grid, z, heights=heights)
 
     def optical():
         try:
@@ -156,23 +169,26 @@ def _fetch_data(fire: Fire, grid: Grid, summer: int, display: Grid) -> dict:
             log.warning("optical picture skipped: %s", error)
             return None
 
-    with ThreadPoolExecutor(max_workers=6) as pool:
+    with ThreadPoolExecutor(max_workers=7) as pool:
         nisar = pool.submit(nisar_layers, grid, summer)
         s1 = pool.submit(layers.sentinel1, grid, summer)
         ndvi = pool.submit(layers.ndvi, grid, summer)
         zones_ref = pool.submit(zones_and_reference)
         images = pool.submit(layers.satellite_images, grid, summer)
         rgb = pool.submit(optical)
-        z, heights, reference = zones_ref.result()
+        terrain = pool.submit(layers.terrain, grid)
+        masks, z, heights, reference = zones_ref.result()
         return {
             "nisar": nisar.result(),
             "s1": s1.result(),
             "ndvi": ndvi.result(),
+            "masks": masks,
             "zones": z,
             "gedi": heights,
             "reference": reference,
             "images": images.result(),
             "optical": rgb.result(),
+            "terrain": terrain.result(),
         }
 
 
