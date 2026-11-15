@@ -71,10 +71,20 @@ def optical_rgb(grid: Grid, year: int) -> dict:
     """Return {"red", "green", "blue"}: Sentinel-2 surface reflectance 0..1 on `grid`, the scenes used for NDVI.
 
     For the optical picture of the fire, so call it on the coarse display grid, not the 30 m grid.
+    Clouds and their shadows are masked first (Sentinel-2 scene classification), so with few scenes
+    the picture shows the ground. Where every scene is cloudy the plain median fills the gap.
+    NDVI keeps the plain median, because the model was trained on it.
     """
     scenes = _s2_scenes(grid, year)
     _require(scenes, "Sentinel-2", year, S2_WINDOW)
-    image = scenes.median().select(["B4", "B3", "B2"], ["red", "green", "blue"]).divide(10000)
+
+    def clear_sky(scene):
+        scl = scene.select("SCL")
+        return scene.updateMask(scl.neq(3).And(scl.lt(8).Or(scl.eq(11))))  # 3 shadow, 8-10 cloud and cirrus, 11 snow
+
+    bands = (["B4", "B3", "B2"], ["red", "green", "blue"])
+    plain = scenes.median().select(*bands)
+    image = scenes.map(clear_sky).median().select(*bands).unmask(plain).divide(10000)
     return client.fetch(image, grid, ["red", "green", "blue"])
 
 

@@ -70,14 +70,24 @@ def fire_size_log(area_ha: float) -> float:
     return round(math.log10(area_ha), 4)
 
 
-def burn_median(layer: np.ndarray, zones: np.ndarray) -> float | None:
-    values = layer[(zones == ZONE_BURN) & np.isfinite(layer)]
+def burn_median(layer: np.ndarray, zones: np.ndarray, where: np.ndarray | None = None) -> float | None:
+    cells = (zones == ZONE_BURN) & np.isfinite(layer)
+    if where is not None:
+        cells &= where
+    values = layer[cells]
     return round(float(np.median(values)), 4) if values.size else None
 
 
-def covariates(layers: Mapping[str, np.ndarray], zones: np.ndarray) -> dict[str, float | None]:
-    """Median over the burn zone of every grid covariate. None when the layer is missing or empty."""
-    return {name: burn_median(layers[name], zones) if name in layers else None for name in GRID_COVARIATES}
+def covariates(layers: Mapping[str, np.ndarray], zones: np.ndarray, where: np.ndarray | None = None) -> dict[str, float | None]:
+    """Median over the burn zone of every grid covariate. None when the layer is missing or empty.
+
+    ``where`` narrows the burn to the cells the training sampled (lidar_shot_mask): the training
+    covariates come from those cells only, so on steep ground the whole-burn median would fall
+    outside the range the forecast model knows. Without any such cell the whole burn is used.
+    """
+    if where is not None and not (where & (zones == ZONE_BURN)).any():
+        where = None
+    return {name: burn_median(layers[name], zones, where) if name in layers else None for name in GRID_COVARIATES}
 
 
 def stage_share(stage: np.ndarray, zones: np.ndarray) -> list[float] | None:

@@ -137,3 +137,14 @@ def test_lidar_in_burn_uses_only_usable_shots(grid, zones):
 
     assert result["lidar"] == pytest.approx(0.4)
     assert result["points_in_fire"] == len(rows[::50])
+
+
+def test_covariates_use_only_the_sampled_cells_when_there_are_any(grid, zones):
+    slope = np.where(zones == ZONE_BURN, 25.0, 3.0)
+    gentle = np.zeros(grid.shape, dtype=bool)
+    rows, cols = np.nonzero(zones == ZONE_BURN)
+    slope[rows[:10], cols[:10]] = 6.0
+    gentle[rows[:10], cols[:10]] = True
+
+    assert fire_stats.covariates({"slope": slope}, zones, where=gentle)["slope"] == 6.0
+    assert fire_stats.covariates({"slope": slope}, zones, where=np.zeros(grid.shape, dtype=bool))["slope"] == 25.0

@@ -85,11 +85,10 @@ def run(fire: Fire, summer: int, out_dir: Path | str, on_step: Callable[[str], N
     step("numbers")
     inside = fire_stats.fire_mask(fire.perimeter, grid)
     edge_m = fire_stats.distance_to_edge(inside)
-    covariates = fire_stats.covariates({fire_stats.DIST_EDGE: edge_m, **data["terrain"]}, zones)
-    nisar_coverage = fire_stats.coverage(data["nisar"].layers[NISAR_HV], zones)
     ndvi = data["ndvi"][NDVI]
     masks = data["masks"]
-    usable_shots = fire_stats.lidar_shot_mask(
+    # Cells the training sampled: lidar shots and forecast covariates both come from them.
+    sampled = fire_stats.lidar_shot_mask(
         fire.year,
         slope=data["terrain"][layers.SLOPE],
         edge_m=edge_m,
@@ -98,7 +97,9 @@ def run(fire: Fire, summer: int, out_dir: Path | str, on_step: Callable[[str], N
         loss_year=masks[layers.LOSS_YEAR],
         last_fire=masks[layers.LAST_FIRE],
     )
-    lidar = fire_stats.lidar_in_burn(data["gedi"], zones, grid, data["reference"]["height_m"], usable=usable_shots)
+    covariates = fire_stats.covariates({fire_stats.DIST_EDGE: edge_m, **data["terrain"]}, zones, where=sampled)
+    nisar_coverage = fire_stats.coverage(data["nisar"].layers[NISAR_HV], zones)
+    lidar = fire_stats.lidar_in_burn(data["gedi"], zones, grid, data["reference"]["height_m"], usable=sampled)
 
     step("forecast")
     reference_m = data["reference"]["height_m"]
