@@ -13,7 +13,7 @@ def run(polygon, year: int, out_dir) -> None:
     # nisar = read_to_grid(find_scene(polygon, year), grid)
     # s1, nd, m = sentinel1(grid, year), ndvi(grid, year), masks(grid, year)
     # zones = make_zones(polygon, grid, m)
-    # ref = reference_height(polygon)
+    # ref = reference_height(polygon, grid, zones)
     # table = build_table(nisar, s1, nd)
     # state = run_model(table, ref["height_m"])
     # write_result(out_dir, ...)
