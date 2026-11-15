@@ -19,3 +19,7 @@ NDVI = "NDVI"  # 0..1, not 0..10000
 FEATURE_COLUMNS = (NISAR_HV, NISAR_HH, S1_VH, S1_VV, NDVI)
 
 # HV-HH and VH-VV differences are computed inside forestrecovery; do not add them here.
+
+# Zone codes in the zones array and in cells.json map.zone. Excluded cells are NaN (null in cells.json).
+ZONE_BURN = 1
+ZONE_REFERENCE = 0

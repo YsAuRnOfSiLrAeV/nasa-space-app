@@ -5,11 +5,14 @@ description = "Pipeline: fire polygon -> imagery on a shared grid -> model -> re
 requires-python = ">=3.10"
 dependencies = [
     "numpy",
-    "shapely",
+    "scipy",
+    "shapely>=2.0",
     "pyproj",
+    "affine",
     "rasterio",
     "h5py",
     "earthaccess",
+    "fsspec[http]",
     "earthengine-api",
     "python-dotenv",
 ]
@@ -24,3 +27,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["pipeline*", "api*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

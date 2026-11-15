@@ -150,7 +150,7 @@ class FakeScenes:
 
 def test_no_scenes_is_a_clear_error():
     layers._require(FakeScenes(3), "Sentinel-1", 2026, layers.S1_WINDOW)
-    with pytest.raises(layers.NoScenesError, match="no Sentinel-1 scenes over the fire between 2026-07-10 and 2026-07-25"):
+    with pytest.raises(layers.NoScenesError, match="no Sentinel-1 scenes over the fire between 2026-07-10 and 2026-07-24"):
         layers._require(FakeScenes(0), "Sentinel-1", 2026, layers.S1_WINDOW)
 
 

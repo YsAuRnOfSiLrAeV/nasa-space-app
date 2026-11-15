@@ -1,1 +1,1 @@
-"""Layers from Google Earth Engine via computePixels, on the shared grid. Owner: Misha."""
+"""Layers from Google Earth Engine via computePixels, on the shared grid."""
