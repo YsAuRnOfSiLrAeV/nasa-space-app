@@ -197,7 +197,7 @@ def main() -> None:
     p.add_argument("--summer", type=int, required=True, help="summer of the satellite images, e.g. 2026")
     p.add_argument("--out", required=True, help="folder for index.json and the fire folders")
     args = p.parse_args()
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logging.basicConfig(level=logging.WARNING, format="%(message)s")  # warnings only: libraries log every download at INFO
     folder = run(fire_from_geojson(args.polygon), args.summer, args.out, on_step=lambda s: print(f"[{s}]", flush=True))
     print(f"written to {folder}")
 

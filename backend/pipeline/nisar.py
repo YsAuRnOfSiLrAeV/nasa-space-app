@@ -43,6 +43,8 @@ TARGET_DAY = "07-17"         # Granules closest to this day are used first. Same
 PASS = "A"                   # Ascending only, like Sentinel-1 in training.
 MIN_DB = -25.0               # Below this the pixel is a granule edge or has no data. Same cut as in training.
 MAX_GRANULES = 200           # Search limit. A summer over one fire returns far fewer.
+ENOUGH_IMAGED = 0.99         # Stop once this share of cells is imaged: the last cells (radar shadow, gaps
+                             # between frames) are usually in no granule, and each extra granule costs seconds.
 GCOV_GRID = "science/LSAR/GCOV/grids/frequencyA"  # where GCOV keeps HHHH, HVHV and their coordinates
 BLOCK_BYTES = 8 * 2**20      # Each HTTP read fetches at least this much. HDF5 makes many small reads close together.
 
@@ -129,7 +131,7 @@ def _read_to_grid(granules: list[Granule], grid: Grid) -> NisarLayers:
 
     A cell is done once a granule has imaged it, even if the value is too dark to use:
     a later granule from another day would not make it brighter. So the loop stops as
-    soon as every cell is imaged, which for most fires is after the first granule.
+    soon as ENOUGH_IMAGED of the cells are imaged, which for most fires is after one to three granules.
     """
     if not granules:
         raise NisarUnavailable("no ascending NISAR granules over the fire for this summer")
@@ -138,9 +140,9 @@ def _read_to_grid(granules: list[Granule], grid: Grid) -> NisarLayers:
     xs, ys = grid.cell_centers()
     used = []
     for granule in granules:
-        todo = ~imaged
-        if not todo.any():
+        if imaged.mean() >= ENOUGH_IMAGED:
             break
+        todo = ~imaged
         with _open_scene(granule) as scene:
             if scene is None:
                 continue

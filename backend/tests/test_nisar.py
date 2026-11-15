@@ -199,3 +199,20 @@ def test_bands_outside_the_usual_group_are_still_found(grid, tmp_path, monkeypat
         f.move("science/LSAR/GCOV/grids/frequencyA", "science/LSAR/GCOV/grids/elsewhere/frequencyA")
     result = nisar._read_to_grid(use_files(monkeypatch, [path]), grid)
     assert np.allclose(result.layers[NISAR_HV], -20.0, atol=1e-4)
+
+
+def test_search_stops_once_almost_every_cell_is_imaged(grid, tmp_path, monkeypatch):
+    """A strip under 1% of the grid that no granule images does not make the reader open every granule."""
+    left, bottom, right, top = grid.bounds
+    strip = left + (right - left) * 0.005
+    holes = lambda xx, yy: np.where(xx < strip, 0.0, 0.01)  # 0 = no data in the westmost strip
+    first = write_granule(tmp_path / "first.h5", grid, hh=const(0.05), hv=holes)
+    second = write_granule(tmp_path / "second.h5", grid, hh=const(0.05), hv=holes)
+    granules = use_files(monkeypatch, [first, second])
+    opened = []
+    open_file = nisar._open
+    monkeypatch.setattr(nisar, "_open", lambda g: opened.append(g.name) or open_file(g))
+
+    result = nisar._read_to_grid(granules, grid)
+    assert opened == ["g0"]
+    assert np.isfinite(result.layers[NISAR_HV]).mean() >= nisar.ENOUGH_IMAGED
