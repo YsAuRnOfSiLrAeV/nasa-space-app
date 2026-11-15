@@ -1,6 +1,6 @@
 # models: the forestrecovery library
 
-The state and forecast models, with their data, version 0.14.0. The full documentation is in
+The state and forecast models, with their data, version 0.14.1. The full documentation is in
 `forestrecovery/README.md`, the input specification in `forestrecovery/FEATURES.md`.
 
 ```bash

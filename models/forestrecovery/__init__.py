@@ -51,4 +51,4 @@ from .bundle import catalog, confidence_zones, export_all, fire_bundle, write_fi
 from .data import (DemoFire, data_info, demo_globe, demo_scenes, fire_boundaries,  # noqa: F401
                    list_demo_fires, list_fires, load_demo_fire, load_points)
 
-__version__ = "0.14.0"
+__version__ = "0.14.1"

@@ -188,7 +188,6 @@ def index_entry(result: dict) -> dict:
         "summer": result["satellite_images"]["summer"],
         "center_lonlat": [round(centre.x, 4), round(centre.y, 4)],
         "recovery_today_avg": model.get("recovery_today_avg"),
-        "area_recovered_80pct": model.get("area_recovered_80pct"),
         "year_80pct": forecast.get("year_80pct"),
         "result": f"{fire['id']}/result.json",
     }

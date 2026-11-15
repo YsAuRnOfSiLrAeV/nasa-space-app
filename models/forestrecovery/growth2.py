@@ -82,4 +82,4 @@ def forecast_recovery(fire_year, covariates=None, horizon=40, now_year=2026, ste
     return dict(fire_year=int(fire_year), years=(fire_year + ages).astype(int).tolist(), age=ages.tolist(), recovery=[round(float(x), 4) for x in rec],
                 low=[round(float(x), 4) for x in low], high=[round(float(x), 4) for x in high], tau=round(tau, 2), years_to_80pct=round(t80, 1),
                 year_80pct=int(round(fire_year + t80)), now_recovery=round(float(1 - np.exp(-age_now / tau)), 4), now_year=now_year, used=used, missing=missing,
-                out_of_range=oor, reliable_age=[lo_age, hi_age], warnings=warns, cv=m["cv"]["tau від змінних"])
+                out_of_range=oor, reliable_age=[lo_age, hi_age], warnings=warns, cv=m["cv"]["tau_from_covariates"])

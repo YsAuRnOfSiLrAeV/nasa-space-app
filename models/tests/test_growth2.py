@@ -31,5 +31,5 @@ assert forecast_recovery(2003, lon=-120.2, lat=51.1)["tau"] > 0
 assert "NOT_VALIDATED_REGION" in forecast_recovery(2003, lon=31, lat=49, allow_unvalidated=True)["warnings"]
 print("3 OK  лише Канада: Україна, Амазонія й Китай дають OutOfDomainError")
 
-assert m["cv"]["tau від змінних"]["r2_fire"] > m["cv"]["tau постійна"]["r2_fire"] and m["n_fires"] >= 50 and len(m["coef"]) == len(m["features"])
+assert m["cv"]["tau_from_covariates"]["r2_fire"] > m["cv"]["tau_constant"]["r2_fire"] and m["n_fires"] >= 50 and len(m["coef"]) == len(m["features"])
 print("4 OK  метрики перевірки в файлі моделі: зі змінними кращі за сталу tau")

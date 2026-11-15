@@ -41,6 +41,7 @@ from .nisar import nisar_layers
 
 log = logging.getLogger(__name__)
 STEPS = ("grid", "data", "state", "numbers", "forecast", "files")
+MAX_EXCLUDED_SHARE = 0.15  # above this share of the burn without a model value, the average is likely too high
 
 
 @dataclass(frozen=True)
@@ -107,9 +108,9 @@ def run(fire: Fire, summer: int, out_dir: Path | str, on_step: Callable[[str], N
             "model_version": model.MODEL_VERSION,
             "region": place.model,
             "recovery_today_avg": recovery["recovery_today_avg"],
-            "area_recovered_80pct": recovery["area_recovered_80pct"],
+            "excluded_share": recovery["excluded_share"],
             "stage_share": fire_stats.stage_share(stage, zones),
-            "error_vs_lidar_pct": model.error_vs_lidar_pct(place.model),
+            "accuracy": model.accuracy(place.model),
         },
         "growth_forecast": growth,
         "comparison": {
@@ -119,7 +120,7 @@ def run(fire: Fire, summer: int, out_dir: Path | str, on_step: Callable[[str], N
             "lidar_points_in_fire": 0,
         },
         "lidar_points": [],
-        "warnings": _warnings(fire, place, input_issues, nisar_coverage, forecast_warnings),
+        "warnings": _warnings(place, input_issues, nisar_coverage, recovery, data["reference"], forecast_warnings, fire),
     }
     cells = export.cells_json(
         {
@@ -161,7 +162,15 @@ def _fetch_data(fire: Fire, grid: Grid, summer: int) -> dict:
         }
 
 
-def _warnings(fire: Fire, place: model.Place, input_issues: list[str], nisar_coverage: float, forecast_warnings: list[str]) -> list[str]:
+def _warnings(
+    place: model.Place,
+    input_issues: list[str],
+    nisar_coverage: float,
+    recovery: dict,
+    reference: dict,
+    forecast_warnings: list[str],
+    fire: Fire,
+) -> list[str]:
     """Warning codes for result.json. The texts live in the frontend."""
     codes = list(fire.extra_warnings)
     if place.extrapolated:
@@ -170,6 +179,10 @@ def _warnings(fire: Fire, place: model.Place, input_issues: list[str], nisar_cov
         codes.append("MODEL_INPUT_CHECK_FAILED")
     if nisar_coverage < fire_stats.MIN_NISAR_COVERAGE:
         codes.append("LOW_NISAR_COVERAGE")
+    if (recovery["excluded_share"] or 0) >= MAX_EXCLUDED_SHARE:
+        codes.append("MANY_CELLS_EXCLUDED")
+    if reference["source"] != "gedi":
+        codes.append("ACCURACY_NOT_VALIDATED_WITHOUT_GEDI")  # validation used fires with GEDI only
     return codes + [code for code in forecast_warnings if code not in codes]
 
 

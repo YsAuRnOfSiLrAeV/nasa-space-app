@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "forestrecovery"
-version = "0.14.0"
+version = "0.14.1"
 description = "Forest recovery after wildfire from NISAR, Sentinel-1 and NDVI: stage now, growth over time, 3D scene. Data for 80 fires included."
 readme = "forestrecovery/README.md"
 requires-python = ">=3.10"

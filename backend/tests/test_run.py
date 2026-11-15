@@ -62,8 +62,11 @@ def test_run_writes_a_complete_result(offline, tmp_path):
     assert result["fire"]["id"] == "bc_test_1"
     assert result["model_result"]["model_version"] == model.MODEL_VERSION
     assert result["model_result"]["region"] == "continental"
-    assert result["model_result"]["error_vs_lidar_pct"] == pytest.approx(11.7)
+    assert result["model_result"]["accuracy"]["error_vs_lidar_pct"] == pytest.approx(11.7)
+    assert result["model_result"]["accuracy"]["null_model_mae_m"] > result["model_result"]["accuracy"]["mae_m"]
     assert 0 < result["model_result"]["recovery_today_avg"] < 1.5
+    assert result["model_result"]["excluded_share"] == pytest.approx(0.0)
+    assert "area_recovered_80pct" not in result["model_result"]
     assert result["satellite_images"]["nisar"] == {"date": "2026-07-18", "fire_covered": 1.0}
     assert result["satellite_images"]["sentinel1"]["scenes"] == 3
     assert result["neighbour_forest"] == {"height_m": 19.1, "source": "gedi"}
@@ -104,3 +107,24 @@ def test_fire_from_geojson_computes_the_area(tmp_path):
     f = pipeline_run.fire_from_geojson(path)
     assert f.name == {"en": "Fire 2003"}
     assert f.area_ha == pytest.approx(3100, rel=0.05)
+
+
+def test_bare_burn_is_reported_as_excluded(offline, tmp_path, monkeypatch):
+    """NDVI under 0.2 is outside the training range: those cells get no model value and are counted as excluded."""
+    def ndvi(grid, summer):
+        out = np.full(grid.shape, 0.77, dtype=np.float32)
+        out[:, : grid.width // 2] = 0.1  # western half bare
+        return {NDVI: out}
+
+    monkeypatch.setattr(layers, "ndvi", ndvi)
+    folder = pipeline_run.run(fire(), 2026, tmp_path)
+    result = json.loads((folder / "result.json").read_text(encoding="utf-8"))
+    assert result["model_result"]["excluded_share"] > pipeline_run.MAX_EXCLUDED_SHARE
+    assert "MANY_CELLS_EXCLUDED" in result["warnings"]
+
+
+def test_neighbour_height_without_gedi_is_flagged(offline, tmp_path, monkeypatch):
+    monkeypatch.setattr(gedi, "reference_height", lambda polygon, grid, zones: {"height_m": 12.0, "source": "eth", "shots": 0})
+    folder = pipeline_run.run(fire(), 2026, tmp_path)
+    result = json.loads((folder / "result.json").read_text(encoding="utf-8"))
+    assert "ACCURACY_NOT_VALIDATED_WITHOUT_GEDI" in result["warnings"]

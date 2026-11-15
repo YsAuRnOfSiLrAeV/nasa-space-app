@@ -97,12 +97,13 @@ def input_report(nisar_HV, nisar_HH, s1_VH, s1_VV, NDVI, region="continental", *
         if per[k]["nan_share"] > 0.5:
             issues.append(f"{k}: понад половина значень NaN ({per[k]['nan_share']:.0%}): перевірте покриття знімками й маску.")
         if k in _DB and fin.any():
-            if np.nanmax(v) > 15 or (np.nanmedian(v) > 0 and np.nanmax(v) < 3):
+            hi99 = float(np.nanpercentile(v, 99))   # 99-й процентиль, а не максимум: один викид не має давати хибну тривогу
+            if hi99 > 15 or (np.nanmedian(v) > 0 and hi99 < 3):
                 issues.append(f"{k} схоже на лінійну потужність (медіана {med:.3g}), а потрібні dB: 10*log10(x). Усереднюйте в лінійних одиницях ДО переведення в dB.")
             elif per[k]["in_range_share"] < 0.8:
                 issues.append(f"{k}: лише {per[k]['in_range_share']:.0%} значень у допустимому діапазоні {lo}..{hi} dB: перевірте одиниці й калібрування.")
         if k == "NDVI" and fin.any():
-            if np.nanmax(v) > 1.5:
+            if np.nanpercentile(v, 99) > 1.5:
                 issues.append(f"NDVI виходить за 1 (макс. {per[k]['max']:.3g}): схоже на масштаб 0..10000, поділіть на 10000.")
             elif per[k]["in_range_share"] < 0.5:
                 issues.append(f"NDVI: лише {per[k]['in_range_share']:.0%} значень >= 0.2 (модель навчена на NDVI >= 0.2): забагато води, голих ділянок чи хмар.")

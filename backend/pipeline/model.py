@@ -3,7 +3,8 @@
     place(lon, lat)                      which regional model applies at the fire, or OutOfDomainError
     check_inputs(table, model)           forestrecovery.input_report on the five inputs
     state(table, model)                  state model per cell: stage, p_forest_gt5, expected height
-    fire_recovery(height, zones, ref)    fire-level recovery for model_result in result.json
+    fire_recovery(height, zones, ref)    fire-level recovery and the share of the burn the model left out
+    accuracy(model)                      how far fire-level recovery was from GEDI lidar in validation
     forecast(fire_year, summer, ...)     growth forecast for the fire, None where it is not validated
 
 Recovery is height over the neighbour forest height. Per cell it is too noisy to show
@@ -22,7 +23,6 @@ from .contract import ZONE_BURN
 
 MODEL_VERSION = f"forestrecovery {fr.__version__}"
 OutOfDomainError = fr.OutOfDomainError
-RECOVERED = 0.8  # a cell counts as recovered at 80% of the neighbour forest height
 
 
 @dataclass(frozen=True)
@@ -66,21 +66,41 @@ def state(table: CellTable, model: str) -> StateResult:
 
 
 def fire_recovery(height_m: np.ndarray, zones: np.ndarray, reference_height_m: float) -> dict:
-    """recovery_today_avg and area_recovered_80pct over the burn zone, from the expected height map."""
-    burn = height_m[(zones == ZONE_BURN) & np.isfinite(height_m)]
-    if not burn.size or not reference_height_m:
-        return {"recovery_today_avg": None, "area_recovered_80pct": None}
-    recovery = burn / reference_height_m
-    return {
-        "recovery_today_avg": round(float(recovery.mean()), 3),
-        "area_recovered_80pct": round(float((recovery >= RECOVERED).mean()), 3),
-    }
+    """recovery_today_avg and excluded_share over the burn zone, from the expected height map.
+
+    excluded_share is the part of the burn with no model value: no NISAR or optical data, or inputs
+    outside the training range (NDVI under 0.2 is the common case: bare, least recovered ground).
+    The average only covers the rest, so a large excluded share means it is likely too high.
+    """
+    burn = zones == ZONE_BURN
+    if not burn.any():
+        return {"recovery_today_avg": None, "excluded_share": None}
+    valid = height_m[burn & np.isfinite(height_m)]
+    excluded = round(1 - valid.size / int(burn.sum()), 4)
+    if not valid.size or not reference_height_m:
+        return {"recovery_today_avg": None, "excluded_share": excluded}
+    return {"recovery_today_avg": round(float(valid.mean() / reference_height_m), 3), "excluded_share": excluded}
 
 
-def error_vs_lidar_pct(model: str) -> float | None:
-    """Typical fire-level error against GEDI lidar, % of the neighbour forest height. None where not validated."""
+def accuracy(model: str) -> dict | None:
+    """Fire-level validation against GEDI lidar for result.json. None where the model was not validated.
+
+    error_vs_lidar_pct   median error of fire-average recovery, % of the neighbour forest height
+    mae_m                mean absolute error of the fire-average height, m
+    null_model_mae_m     the same for always predicting the average, m: the model is only somewhat better
+    n_fires              fires with at least min_gedi_points GEDI shots in the burn
+    """
     acc = fr.accuracy(model)
-    return None if acc is None else acc["fire_level"]["error_vs_lidar_pct_median"]
+    if acc is None:
+        return None
+    fire = acc["fire_level"]
+    return {
+        "error_vs_lidar_pct": fire["error_vs_lidar_pct_median"],
+        "mae_m": fire["mae_m"],
+        "null_model_mae_m": fire["null_model_mae_m"],
+        "n_fires": fire["n_fires"],
+        "min_gedi_points": fire["min_points_per_fire"],
+    }
 
 
 def forecast(fire_year: int, summer: int, factors: dict, lon: float, lat: float) -> tuple[dict | None, list[str]]:
