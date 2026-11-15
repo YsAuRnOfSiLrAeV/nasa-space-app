@@ -139,7 +139,7 @@ describe('explorer with a fire open', () => {
     expect(html).toContain('href="#/?view=explore&amp;mode=examples"');
   });
 
-  it('keeps only fire area and modeled recovery in the compact summary', () => {
+  it('keeps only fire area in the compact summary; recovery lives in the slider', () => {
     const html = renderToStaticMarkup(
       createElement(FireBottomBar, {
         investigation: { ...loading, data: demoData },
@@ -153,7 +153,7 @@ describe('explorer with a fire open', () => {
       }),
     );
     expect(html).toContain('Fire area');
-    expect(html).toContain('Modeled recovery');
+    expect(html).not.toContain('Modeled recovery');
     expect(html).not.toContain('Reference forest height');
     expect(html).not.toContain('GEDI measurements');
     expect(html).toContain('Close fire');

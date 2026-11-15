@@ -394,6 +394,12 @@
   text-decoration: underline;
   text-underline-offset: 4px;
 }
+/* "Back to <now>" sits with the fire actions, set a little apart from them. */
+.bottomActions .bottomBack {
+  margin-right: 0.75rem;
+  padding-right: 1.5rem;
+  border-right: 1px solid var(--rule-strong);
+}
 .bottomActions :focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 3px;

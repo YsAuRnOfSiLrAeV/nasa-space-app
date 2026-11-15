@@ -32,6 +32,7 @@ export function ForecastYearBar({
   onYear,
   cells,
   embedded = false,
+  hideBack = false,
 }: {
   curve: GrowthCurve;
   year: number;
@@ -39,10 +40,20 @@ export function ForecastYearBar({
   cells?: YearBarCells | null;
   /** Inside another bar (the selected fire's bottom bar): no own position or frame. */
   embedded?: boolean;
+  /** The host renders the "Back to" action itself (see `backToNow`). */
+  hideBack?: boolean;
 }) {
   const formatValue = curve.series ? formatForecastPercent : formatShare;
   if (cells?.years.length)
-    return <CellYearBar curve={curve} year={year} cells={cells} embedded={embedded} />;
+    return (
+      <CellYearBar
+        curve={curve}
+        year={year}
+        cells={cells}
+        embedded={embedded}
+        hideBack={hideBack}
+      />
+    );
 
   const estimate = estimateFor(curve, year);
   const kind = estimate.year === curve.summer ? 'forecast at the observation summer' : 'forecast';
@@ -61,14 +72,16 @@ export function ForecastYearBar({
           Recovery by year
         </label>
         <span className={styles.yearBarHeadRight}>
-          {estimate.year !== curve.summer && (
+          {!hideBack && estimate.year !== curve.summer && (
             <button type="button" onClick={() => onYear(curve.summer)}>
               Back to {curve.summer}
             </button>
           )}
           <span className={styles.yearBarValue} aria-hidden>
+            {estimate.reliable === false && (
+              <span className={styles.yearBarFlag}>extrapolation</span>
+            )}
             {estimate.year} · {formatValue(estimate.value)}
-            {estimate.reliable === false && ' · extrapolation'}
           </span>
         </span>
       </div>
@@ -83,23 +96,8 @@ export function ForecastYearBar({
         step={1}
         value={estimate.year}
         aria-valuetext={valueText}
-        aria-describedby="forecast-year-note"
         onChange={(event) => onYear(Number(event.target.value))}
       />
-      <div className={styles.yearBarFoot}>
-        <span id="forecast-year-note">
-          <span className={styles.longNote}>
-            {curve.series
-              ? 'No cell timeline: the slider changes this recovery estimate, not the map.'
-              : `Map grid: summer ${curve.summer} observation, unchanged by this slider`}
-          </span>
-          <span className={styles.shortNote}>
-            {curve.series
-              ? 'Recovery estimate only; map unchanged'
-              : `Grid stays at summer ${curve.summer}`}
-          </span>
-        </span>
-      </div>
     </div>
   );
 }
@@ -108,20 +106,52 @@ export function ForecastYearBar({
 const nearest = (years: readonly number[], year: number) =>
   years.reduce((best, y) => (Math.abs(y - year) < Math.abs(best - year) ? y : best));
 
+/** The timeline from the observation summer (now) onward: earlier years are not offered. */
+const fromNow = (years: readonly number[], summer: number) => {
+  const start = nearest(years, summer);
+  return years.filter((y) => y >= start);
+};
+
+/**
+ * The bar's "Back to <now>" action, for a host that shows it outside the bar:
+ * null while the bar already sits at the observation summer.
+ */
+export function backToNow(
+  curve: GrowthCurve,
+  year: number,
+  onYear: (year: number) => void,
+  cells?: YearBarCells | null,
+): { year: number; go: () => void } | null {
+  if (cells?.years.length) {
+    const years = fromNow(cells.years, curve.summer);
+    const summer = years[0]!;
+    const shown = nearest(years, cells.year ?? year);
+    return cells.year !== null && shown !== summer
+      ? { year: summer, go: () => cells.onYear(summer) }
+      : null;
+  }
+  return estimateFor(curve, year).year !== curve.summer
+    ? { year: curve.summer, go: () => onYear(curve.summer) }
+    : null;
+}
+
 /** The bar for a fire with a cell timeline: the map's year, with the whole-fire value beside it. */
 function CellYearBar({
   curve,
   year,
   cells,
   embedded,
+  hideBack,
 }: {
   curve: GrowthCurve;
   year: number;
   cells: YearBarCells;
   embedded: boolean;
+  hideBack: boolean;
 }) {
   const formatValue = curve.series ? formatForecastPercent : formatShare;
-  const shown = nearest(cells.years, cells.year ?? year);
+  const years = fromNow(cells.years, curve.summer);
+  const shown = nearest(years, cells.year ?? year);
   const onMap = cells.year !== null;
   const value = curveValue(curve, shown);
   const extrapolation = withinReliableAge(curve, shown) === false;
@@ -131,7 +161,7 @@ function CellYearBar({
       : shown === curve.summer
         ? `modeled state, summer ${curve.summer}`
         : 'modeled projection';
-  const summer = nearest(cells.years, curve.summer);
+  const summer = years[0]!;
   return (
     <div
       className={embedded ? styles.yearBarEmbedded : styles.yearBar}
@@ -144,14 +174,14 @@ function CellYearBar({
           Recovery by year
         </label>
         <span className={styles.yearBarHeadRight}>
-          {onMap && shown !== summer && (
+          {!hideBack && onMap && shown !== summer && (
             <button type="button" onClick={() => cells.onYear(summer)}>
               Back to {summer}
             </button>
           )}
           <span className={styles.yearBarValue} aria-hidden>
+            {extrapolation && <span className={styles.yearBarFlag}>extrapolation</span>}
             {shown} · {formatValue(value)}
-            {extrapolation && ' · extrapolation'}
           </span>
         </span>
       </div>
@@ -159,12 +189,12 @@ function CellYearBar({
         id="forecast-year"
         type="range"
         min={0}
-        max={cells.years.length - 1}
+        max={years.length - 1}
         step={1}
-        value={cells.years.indexOf(shown)}
+        value={years.indexOf(shown)}
         aria-valuetext={`${shown}, ${when}${onMap ? ', cells shown on the map' : ''}; recovery estimate ${formatValue(value)}${extrapolation ? ', extrapolation outside the validated ages' : ''}.`}
         aria-describedby={onMap ? 'forecast-year-note' : undefined}
-        onChange={(event) => cells.onYear(cells.years[Number(event.target.value)]!)}
+        onChange={(event) => cells.onYear(years[Number(event.target.value)]!)}
       />
       {onMap && (
         <div className={styles.yearBarFoot}>

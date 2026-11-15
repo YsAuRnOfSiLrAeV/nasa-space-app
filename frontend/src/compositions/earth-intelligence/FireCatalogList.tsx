@@ -2,6 +2,7 @@ import type { DemoFire } from '@/data/fireSchema';
 import {
   filterFireCatalog,
   groupFireCatalog,
+  REGION_NOT_SUPPLIED,
   NO_CATALOG_FILTERS,
   type CatalogFilters,
 } from '@/domain/fire/catalogSearch';
@@ -94,26 +95,32 @@ export function FireCatalogList({
               {country} · {matches.filter((fire) => fireCountry(fire.id) === country).length}
             </h3>
             {groupFireCatalog(matches.filter((fire) => fireCountry(fire.id) === country)).map(
-              (group) => (
-                <section key={group.region} aria-label={`${country}, ${group.region}`}>
-                  <h3 className={styles.catalogRegion}>{group.region}</h3>
-                  {group.years.map(({ year, fires }) => (
-                    <section key={year} aria-label={`${group.region}, ${year}`}>
-                      <h4 className={styles.catalogYear}>{year}</h4>
-                      <ul>
-                        {fires.map((fire) => (
-                          <FireCatalogItem
-                            key={fire.id}
-                            fire={fire}
-                            current={fire.id === selectedId}
-                            onSelect={onSelect}
-                          />
-                        ))}
-                      </ul>
-                    </section>
-                  ))}
-                </section>
-              ),
+              (group) => {
+                const named = group.region !== REGION_NOT_SUPPLIED;
+                return (
+                  <section
+                    key={group.region}
+                    aria-label={named ? `${country}, ${group.region}` : country}
+                  >
+                    {named && <h3 className={styles.catalogRegion}>{group.region}</h3>}
+                    {group.years.map(({ year, fires }) => (
+                      <section key={year} aria-label={`${named ? group.region : country}, ${year}`}>
+                        <h4 className={styles.catalogYear}>{year}</h4>
+                        <ul>
+                          {fires.map((fire) => (
+                            <FireCatalogItem
+                              key={fire.id}
+                              fire={fire}
+                              current={fire.id === selectedId}
+                              onSelect={onSelect}
+                            />
+                          ))}
+                        </ul>
+                      </section>
+                    ))}
+                  </section>
+                );
+              },
             )}
           </li>
         ))}

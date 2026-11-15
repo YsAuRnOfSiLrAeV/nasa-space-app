@@ -37,10 +37,13 @@ export function catalogCapabilityLabels(capabilities: CatalogCapabilityFlags): s
   return labels;
 }
 
+/** The group of fires whose export names no region; the list shows no region heading for it. */
+export const REGION_NOT_SUPPLIED = 'Region not supplied';
+
 export function groupFireCatalog(fires: DemoFire[]) {
-  const regions = [...new Set(fires.map((fire) => fire.region || 'Region not supplied'))].sort();
+  const regions = [...new Set(fires.map((fire) => fire.region || REGION_NOT_SUPPLIED))].sort();
   return regions.map((region) => {
-    const regional = fires.filter((fire) => (fire.region || 'Region not supplied') === region);
+    const regional = fires.filter((fire) => (fire.region || REGION_NOT_SUPPLIED) === region);
     return {
       region,
       years: [...new Set(regional.map((fire) => fire.year))]

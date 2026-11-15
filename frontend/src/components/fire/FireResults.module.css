@@ -246,7 +246,16 @@
   outline-offset: 2px;
 }
 .yearBarValue {
-  font: 500 0.8125rem/1.4 var(--font-data);
+  font: 600 1.25rem/1.2 var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+/* A quiet flag before the readout, e.g. a year outside the validated ages. */
+.yearBarFlag {
+  margin-right: 1.5rem;
+  font: 400 0.6875rem/1 var(--font-label);
+  letter-spacing: 0.04em;
+  color: var(--muted-foreground);
+  vertical-align: middle;
 }
 .yearBar input[type='range'] {
   width: 100%;
@@ -284,7 +293,7 @@
     font-size: 0.625rem;
   }
   .yearBarValue {
-    font-size: 0.75rem;
+    font-size: 1rem;
   }
   .yearBar {
     left: 12px;

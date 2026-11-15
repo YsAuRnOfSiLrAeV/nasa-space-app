@@ -1,7 +1,6 @@
-import { ForecastYearBar, type YearBarCells } from '@/components/fire/ForecastYearBar';
+import { backToNow, ForecastYearBar, type YearBarCells } from '@/components/fire/ForecastYearBar';
 import type { DemoFire } from '@/data/fireSchema';
 import { fireLabel } from '@/domain/fire/fireLabel';
-import { formatShare } from '@/domain/fire/fireSummary';
 import type { GrowthCurve } from '@/domain/fire/growthForecast';
 import type { FireInvestigationState } from '@/hooks/useFireInvestigation';
 import styles from './MapShell.module.css';
@@ -37,10 +36,6 @@ export function FireBottomBar({
     : entry?.name.en;
   const fireYear = data?.result.fire.year ?? entry?.year;
   const bundle = data?.bundle;
-  const now =
-    bundle?.forecast.kind === 'growth'
-      ? bundle.forecast.now_recovery
-      : (data?.result.model_result.recovery_today_avg ?? null);
   const year80 =
     curve?.year80 ?? (bundle?.forecast.kind === 'growth' ? bundle.forecast.year_80pct : null);
   const figures = [
@@ -48,11 +43,6 @@ export function FireBottomBar({
       label: 'Fire area',
       value: `${data.result.fire.area_ha.toLocaleString('en')} ha`,
     },
-    now != null &&
-      data && {
-        label: 'Modeled recovery',
-        value: `${formatShare(now)} · ${data.result.satellite_images.summer}`,
-      },
     year80 != null &&
       data && {
         label: 'Modeled 80% recovery',
@@ -60,6 +50,7 @@ export function FireBottomBar({
         value: year80 <= data.result.satellite_images.summer ? `reached ${year80}` : `by ${year80}`,
       },
   ].filter((figure): figure is { label: string; value: string } => Boolean(figure));
+  const back = curve && year !== null ? backToNow(curve, year, onYear, cells) : null;
 
   return (
     <section className={styles.bottomBar} data-map-occluder="bottom" aria-label="Fire details">
@@ -81,6 +72,11 @@ export function FireBottomBar({
           </dl>
         )}
         <div className={styles.bottomActions}>
+          {back && (
+            <button type="button" className={styles.bottomBack} onClick={back.go}>
+              Back to {back.year}
+            </button>
+          )}
           {onFit && (
             <button type="button" onClick={onFit}>
               Fit fire
@@ -92,7 +88,7 @@ export function FireBottomBar({
         </div>
       </div>
       {curve && year !== null ? (
-        <ForecastYearBar curve={curve} year={year} onYear={onYear} cells={cells} embedded />
+        <ForecastYearBar curve={curve} year={year} onYear={onYear} cells={cells} embedded hideBack />
       ) : (
         data && (
           <p className={styles.bottomNote}>

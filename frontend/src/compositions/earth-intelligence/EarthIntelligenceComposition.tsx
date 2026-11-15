@@ -179,12 +179,6 @@ export function EarthIntelligenceComposition({ load, study, mapView, mapState }:
       <Presence show={fireLayout} className={searchStyles.slideLeft}>
         <OtherFiresMenu href={closeHref} />
       </Presence>
-      {!examples && !fireData && view.phase === 'region' && (
-        <div className={searchStyles.mapLegend}>
-          Catalog points and supplied outlines. Applicability boundaries carry provider labels;
-          geographic coverage is separate from exported data. New analysis is unavailable.
-        </div>
-      )}
       <Presence show={view.phase === 'region' && !fireLayout} className={searchStyles.slideRight}>
         <InvestigationPanel
           filters={catalogFilters}

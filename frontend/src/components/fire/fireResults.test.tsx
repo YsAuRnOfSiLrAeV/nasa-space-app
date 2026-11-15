@@ -221,13 +221,13 @@ describe('growth forecast', () => {
     );
     expect(markup).toContain('type="range"');
     expect(markup).toContain('min="2026"');
-    expect(markup).toContain('Map grid: summer 2026 observation, unchanged by this slider');
+    expect(markup).not.toContain('unchanged by this slider');
     expect(markup).toContain('extrapolation');
     expect(markup).toContain('Back to 2026');
   });
 
   it('drives the map with modeled cell recovery when the fire has a cell timeline', () => {
-    const years = [2003, 2004, 2026, 2040, 2066];
+    const years = [2003, 2004, 2026, 2040, 2066, 2070];
     const shown = (year: number | null) =>
       renderToStaticMarkup(
         <ForecastYearBar
@@ -239,18 +239,21 @@ describe('growth forecast', () => {
       );
     const off = shown(null);
     expect(off).toContain('Recovery by year');
-    // The slider steps through the timeline's own years, from the fire year.
-    expect(off).toMatch(/type="range"[^>]*min="0"[^>]*max="4"/);
+    // The slider steps through the timeline's own years, from the observation summer (now).
+    expect(off).toMatch(/type="range"[^>]*min="0"[^>]*max="3"[^>]*value="0"/);
+    expect(off).toContain('2026 · ');
     expect(off).not.toContain('Move slider to show modeled cells.');
     expect(off).not.toContain('forecast-year-note');
     expect(off).not.toContain('Hide modeled cells');
-    const on = shown(2004);
+    // A year before now is not offered: it shows from the summer.
+    expect(shown(2004)).toContain('2026 · ');
+    const on = shown(2040);
     expect(on).toMatch(/type="range"[^>]*value="1"/);
-    expect(on).toContain('2004 · 4%');
+    expect(on).toContain('2040 · ');
     expect(on).not.toContain('whole-fire');
-    expect(on).toContain('Modeled cell recovery, 2004. Not observed.');
+    expect(on).toContain('Modeled cell recovery, 2040. Not observed.');
     expect(on).toContain('id="forecast-year-note"');
-    expect(on).toContain('modeled back from summer 2026');
+    expect(on).toContain('modeled projection');
     expect(on).toContain('Back to 2026');
     // "Back to" sits in the head row with the year readout, above the slider.
     expect(on.indexOf('Back to 2026')).toBeLessThan(on.indexOf('type="range"'));
@@ -271,9 +274,7 @@ describe('growth forecast', () => {
       <ForecastYearBar curve={series} year={2026} onYear={() => {}} cells={null} />,
     );
     expect(markup).toContain('Recovery by year');
-    expect(markup).toContain(
-      'No cell timeline: the slider changes this recovery estimate, not the map.',
-    );
+    expect(markup).not.toContain('Recovery estimate only; map unchanged');
     expect(markup).not.toContain('whole-fire');
   });
 

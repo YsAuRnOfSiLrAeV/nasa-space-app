@@ -79,7 +79,8 @@ describe('scientific spatial layers', () => {
         year={2040}
       />,
     );
-    expect(html).toContain('Cell 812');
+    expect(html).toContain('<p>Cell</p>');
+    expect(html).not.toContain('Cell 812');
     expect(html).toContain('source summer');
     expect(html).toContain('Modeled canopy height');
     expect(html).toContain(`${cell.height_m} m`);

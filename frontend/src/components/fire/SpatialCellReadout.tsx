@@ -21,10 +21,7 @@ export function SpatialCellReadout({
   const timeline = bundle.timeline && year != null ? timelineRow(bundle.timeline, year) : null;
   return (
     <div>
-      <p>
-        Cell {i} · row {cell.row}, column {cell.col} · source summer{' '}
-        {data.result.satellite_images.summer}
-      </p>
+      <p>Cell</p>
       <dl>
         <dt>Modeled recovery · source summer {data.result.satellite_images.summer}</dt>
         <dd>

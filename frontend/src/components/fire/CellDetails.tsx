@@ -10,9 +10,7 @@ export function CellDetails({
 }) {
   return (
     <>
-      <p className={titleClassName}>
-        Cell · row {cell.row}, column {cell.column}
-      </p>
+      <p className={titleClassName}>Cell</p>
       {cell.supplied ? (
         <dl>
           <dt>Area</dt>

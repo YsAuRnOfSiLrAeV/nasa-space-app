@@ -32,7 +32,9 @@ describe('keyboard cell inspector', () => {
   it('starts on the first cell with data and describes it by category only', () => {
     const out = html(null, 'probability');
     const first = data.cells.model.stage.findIndex((v) => v !== null);
-    expect(out).toContain(`row ${Math.floor(first / 60) + 1}, column ${(first % 60) + 1}`);
+    // The row and column are in the inspector's own fields, not repeated in the readout title.
+    expect(out).toMatch(new RegExp(`<label>Row<input[^>]*value="${Math.floor(first / 60) + 1}"`));
+    expect(out).not.toContain(`row ${Math.floor(first / 60) + 1}, column`);
     const p = data.cells.model.p_forest_gt5[first]!;
     const readout = out.slice(out.indexOf('<output'));
     expect(readout).not.toContain(`${p}%`);
