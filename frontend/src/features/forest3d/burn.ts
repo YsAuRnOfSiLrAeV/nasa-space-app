@@ -1,10 +1,10 @@
 /**
  * The real burn perimeter, as a shape on the illustrative block. Pure and DOM-free.
  *
- * The perimeter (longitude/latitude) is projected flat around its own centre, scaled so
- * its longer side fills `fill` of the block, and drawn north-up. Its shape is real; its
- * scale is not (a 1,000 ha fire and a 17,000 ha fire both fit the block), so the real
- * width in km is kept for the caption.
+ * The perimeter (longitude/latitude) is projected flat around its own centre, scaled to
+ * fill the block, and drawn north-up. Its shape is real; its scale is not (a 1,000 ha fire
+ * and a 17,000 ha fire fill the same block), so what a block stands for in km is kept for
+ * the caption.
  */
 
 export type ScenePoint = readonly [number, number];
@@ -16,6 +16,10 @@ export interface BurnShape {
   /** Real width and height of the perimeter, km. */
   widthKm: number;
   heightKm: number;
+  /** How many real km the block's side stands for. */
+  blockKm: number;
+  /** Side of the block that holds the whole burn, scene units (the base size, or larger). */
+  blockSize: number;
 }
 
 /** A GeoJSON Polygon or MultiPolygon: all this module needs of it. */
@@ -27,6 +31,8 @@ export interface PerimeterLike {
 const KM_PER_DEG = 110.57;
 /** Polygons and holes smaller than this (square scene units) are specks, not shape. */
 const MIN_AREA = 1.5;
+/** Room kept between the burn and the block's edge, scene units. */
+const EDGE_MARGIN = 6;
 /** Outline simplification tolerance, scene units (about 0.3 m of block per unit… i.e. invisible). */
 const TOLERANCE = 0.25;
 
@@ -88,11 +94,18 @@ function simplifyRing(ring: readonly ScenePoint[], tolerance: number): ScenePoin
   return [...first, ...second.slice(1)];
 }
 
-/** The perimeter as a block-sized shape, or null if it has no usable outline. */
+/**
+ * The perimeter as a shape on the block, or null if it has no usable outline.
+ *
+ * Scaled so the burn covers about `targetShare` of a base-sized block, so the growth you
+ * scrub through is visible. A thin, winding fire then reaches well past that block, so the
+ * block grows to hold all of it (never beyond `maxBlock`; a longer fire is shrunk instead).
+ * Centred on the burn's own centre of mass.
+ */
 export function burnShapeFromPerimeter(
   perimeter: PerimeterLike | null | undefined,
   blockSize: number,
-  fill = 0.8,
+  { targetShare = 0.3, maxBlock = 240 }: { targetShare?: number; maxBlock?: number } = {},
 ): BurnShape | null {
   if (!perimeter) return null;
   const polygons: number[][][][] =
@@ -116,11 +129,52 @@ export function burnShapeFromPerimeter(
   const kmX = Math.cos((lat0 * Math.PI) / 180) * KM_PER_DEG;
   const widthKm = (east - west) * kmX;
   const heightKm = (north - south) * KM_PER_DEG;
-  const scale = (fill * blockSize) / Math.max(widthKm, heightKm);
-  const project = (p: number[]): ScenePoint => [
-    (p[0]! - lon0) * kmX * scale,
-    -(p[1]! - lat0) * KM_PER_DEG * scale,
-  ];
+  // Kilometres from the bounding-box centre, north up (z grows southwards).
+  const km = (p: number[]): ScenePoint => [(p[0]! - lon0) * kmX, -(p[1]! - lat0) * KM_PER_DEG];
+
+  // Burned area and its centre of mass (outer rings minus holes), in km.
+  let area = 0;
+  let cx = 0;
+  let cz = 0;
+  for (const polygon of polygons)
+    polygon.forEach((ring, index) => {
+      const pts = ring.map(km);
+      let a = 0;
+      let mx = 0;
+      let mz = 0;
+      for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+        const cross = pts[j]![0] * pts[i]![1] - pts[i]![0] * pts[j]![1];
+        a += cross;
+        mx += (pts[j]![0] + pts[i]![0]) * cross;
+        mz += (pts[j]![1] + pts[i]![1]) * cross;
+      }
+      const sign = index === 0 ? 1 : -1;
+      area += (sign * Math.abs(a)) / 2;
+      const orient = a < 0 ? -1 : 1;
+      cx += (sign * orient * mx) / 6;
+      cz += (sign * orient * mz) / 6;
+    });
+  if (!(area > 0)) return null;
+  const centre: ScenePoint = [cx / area, cz / area];
+
+  // How far the burn reaches from its centre of mass, km: the block must hold all of it.
+  let reach = 0;
+  for (const polygon of polygons)
+    for (const p of polygon[0] ?? []) {
+      const [x, z] = km(p);
+      reach = Math.max(reach, Math.abs(x - centre[0]), Math.abs(z - centre[1]));
+    }
+  let scale = Math.sqrt((targetShare * blockSize * blockSize) / area);
+  let size = Math.max(blockSize, 2 * (reach * scale + EDGE_MARGIN));
+  if (size > maxBlock) {
+    // Very long fires: shrink the shape rather than grow the block without limit.
+    scale = (maxBlock / 2 - EDGE_MARGIN) / reach;
+    size = maxBlock;
+  }
+  const project = (p: number[]): ScenePoint => {
+    const [x, z] = km(p);
+    return [(x - centre[0]) * scale, (z - centre[1]) * scale];
+  };
 
   const shaped: ScenePolygon[] = [];
   for (const polygon of polygons) {
@@ -132,7 +186,7 @@ export function burnShapeFromPerimeter(
     shaped.push([outer, ...rings.slice(1).filter((hole) => ringArea(hole) >= MIN_AREA)]);
   }
   if (!shaped.length) return null;
-  return { polygons: shaped, widthKm, heightKm };
+  return { polygons: shaped, widthKm, heightKm, blockKm: size / scale, blockSize: size };
 }
 
 function insideRing(x: number, z: number, ring: readonly ScenePoint[]): boolean {

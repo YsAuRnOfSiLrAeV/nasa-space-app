@@ -153,7 +153,7 @@ export function PlanetHero({
           data-selected={fire.id === selectedFireId || undefined}
           data-example={config.fireDataIsExample || undefined}
           style={{ visibility: 'hidden' }}
-          aria-label={`Open ${fire.name.en}, fire of ${fire.year}${config.fireDataIsExample ? ' (documentation example data)' : ''}`}
+          aria-label={`Open ${fireLabel(fire.id)}, fire of ${fire.year}${config.fireDataIsExample ? ' (documentation example data)' : ''}`}
           onFocus={() => {
             focused.current = true;
           }}

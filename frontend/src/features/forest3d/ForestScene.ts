@@ -69,6 +69,7 @@ export class ForestScene {
   private resize: ResizeObserver;
   private disposed = false;
   private reducedMotion: boolean;
+  private blockSize: number;
 
   constructor(
     private container: HTMLElement,
@@ -109,8 +110,12 @@ export class ForestScene {
     });
 
     // Model. The stand is scattered once; growth only rescales it.
+    // The block grows to hold the whole burn (never the case without a burn shape).
+    const blockSize = stand.burn?.blockSize ?? BLOCK_SIZE;
+    this.blockSize = blockSize;
     const field = createHeightField({
-      size: BLOCK_SIZE,
+      size: blockSize,
+      res: Math.min(321, Math.round((161 * blockSize) / BLOCK_SIZE)),
       seed: stand.seed % 1000,
       ...(stand.terrain && { relief: stand.terrain.relief, variant: stand.terrain.variant }),
     });
@@ -119,7 +124,7 @@ export class ForestScene {
     this.vegetation = buildVegetation(this.plants);
     this.heights = growHeights(this.plants, growth);
     this.vegetation.setHeights(this.heights);
-    const lighting = createLighting(BLOCK_SIZE);
+    const lighting = createLighting(blockSize);
     this.scene.add(block.group, this.vegetation.group, lighting.group);
     this.disposers.push(block.dispose, this.vegetation.dispose, lighting.dispose);
     this.stats = { plants: this.vegetation.counts };
@@ -127,15 +132,15 @@ export class ForestScene {
     // View.
     const { width, height } = this.size();
     r.setSize(width, height, false);
-    this.camera = createCamera(BLOCK_SIZE, width / height);
-    this.controls = createControls(this.camera, r.domElement, BLOCK_SIZE);
+    this.camera = createCamera(blockSize, width / height);
+    this.controls = createControls(this.camera, r.domElement, blockSize);
     this.controls.addEventListener('change', this.requestRender);
     this.controls.addEventListener('start', this.requestRender);
 
     this.resize = new ResizeObserver(() => {
       const s = this.size();
       r.setSize(s.width, s.height, false);
-      fitCamera(this.camera, BLOCK_SIZE, s.width / s.height);
+      fitCamera(this.camera, this.blockSize, s.width / s.height);
       this.requestRender();
     });
     this.resize.observe(container);

@@ -10,7 +10,8 @@ import { contourSegments, type HeightField } from './heightField';
 
 export const BLOCK_TONES = {
   surface: '#efefed',
-  scorched: '#d6d4cf',
+  scorched: '#d9aab3',
+  burnLine: '#7a2234',
   wall: '#dcdcd9',
   base: '#9c9c9a',
   water: '#a7a9ab',
@@ -52,7 +53,7 @@ export function buildTerrainBlock(field: HeightField, burn?: BurnShape | null): 
     sp.setY(k, heights[j * res + i]!);
   }
   surface.computeVertexNormals();
-  // Ground inside the burn is a little darker, so the burn reads even where no tree stands.
+  // Ground inside the burn is tinted a light burgundy, so the burn reads even where no tree stands.
   const mask = burn ? createBurnMask(burn) : null;
   if (mask) {
     const base = new THREE.Color(BLOCK_TONES.surface);
@@ -164,7 +165,7 @@ export function buildTerrainBlock(field: HeightField, burn?: BurnShape | null): 
         }
       }
     outline.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    group.add(new THREE.LineSegments(outline, keep(line(BLOCK_TONES.ink, 0.9))));
+    group.add(new THREE.LineSegments(outline, keep(line(BLOCK_TONES.burnLine, 0.95))));
   }
 
   // Contours on the surface, lifted a hair to sit on top.

@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 import type { DemoFire } from '@/data/fireSchema';
 import type { FireBundle } from '@/data/fireTypes';
+import { fireLabel } from '@/domain/fire/fireLabel';
 import { EMPTY_FIRES, useFireCatalog } from '@/hooks/useFireCatalog';
 import { useFireData } from '@/hooks/useFireData';
 import { usePrefersReducedMotion } from '@/hooks/useMediaQuery';
@@ -68,7 +69,7 @@ export function ForestGrowthExplorer() {
           <option value={ILLUSTRATIVE}>No fire · the illustrative stand</option>
           {fires.map((fire: DemoFire) => (
             <option key={fire.id} value={fire.id}>
-              {fire.name.en} · fire of {fire.year}
+              {fireLabel(fire.id)} · fire of {fire.year}
             </option>
           ))}
         </select>
@@ -125,9 +126,7 @@ function GrowthPlayer({ bundle }: { bundle: GrowthFire }) {
       }),
     [bundle],
   );
-  const burnKm = stand.burn
-    ? `${Math.round(stand.burn.widthKm * 10) / 10} × ${Math.round(stand.burn.heightKm * 10) / 10} km`
-    : null;
+  const blockKm = stand.burn ? Math.round(stand.burn.blockKm * 10) / 10 : null;
 
   useEffect(() => {
     if (!playing) return;
@@ -270,8 +269,8 @@ function GrowthPlayer({ bundle }: { bundle: GrowthFire }) {
           compact={Boolean(before)}
           label={{
             index: `${year} · ILLUSTRATIVE · NOT MEASURED`,
-            title: `${bundle.metadata.id} · ${year}`,
-            note: `Tree heights = modeled recovery ${pct(after.recovery)}${after.cells ? `, spread like ${after.cells} modeled cells` : ''}. Inside the outline: the burn${burnKm ? ` (${burnKm}, shape to scale)` : ''}; outside: unburned forest.`,
+            title: `${fireLabel(bundle.metadata.id)} · ${year}`,
+            note: `Tree heights = modeled recovery ${pct(after.recovery)}${after.cells ? `, spread like ${after.cells} modeled cells` : ''}. Inside the outline: the burn${blockKm ? ` (this block is about ${blockKm} km across)` : ''}; outside: unburned forest.`,
           }}
           fallback={readout}
         />
@@ -326,9 +325,9 @@ function GrowthPlayer({ bundle }: { bundle: GrowthFire }) {
             <tr>
               <th scope="row">Burn outline and ground tone</th>
               <td>
-                The fire’s real perimeter (result.json), drawn north-up and scaled to fit the block:
-                the shape is real, the size is not. Inside it the forest regrows; outside it stands
-                unburned.
+                The fire’s real perimeter (result.json), drawn north-up and scaled so about a third
+                of the block is burn (the regrowth stays visible): the shape is real, the size is
+                not. Inside it the forest regrows; outside it stands unburned.
               </td>
               <td>Data (shape), illustrative (scale)</td>
             </tr>
