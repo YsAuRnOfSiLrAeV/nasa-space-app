@@ -49,7 +49,7 @@ def write_granule(path, grid, hh, hv, cover=None):
 def use_files(monkeypatch, files):
     """Make read_to_grid open local files (looked up by granule name) instead of Earthdata results."""
     paths = {f"g{i}": path for i, path in enumerate(files)}
-    monkeypatch.setattr(nisar, "_open", lambda granule: paths[granule.name])
+    monkeypatch.setattr(nisar, "_open", lambda granule: open(paths[granule.name], "rb"))
     return [nisar.Granule(name, date(2026, 7, 17), None) for name in paths]
 
 
@@ -190,3 +190,12 @@ def test_mean_of_a_large_window_stays_light():
     _, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     assert peak < 6 * window.nbytes
+
+
+def test_bands_outside_the_usual_group_are_still_found(grid, tmp_path, monkeypatch):
+    path = tmp_path / "moved.h5"
+    write_granule(path, grid, hh=const(0.05), hv=const(0.01))
+    with h5py.File(path, "a") as f:
+        f.move("science/LSAR/GCOV/grids/frequencyA", "science/LSAR/GCOV/grids/elsewhere/frequencyA")
+    result = nisar._read_to_grid(use_files(monkeypatch, [path]), grid)
+    assert np.allclose(result.layers[NISAR_HV], -20.0, atol=1e-4)

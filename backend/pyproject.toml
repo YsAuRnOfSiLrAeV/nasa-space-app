@@ -12,6 +12,7 @@ dependencies = [
     "rasterio",
     "h5py",
     "earthaccess",
+    "fsspec[http]",
     "earthengine-api",
     "python-dotenv",
 ]

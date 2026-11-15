@@ -43,6 +43,8 @@ TARGET_DAY = "07-17"         # Granules closest to this day are used first. Same
 PASS = "A"                   # Ascending only, like Sentinel-1 in training.
 MIN_DB = -25.0               # Below this the pixel is a granule edge or has no data. Same cut as in training.
 MAX_GRANULES = 200           # Search limit. A summer over one fire returns far fewer.
+GCOV_GRID = "science/LSAR/GCOV/grids/frequencyA"  # where GCOV keeps HHHH, HVHV and their coordinates
+BLOCK_BYTES = 8 * 2**20      # Each HTTP read fetches at least this much. HDF5 makes many small reads close together.
 
 __all__ = ["Granule", "NisarLayers", "NisarUnavailable", "UsedGranule", "find_granules", "nisar_layers"]
 
@@ -212,34 +214,63 @@ def _db(linear: np.ndarray) -> np.ndarray:
 @contextmanager
 def _open_scene(granule: Granule) -> Iterator[Scene | None]:
     """Open a granule and find its HH/HV bands. Yields None when the granule has no such bands."""
-    with h5py.File(_open(granule), "r") as f:
+    with _open(granule) as raw, h5py.File(raw, "r") as f:
         yield _find_bands(f)
 
 
 def _find_bands(f: h5py.File) -> Scene | None:
-    paths: list[str] = []
-    f.visit(paths.append)
-    hh = next((p for p in paths if p.endswith("frequencyA/HHHH")), None)
-    hv = next((p for p in paths if p.endswith("frequencyA/HVHV")), None)
-    if hh is None or hv is None:
+    group = GCOV_GRID if f.get(f"{GCOV_GRID}/HHHH") is not None and f.get(f"{GCOV_GRID}/HVHV") is not None else _search_bands(f)
+    if group is None:
         return None
-    group = hh.rsplit("/", 1)[0]
     projection = f[group + "/projection"]
     epsg = projection.attrs.get("epsg_code")
     if epsg is None:
         epsg = projection[()]
     return Scene(
-        hh=f[hh],
-        hv=f[hv],
+        hh=f[group + "/HHHH"],
+        hv=f[group + "/HVHV"],
         x=f[group + "/xCoordinates"][:],
         y=f[group + "/yCoordinates"][:],
         epsg=int(np.ravel(epsg)[0]),
     )
 
 
+def _search_bands(f: h5py.File) -> str | None:
+    """Group holding frequencyA HHHH and HVHV, found by walking the whole file.
+
+    Only a fallback for files laid out differently: over HTTP every visited object costs a request.
+    """
+    paths: list[str] = []
+    f.visit(paths.append)
+    hh = next((p for p in paths if p.endswith("frequencyA/HHHH")), None)
+    hv = next((p for p in paths if p.endswith("frequencyA/HVHV")), None)
+    if hh is None or hv is None or hh.rsplit("/", 1)[0] != hv.rsplit("/", 1)[0]:
+        return None
+    return hh.rsplit("/", 1)[0]
+
+
 def _open(granule: Granule) -> IO[bytes]:
-    """File-like object for the granule, streamed from Earthdata (only the read windows are fetched)."""
-    return _earthaccess().open([granule.result])[0]
+    """File-like object that reads the granule over HTTPS in BLOCK_BYTES blocks.
+
+    The Earthdata URL redirects to a signed CloudFront URL, and a request through that
+    redirect takes seconds. The redirect is followed once here, then every read goes
+    straight to the signed URL. Only the blocks that are read are downloaded, never the
+    whole file (several GB).
+    """
+    import fsspec
+
+    links = [link for link in granule.result.data_links(access="external") if link.endswith(".h5")]
+    if not links:
+        raise NisarUnavailable(f"no HDF5 download link for {granule.name}")
+    # Follow the redirect with a one-byte GET, not HEAD: the server signs the URL for the
+    # request method, and a URL signed for HEAD is refused (403) for the GETs that follow.
+    session = _earthaccess().get_requests_https_session()
+    with session.get(links[0], headers={"Range": "bytes=0-0"}, allow_redirects=True, stream=True, timeout=60) as first:
+        first.raise_for_status()
+        signed_url = first.url
+        size = int(first.headers["content-range"].rsplit("/", 1)[1])  # "bytes 0-0/<total size>"
+    https = fsspec.filesystem("https", encoded=True)  # the signed URL must be sent exactly as given
+    return https.open(signed_url, block_size=BLOCK_BYTES, cache_type="blockcache", size=size)
 
 
 @lru_cache(maxsize=1)
