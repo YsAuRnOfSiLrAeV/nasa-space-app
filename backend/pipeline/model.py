@@ -23,6 +23,7 @@ from .cell_features import CellTable
 from .contract import ZONE_BURN
 
 MODEL_VERSION = f"forestrecovery {fr.__version__}"
+MIN_VALIDATED_AGE = 8  # youngest fire age (years) among the model's training and validation points
 OutOfDomainError = fr.OutOfDomainError
 
 

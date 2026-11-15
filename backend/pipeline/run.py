@@ -136,7 +136,7 @@ def run(fire: Fire, summer: int, out_dir: Path | str, on_step: Callable[[str], N
             "lidar_points_in_fire": lidar["points_in_fire"],
         },
         "lidar_points": lidar["points"],
-        "warnings": _warnings(place, input_issues, nisar_coverage, recovery, data["reference"], forecast_warnings, fire),
+        "warnings": _warnings(place, input_issues, nisar_coverage, recovery, data["reference"], forecast_warnings, fire, summer),
     }
     cells = export.cells_json(
         {
@@ -161,7 +161,8 @@ def _fetch_data(fire: Fire, grid: Grid, summer: int, display: Grid) -> dict:
         masks = layers.masks(grid, summer)
         z = zone_maps.make_zones(fire.perimeter, grid, masks)
         heights = gedi.shot_heights(fire.perimeter, grid)
-        return masks, z, heights, gedi.reference_height(fire.perimeter, grid, z, heights=heights)
+        after_fire = gedi.shots_after_fire(fire.perimeter, grid, fire.year, heights)
+        return masks, z, after_fire, gedi.reference_height(fire.perimeter, grid, z, heights=heights)
 
     def optical():
         try:
@@ -201,6 +202,7 @@ def _warnings(
     reference: dict,
     forecast_warnings: list[str],
     fire: Fire,
+    summer: int,
 ) -> list[str]:
     """Warning codes for result.json. The texts live in the frontend."""
     codes = list(fire.extra_warnings)
@@ -214,6 +216,8 @@ def _warnings(
         codes.append("MANY_CELLS_EXCLUDED")
     if reference["source"] != "gedi":
         codes.append("ACCURACY_NOT_VALIDATED_WITHOUT_GEDI")  # validation used fires with GEDI only
+    if summer - fire.year < model.MIN_VALIDATED_AGE:
+        codes.append("AGE_BELOW_VALIDATED")
     return codes + [code for code in forecast_warnings if code not in codes]
 
 
