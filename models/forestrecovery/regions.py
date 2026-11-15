@@ -36,7 +36,7 @@ class OutOfDomainError(ValueError):
 def _regions():
     global _R
     if _R is None:
-        _R = json.loads(_PATH.read_text())
+        _R = json.loads(_PATH.read_text(encoding="utf-8"))
     return _R
 
 
@@ -208,7 +208,7 @@ def accuracy(region="continental"):
     """Похибка моделі проти лідара GEDI для регіону (з перевірки поза вибіркою): dict або None, якщо регіон не перевірявся в метрах.
     fire_level.error_vs_lidar_pct_median: типова помилка середнього по пожежі, % висоти сусіднього лісу; point_level.mae_m: помилка однієї клітинки, м."""
     p = Path(__file__).parent / "accuracy.json"
-    return json.loads(p.read_text()).get(resolve_model(region)) if p.exists() else None
+    return json.loads(p.read_text(encoding="utf-8")).get(resolve_model(region)) if p.exists() else None
 
 
 def footprint_geojson(region=None):

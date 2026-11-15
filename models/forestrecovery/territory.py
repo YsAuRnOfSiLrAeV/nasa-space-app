@@ -197,13 +197,13 @@ def assess_territory(polygon, min_inside=MIN_INSIDE, lang="uk"):
 def growth_zone_geojson():
     """Де крива росту підтверджена (лише Канада, перевірений рівень): контур для інтерфейсу. Поза ним прогноз за роками не показуємо."""
     p = Path(__file__).parent / "growth_zone.geojson"
-    return json.loads(p.read_text()) if p.exists() else dict(type="FeatureCollection", features=[])
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else dict(type="FeatureCollection", features=[])
 
 
 def scenario_zone_geojson():
     """Де підтверджено сценарій сили пожежі для регіону continental (лише Україна, перевірений рівень). Середземномор'я: див. territory_geojson('mediterranean')."""
     p = Path(__file__).parent / "ukraine_zone.geojson"
-    return json.loads(p.read_text()) if p.exists() else dict(type="FeatureCollection", features=[])
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else dict(type="FeatureCollection", features=[])
 
 
 def _region_rel(rid):
@@ -217,7 +217,7 @@ def territory_geojson(region=None):
     Якщо зібрано сітку території (екорегіони), це спрощені контури регіонів; інакше комірки сліду (з країною й надійністю)."""
     p = Path(__file__).parent / "territory_display.geojson"
     if p.exists() and _grid():
-        gj = json.loads(p.read_text())
+        gj = json.loads(p.read_text(encoding="utf-8"))
         regs = _regions()["regions"]
         keep = []
         for f in gj["features"]:

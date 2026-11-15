@@ -89,7 +89,7 @@ def scene_data(fires, growth=None, now_year=None):
 def globe_html(fires, *, growth=None, now_year=None, standalone=True, territory=None, points=None, zones=None, scen=None):
     """HTML-текст глобуса. standalone=True додає doctype і meta (для окремого файлу); False - для публікації як артефакт."""
     tpl = (_ASSETS / "globe.tpl.html").read_text(encoding="utf-8")
-    world = (_ASSETS / "world.json").read_text()
+    world = (_ASSETS / "world.json").read_text(encoding="utf-8")
     html = (tpl.replace("__FIRES__", json.dumps(scene_data(fires, growth, now_year), separators=(",", ":"))).replace("__WORLD__", world)
             .replace("__TERRITORY__", json.dumps(territory, separators=(",", ":")) if territory else "null")
             .replace("__POINTS__", json.dumps(points, separators=(",", ":")) if points else "null")

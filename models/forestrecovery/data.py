@@ -41,7 +41,7 @@ def data_info():
 
 
 def _demo_meta():
-    return json.loads((_DIR / "demo_fires.json").read_text())
+    return json.loads((_DIR / "demo_fires.json").read_text(encoding="utf-8"))
 
 
 def list_demo_fires():
@@ -52,12 +52,12 @@ def list_demo_fires():
 
 def list_fires():
     """Усі пожежі вибірки: список dict (fire_id, fire_year, area_ha, site, cause, admin, lon, lat)."""
-    return json.loads((_DIR / "fires.json").read_text())
+    return json.loads((_DIR / "fires.json").read_text(encoding="utf-8"))
 
 
 def fire_boundaries():
     """Контури пожеж як GeoJSON-dict (спрощені до ~300 м), властивості: fire_id, year, ha, site."""
-    return json.loads((_DIR / "fires.geojson").read_text())
+    return json.loads((_DIR / "fires.geojson").read_text(encoding="utf-8"))
 
 
 def load_points():

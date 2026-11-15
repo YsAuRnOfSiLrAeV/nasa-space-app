@@ -28,7 +28,7 @@ Z90 = 1.645
 
 def _params(region="mediterranean"):
     if region not in _S:
-        _S[region] = json.loads(_PATHS[region].read_text())
+        _S[region] = json.loads(_PATHS[region].read_text(encoding="utf-8"))
     return _S[region]
 
 

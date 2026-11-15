@@ -22,7 +22,7 @@ _M = None
 def _model():
     global _M
     if _M is None:
-        _M = json.loads((Path(__file__).parent / "growth_covariates.json").read_text())
+        _M = json.loads((Path(__file__).parent / "growth_covariates.json").read_text(encoding="utf-8"))
     return _M
 
 

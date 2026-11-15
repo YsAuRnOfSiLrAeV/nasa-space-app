@@ -39,7 +39,7 @@ VALIDATED_COUNTRIES = ("canada",)     # крива підтверджена ли
 def _params():
     global _G
     if _G is None:
-        _G = json.loads(_PATH.read_text())
+        _G = json.loads(_PATH.read_text(encoding="utf-8"))
     return _G
 
 
@@ -62,7 +62,7 @@ def growth_info(region=None):
     if region is not None:
         r = _growth_region(region)
         if r == "mediterranean":
-            return json.loads((Path(__file__).parent / "growth_mediterranean.json").read_text())
+            return json.loads((Path(__file__).parent / "growth_mediterranean.json").read_text(encoding="utf-8"))
         if r in _NO_CURVE:
             return dict(region=r, valid=False, reason=_NO_CURVE[r])
     g = _params()

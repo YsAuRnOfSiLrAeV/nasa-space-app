@@ -31,7 +31,7 @@ def _model(name="continental"):
         path = _DIR / "models" / f"{name}.json"
         if not path.exists():
             raise ValueError(f"Для регіону {name!r} моделі ще немає (є: {sorted(p.stem for p in (_DIR / 'models').glob('*.json'))})")
-        m = json.loads(path.read_text())
+        m = json.loads(path.read_text(encoding="utf-8"))
         for k in ("scaler_mean", "scaler_scale", "coef", "intercept"):
             m[k] = np.asarray(m[k], dtype="float64")
         _MODELS[name] = m

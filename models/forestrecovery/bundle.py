@@ -41,7 +41,7 @@ RELIABILITY = {
 
 def _covs():
     p = _DIR / "fire_covariates.json"
-    return json.loads(p.read_text()) if p.exists() else {}
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
 
 
 def _cell_xy(meta, rr, cc):
@@ -86,7 +86,7 @@ def _polygon(fire_id):
     feats = list(fire_boundaries()["features"])
     extra = _DIR / "fires_extra.geojson"            # контури додаткових демо-пожеж (серединні, Європа)
     if extra.exists():
-        feats += json.loads(extra.read_text())["features"]
+        feats += json.loads(extra.read_text(encoding="utf-8"))["features"]
     for f in feats:
         if f["properties"]["fire_id"] == fire_id:
             return dict(type="Feature", properties=f["properties"], geometry=f["geometry"])
