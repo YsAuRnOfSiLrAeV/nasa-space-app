@@ -47,3 +47,21 @@ Regression coverage includes all 80 catalog associations and coordinates; countr
 Full desktop/mobile browser acceptance remains NOT VERIFIED while the browser automation host is unavailable. Manual acceptance should cover search → perimeter selection → shared result, drawing and cancellation, real matches/no matches, known perimeter-only exports, model-specific coverage, missing zones, switching to Examples, URL reload and Back/Forward. Automated geometry/data checks do not establish visual acceptance.
 
 No backend changes, invented scientific values, new dependencies or automatic commits are introduced.
+
+## Global fire atlas (backend)
+
+When an API is configured (`VITE_API_URL`, or the dev proxy at `/api`), Find Your Fire also searches the backend fire atlas: about 12 million Global Fire Atlas perimeters, 2002–2026, already limited to the model regions. Without an API the section is not rendered and everything above works as before.
+
+Finishing a polygon sends it to `POST /fires/search` with the optional year and minimum-area filters. The answer is one of three outcomes, each with its own message:
+
+| `status`          | Meaning                                                                       |
+| ----------------- | ----------------------------------------------------------------------------- |
+| `outside_regions` | The polygon touches no model region; nothing can be analysed there            |
+| `no_fires`        | It is inside a region, but the atlas has no fire there with these filters     |
+| `ok`              | Fires, largest first, each with the share of its perimeter inside the polygon |
+
+The summary also reports how much of the polygon lies in a verified (tier A) and an extrapolated (tier B) region. Atlas perimeters are drawn with the rest of the search geometry and can be clicked.
+
+Choosing a fire puts its id (`gfa_<number>`) in the URL like any other selection, so the link can be shared and reloaded; a fire opened this way is fetched with `GET /fires/{id}`. `GET /summers` tells which summers it can be analysed for; a fire as recent as the latest summer has none. **Analyse forest recovery** calls `POST /runs`, polls `GET /runs/{id}` while showing the pipeline step and progress, and opens the finished result in the shared investigation view. A fire computed before is returned at once. A failed run shows the backend's code and message, for example `NOT_CONFIGURED` when the server has no satellite credentials.
+
+The answers are validated by `AtlasSearchSchema`, `AtlasFireSchema` and `RunSchema` in `src/services/search/contracts.ts`. Wording of the outcomes lives in `src/services/search/atlas.ts` and is covered by `atlas.test.ts`. The exported 80-fire catalog is unchanged: a new analysis is offered for atlas fires only.

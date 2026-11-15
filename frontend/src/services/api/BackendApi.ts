@@ -1,10 +1,10 @@
 /**
  * Client for the team API (backend/api/main.py, FastAPI on Cloud Run).
  *
- * Today the API exposes only `GET /health` -> {"status": "ok"}. The analysis
- * endpoint for "Your own fire" does not exist yet; when it does, it should
- * return the same files as the pipeline (DELIVERABLES tab 1), which the app
- * already reads with `FireResultSchema` / `FireCellsSchema`.
+ * This client only checks `GET /health` -> {"status": "ok"}. Fire search and
+ * analysis runs go through `services/search/AnalysisClient.ts`; a finished run
+ * returns the same files as the pipeline (DELIVERABLES tab 1), which the app
+ * reads with `FireResultSchema` / `FireCellsSchema`.
  *
  * DOM-free and config-free: the base URL and fetch are injected (tests pass a
  * fake fetch; the app's instance lives in `./index.ts`).

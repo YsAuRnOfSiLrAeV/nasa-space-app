@@ -65,3 +65,34 @@ export const RunSchema = z.discriminatedUnion('status', [
   z.object({ status: z.literal('failed'), code: z.string(), message: z.string().optional() }),
 ]);
 export type Run = z.infer<typeof RunSchema>;
+
+/** A fire of the backend catalog (Global Fire Atlas), as `POST /fires/search` and `GET /fires/{id}` return it. */
+export const AtlasFireSchema = z.object({
+  id: z.string().min(1),
+  year: z.number().int().positive(),
+  start_date: z.iso.date(),
+  end_date: z.iso.date(),
+  area_ha: z.number().nonnegative(),
+  center: Position,
+  /** Model region tier: A verified, B extrapolated. */
+  tier: z.enum(['A', 'B']).nullable(),
+  perimeter: FirePerimeterSchema,
+  /** Share of the fire inside the drawn polygon; absent outside a search. */
+  overlap: z.number().min(0).max(1).optional(),
+});
+export type AtlasFire = z.infer<typeof AtlasFireSchema>;
+export const AtlasSearchSchema = z.object({
+  /** outside_regions: no model region under the polygon. no_fires: a region, but no fire. */
+  status: z.enum(['ok', 'no_fires', 'outside_regions']),
+  /** Share of the polygon inside each region tier. */
+  regions: z.record(z.string(), z.number().min(0).max(1)),
+  total: z.number().int().nonnegative(),
+  truncated: z.boolean(),
+  fires: z.array(AtlasFireSchema),
+});
+export type AtlasSearch = z.infer<typeof AtlasSearchSchema>;
+export interface AtlasFilters {
+  yearFrom?: number;
+  yearTo?: number;
+  minAreaHa?: number;
+}

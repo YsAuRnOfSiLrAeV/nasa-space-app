@@ -16,18 +16,20 @@ dependencies = [
     "earthengine-api",
     "python-dotenv",
     "pillow",
+    "pyarrow",
 ]
 
 [project.optional-dependencies]
 api = ["fastapi", "uvicorn"]
-dev = ["pytest"]
+catalog = ["pandas", "geopandas", "pyogrio"]
+dev = ["pytest", "fastapi", "httpx"]
 
 [build-system]
 requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["pipeline*", "api*"]
+include = ["pipeline*", "api*", "catalog*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

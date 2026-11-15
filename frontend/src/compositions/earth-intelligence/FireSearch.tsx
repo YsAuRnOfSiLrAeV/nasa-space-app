@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Polygon, FeatureCollection } from 'geojson';
+import type { Feature, Polygon, FeatureCollection } from 'geojson';
 import { mapHref, type MapState } from '@/app/route';
 import type { StudyMapController } from '@/components/map/StudyMapController';
 import { config } from '@/config';
@@ -15,6 +15,8 @@ import { simulateAnalysis } from '@/services/search/mockAnalysis';
 import { filterCatalog, type CatalogFire, type Run } from '@/services/search/contracts';
 import { drawingPolygon } from '@/services/search/coverage';
 import { boundaryOverlap, canAnalyze, precomputedHref } from '@/services/search/selection';
+import { isAtlasFire } from '@/services/search/atlas';
+import { AtlasSearch } from './AtlasSearch';
 import styles from './MapShell.module.css';
 
 async function json(path: string, signal: AbortSignal) {
@@ -62,6 +64,8 @@ export function FireSearch({
   const [busy, setBusy] = useState(false);
   const [failMock, setFailMock] = useState(false);
   const active = useRef<AbortController | null>(null);
+  // Perimeters of the backend atlas fires, drawn with the rest of the search geometry.
+  const [atlasFeatures, setAtlasFeatures] = useState<Feature[]>([]);
   const perimetersResource = useResource(mock ? null : 'search-perimeters', (signal) =>
     studyDataApi.loadFirePerimeters(signal),
   );
@@ -203,6 +207,7 @@ export function FireSearch({
         ? [{ type: 'Feature' as const, geometry: fire.perimeter, properties: { fireId: fire.id } }]
         : [],
     );
+    features.push(...atlasFeatures);
     if (polygon) features.push({ type: 'Feature', geometry: polygon, properties: {} });
     if (points.length > 1)
       features.push({
@@ -211,7 +216,7 @@ export function FireSearch({
         properties: {},
       });
     return mapView.showSearchGeometry({ type: 'FeatureCollection', features }, pick);
-  }, [mapView, fires, points, polygon, pick]);
+  }, [mapView, fires, atlasFeatures, points, polygon, pick]);
   useEffect(
     () =>
       drawing && mapView
@@ -403,12 +408,24 @@ export function FireSearch({
           </li>
         ))}
       </ul>
-      {state.fireId && !selected && firesResource.state.status === 'ready' && (
-        <p role="status">
-          No exported dataset exists for this identifier in the supplied catalog. Choose a listed
-          fire.
-        </p>
-      )}
+      {state.fireId &&
+        !selected &&
+        !isAtlasFire(state.fireId) &&
+        firesResource.state.status === 'ready' && (
+          <p role="status">
+            No exported dataset exists for this identifier in the supplied catalog. Choose a listed
+            fire.
+          </p>
+        )}
+      <AtlasSearch
+        mapView={mapView}
+        polygon={polygon}
+        drawing={drawing}
+        fireId={state.fireId}
+        country={selectedCountry?.code}
+        onPerimeters={setAtlasFeatures}
+        onResult={onResult}
+      />
       <fieldset>
         <legend>Selection boundary</legend>
         <button
@@ -467,8 +484,9 @@ export function FireSearch({
         <>
           {!mock && (
             <p role="status">
-              Analysis submission and observation-summer lookup are unavailable. The backend
-              currently exposes only a health check. Precomputed results can still be opened.
+              This fire comes from the exported catalog: its precomputed result can be opened, but a
+              new analysis cannot be requested for it. To analyse a fire, draw a polygon and pick
+              one from the global fire atlas.
             </p>
           )}
           <h3>

@@ -1,0 +1,12 @@
+{
+  "continental": {
+    "validated_on": "Канада, 131 пожежа, оцінка поза вибіркою (група CV за пожежами)",
+    "fire_level": {"n_fires": 54, "min_points_per_fire": 10, "error_vs_lidar_pct_median": 11.7, "error_vs_lidar_pct_mean": 13.7,
+                   "mae_m": 1.78, "null_model_mae_m": 2.18, "r": 0.59, "slope_pred_on_gedi": 0.24},
+    "point_level": {"n_points": 1485, "mae_m": 3.7, "r2": 0.11, "slope_pred_on_gedi": 0.15, "bias_low_heights_m": 3.6, "bias_high_heights_m": -6.5},
+    "calibration": "Ізотонічне калібрування не покращило помилку (3.66 -> 3.71 м): прогнози збиті до середини через слабкий сигнал, а не через зсув.",
+    "optics_fire_level_r_with_gedi": -0.23,
+    "use": "метри й recovery по клітинці є оцінкою зі шумом ±3.7 м: показувати агрегат по пожежі (±12%), по клітинці лише stage / p_forest_gt5",
+    "source": "scripts/calibration_check.py; results/calibration_summary.json, calibration_demo.csv"
+  }
+}

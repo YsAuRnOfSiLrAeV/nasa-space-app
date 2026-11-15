@@ -1,5 +1,14 @@
 import { z } from 'zod';
-import { ErrorSchema, RunSchema, SummersSchema, type Run } from './contracts';
+import {
+  AtlasFireSchema,
+  AtlasSearchSchema,
+  ErrorSchema,
+  RunSchema,
+  SummersSchema,
+  type AtlasFilters,
+  type Run,
+} from './contracts';
+import type { Polygon } from 'geojson';
 import { FireResultSchema, parseFireCells, type FireData } from '@/data/fireSchema';
 
 export function pause(milliseconds: number, signal: AbortSignal) {
@@ -20,7 +29,8 @@ export function pause(milliseconds: number, signal: AbortSignal) {
 export class AnalysisClient {
   constructor(
     private base: string | null,
-    private fetcher: typeof fetch = fetch,
+    // Bound: calling the browser's fetch as a method of this object throws "Illegal invocation".
+    private fetcher: typeof fetch = globalThis.fetch.bind(globalThis),
   ) {}
   private async request<T>(
     path: string,
@@ -45,6 +55,18 @@ export class AnalysisClient {
       );
     }
     return schema.parse(await response.json());
+  }
+  /** Fires of the backend catalog under a drawn polygon. */
+  searchFires(polygon: Polygon, filters: AtlasFilters, signal: AbortSignal) {
+    return this.request('/fires/search', AtlasSearchSchema, signal, {
+      polygon,
+      year_from: filters.yearFrom,
+      year_to: filters.yearTo,
+      min_area_ha: filters.minAreaHa,
+    });
+  }
+  fire(fireId: string, signal: AbortSignal) {
+    return this.request(`/fires/${encodeURIComponent(fireId)}`, AtlasFireSchema, signal);
   }
   async summers(fireId: string, signal: AbortSignal) {
     return (

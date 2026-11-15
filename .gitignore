@@ -28,6 +28,10 @@ dist/
 data/raw/
 data/cache/
 
+# Каталог пожеж (400 МБ) і пораховані через API пожежі: кожен кладе собі сам, див. data/README.md
+data/gfa/
+data/fires/
+
 # IDE / OS
 .vscode/
 .idea/

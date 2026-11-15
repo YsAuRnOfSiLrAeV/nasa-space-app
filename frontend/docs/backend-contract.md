@@ -16,7 +16,7 @@ Reviewed `origin/main` at `b58a3de`, including `backend/pipeline/run.py`, `model
 
 The pipeline current-state average and growth-model estimate at the observation summer can differ. Neither is adjusted to match the other. Calibration MAE and median error are distinct from the growth model's 80% uncertainty interval. Canadian validation statistics do not establish accuracy in an extrapolated region or with a different reference-height source.
 
-The HTTP API still exposes only `GET /health`. A working command-line runner does not authorize real analysis submissions from the frontend. Production summer lookup, submission and polling remain disabled.
+The HTTP API now serves the fire atlas search and analysis runs (see [find-your-fire.md](find-your-fire.md) and `backend/README.md`); the paragraph below describes the earlier state, when it exposed only `GET /health`. A working command-line runner does not authorize real analysis submissions from the frontend. Production summer lookup, submission and polling remain disabled.
 
 The supplied 80-fire bundle is still the original forestrecovery 0.14.0 export. These changes do not regenerate it or replace its scientific values. Bundle v2 model-version labels now read each manifest's actual library version. Both v1 pipeline exports and existing v2 resources keep the shared investigation UI. To inspect newly generated pipeline exports, use the existing `FIRE_DEMO_DIR` override documented below; no new pipeline run was performed for this alignment.
 
