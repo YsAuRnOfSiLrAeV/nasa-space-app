@@ -1,6 +1,8 @@
-"""Reference ("100% recovery") forest height from GEDI.
+"""GEDI lidar heights: the reference ("100% recovery") forest height, and the shots for the burn.
+The shots inside the burn get the extra filters of the training labels in fire_stats.lidar_shot_mask.
 
-Median rh98 of good-quality GEDI shots over the reference forest (zones.py: the 1.5-6 km ring
+``shot_heights`` downloads the good GEDI shots on the grid once. ``reference_height`` takes the
+median rh98 of good-quality GEDI shots over the reference forest (zones.py: the 1.5-6 km ring
 around the WHOLE fire, unburned forest only). GEDI only reaches 51.6 N; north of that use
 ETH Canopy Height, flagged as approximate.
 
@@ -28,18 +30,24 @@ RH98 = "rh98"
 ETH_HEIGHT = "eth_height"
 
 
-def reference_height(polygon, grid: Grid, zones: np.ndarray) -> dict:
+def shot_heights(polygon, grid: Grid) -> np.ndarray | None:
+    """rh98 (m) of good GEDI shots on the grid, NaN between shots. None north of GEDI coverage."""
+    return _gedi_rh98(grid) if _latitude(polygon) <= GEDI_MAX_LAT else None
+
+
+def reference_height(polygon, grid: Grid, zones: np.ndarray, heights: np.ndarray | None = None) -> dict:
     """Return {"height_m", "source", "shots"}: median height of the reference forest.
 
     source is "gedi", or "eth" (approximate) north of GEDI coverage or with under MIN_SHOTS shots.
+    ``heights`` are the shots from ``shot_heights``, to avoid downloading them twice.
     """
     reference = zones == REFERENCE
     if not reference.any():
         raise ValueError("no reference forest in the ring around the fire")
 
-    shots = np.empty(0)
-    if _latitude(polygon) <= GEDI_MAX_LAT:
-        shots = _valid(_gedi_rh98(grid)[reference])
+    if heights is None and _latitude(polygon) <= GEDI_MAX_LAT:
+        heights = _gedi_rh98(grid)
+    shots = np.empty(0) if heights is None else _valid(heights[reference])
     if shots.size >= MIN_SHOTS:
         return {"height_m": _median(shots), "source": "gedi", "shots": shots.size}
 

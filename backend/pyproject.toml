@@ -15,6 +15,7 @@ dependencies = [
     "fsspec[http]",
     "earthengine-api",
     "python-dotenv",
+    "pillow",
 ]
 
 [project.optional-dependencies]

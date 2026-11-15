@@ -1,0 +1,66 @@
+[
+  {
+    "id": "bc_2003_490",
+    "name": {
+      "en": "British Columbia #490"
+    },
+    "year": 2003,
+    "area_ha": 27137,
+    "summer": 2026,
+    "center_lonlat": [
+      -120.1985,
+      51.1408
+    ],
+    "recovery_today_avg": 0.463,
+    "year_80pct": 2066,
+    "result": "bc_2003_490/result.json"
+  },
+  {
+    "id": "ontario_1988_21",
+    "name": {
+      "en": "Ontario #21"
+    },
+    "year": 1988,
+    "area_ha": 19386,
+    "summer": 2026,
+    "center_lonlat": [
+      -94.9671,
+      49.892
+    ],
+    "recovery_today_avg": 0.607,
+    "year_80pct": 2024,
+    "result": "ontario_1988_21/result.json"
+  },
+  {
+    "id": "quebec_1995_1218",
+    "name": {
+      "en": "Quebec #1218"
+    },
+    "year": 1995,
+    "area_ha": 39354,
+    "summer": 2026,
+    "center_lonlat": [
+      -76.3749,
+      48.8892
+    ],
+    "recovery_today_avg": 0.809,
+    "year_80pct": 2019,
+    "result": "quebec_1995_1218/result.json"
+  },
+  {
+    "id": "quebec_2010_557",
+    "name": {
+      "en": "Quebec #557"
+    },
+    "year": 2010,
+    "area_ha": 16751,
+    "summer": 2026,
+    "center_lonlat": [
+      -75.811,
+      49.1413
+    ],
+    "recovery_today_avg": 0.811,
+    "year_80pct": 2035,
+    "result": "quebec_2010_557/result.json"
+  }
+]

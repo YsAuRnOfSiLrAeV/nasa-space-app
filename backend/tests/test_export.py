@@ -152,3 +152,19 @@ def test_files_are_written_as_utf8(grid, tmp_path, monkeypatch):
     export.update_index(tmp_path, result)
     assert "Тест" in (folder / "result.json").read_bytes().decode("utf-8")
     assert not list(tmp_path.rglob("*.tmp"))
+
+
+def test_optical_png_keeps_size_and_makes_no_data_transparent():
+    import io
+
+    from PIL import Image
+
+    red = np.full((4, 5), 0.05, dtype=np.float32)
+    red[0, 0] = np.nan
+    png = export.optical_png({"red": red, "green": np.full((4, 5), 0.08), "blue": np.full((4, 5), 0.03)})
+    image = Image.open(io.BytesIO(png))
+    assert image.size == (5, 4) and image.mode == "RGBA"
+    assert image.getpixel((0, 0))[3] == 0 and image.getpixel((1, 0))[3] == 255
+    r, g, b, _ = image.getpixel((1, 0))
+    assert g > r > b  # vegetation looks green
+
