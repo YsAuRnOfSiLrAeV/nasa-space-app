@@ -1,7 +1,7 @@
-"""GEE layers on the shared grid via ee.data.computePixels. Owner: Misha.
+"""GEE layers on the shared grid via ee.data.computePixels.
 
-- Sentinel-1 GRD, IW, ascending, Jul 10-25, median, focalMean 30 m -> s1_VH, s1_VV (dB)
-- Sentinel-2 SR Harmonized, Jul 1 - Aug 15, cloud < 20%, median, (B8-B4)/(B8+B4) -> NDVI
+- Sentinel-1 GRD, IW, ascending, Jul 10-24, median, focalMean 30 m -> s1_VH, s1_VV (dB)
+- Sentinel-2 SR Harmonized, Jul 1 - Aug 14, cloud < 20%, median, (B8-B4)/(B8+B4) -> NDVI
 - WorldCover (water / forest mask), Hansen (forest loss), MODIS + NBAC (fire history)
 
 Only month/day are fixed, the year is a parameter.
@@ -15,12 +15,12 @@ from ..grid import Grid
 from . import client
 
 # (first day, last day), both included.
-S1_WINDOW = ("07-10", "07-25")
-S2_WINDOW = ("07-01", "08-15")
+S1_WINDOW = ("07-10", "07-24")  # training: filterDate 07-10 .. 07-25, end excluded
+S2_WINDOW = ("07-01", "08-14")  # training: filterDate 07-01 .. 08-15, end excluded
 S2_MAX_CLOUD_PCT = 20
 S1_SMOOTH_M = 30
 # The focal mean must run on Sentinel-1's own 10 m pixels, not on the 30 m grid cells.
-# TODO (Sofia): confirm this is the scale the training features were smoothed at.
+# TODO: confirm against the training scripts that this is the scale the features were smoothed at.
 S1_PIXEL_M = 10
 
 # Mask layer names, read by zones.py.
@@ -28,7 +28,7 @@ WORLDCOVER = "worldcover"  # ESA class: 10 trees, 80 water
 FOREST_LOSS = "forest_loss"  # 1 where Hansen recorded any forest loss (logging, fire, ...)
 BURNED = "burned"  # 1 inside a known fire: MODIS since 2001 or an NBAC perimeter since 1972
 
-HANSEN = "UMD/hansen/global_forest_change_2024_v1_12"
+HANSEN = "UMD/hansen/global_forest_change_2025_v1_13"
 NBAC = "projects/sat-io/open-datasets/CA_FOREST/NBAC/nbac_1972_2023_20240530"
 MODIS_FIRST_YEAR = 2001
 
@@ -44,7 +44,7 @@ def sentinel1(grid: Grid, year: int) -> dict:
     image = (
         scenes.select(["VH", "VV"])
         .median()
-        .focalMean(S1_SMOOTH_M, "circle", "meters")
+        .focalMean(S1_SMOOTH_M, "square", "meters")  # square kernel, as in the training scripts
         .reproject(crs=grid.crs, scale=S1_PIXEL_M)
         .rename([S1_VH, S1_VV])
     )

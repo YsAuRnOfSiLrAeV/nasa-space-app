@@ -1,4 +1,4 @@
-"""Cell zones for the cells.json `zone` field. Owner: Misha.
+"""Cell zones for the cells.json `zone` field.
 
 - burn: cell inside the fire polygon, except water
 - reference forest: cell in the 1.5-6 km ring, not burned, no forest loss, forest now
@@ -15,11 +15,12 @@ import shapely
 from shapely.geometry import shape
 from shapely.geometry.base import BaseGeometry
 
+from ..contract import ZONE_BURN, ZONE_REFERENCE
 from ..grid import Grid
 from .layers import BURNED, FOREST_LOSS, WORLDCOVER
 
-BURN = 1
-REFERENCE = 0
+BURN = ZONE_BURN
+REFERENCE = ZONE_REFERENCE
 # Excluded cells stay NaN, which becomes null in cells.json.
 
 # Reference forest lies this far from the fire edge: not right next to it, not too far.

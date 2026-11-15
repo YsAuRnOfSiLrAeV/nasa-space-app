@@ -1,10 +1,11 @@
-"""Reference ("100% recovery") forest height from GEDI. Owner: Misha.
+"""Reference ("100% recovery") forest height from GEDI.
 
 Median rh98 of good-quality GEDI shots over the reference forest (zones.py: the 1.5-6 km ring
 around the WHOLE fire, unburned forest only). GEDI only reaches 51.6 N; north of that use
 ETH Canopy Height, flagged as approximate.
 
-TODO (Sofia): confirm these filters match the ones used for calibration (sensitivity, months).
+Shot filters are the ones used in the training data collection: 2019-04-01 to 2023-03-16,
+June to September only, quality_flag 1, degrade_flag 0, sensitivity >= 0.95, rh98 <= 35 m.
 """
 
 from __future__ import annotations
@@ -18,8 +19,10 @@ from .zones import REFERENCE
 
 MIN_SHOTS = 100
 GEDI_MAX_LAT = 51.6
-MIN_SENSITIVITY = 0.9
+MIN_SENSITIVITY = 0.95
 MAX_RH98_M = 35  # taller returns are treated as noise, as in data collection
+GEDI_DATES = ("2019-04-01", "2023-03-17")  # filterDate excludes its end: last day 2023-03-16
+GEDI_MONTHS = (6, 9)  # June to September: leaf-on, no snow
 
 RH98 = "rh98"
 ETH_HEIGHT = "eth_height"
@@ -57,13 +60,15 @@ def _gedi_rh98(grid: Grid) -> np.ndarray:
             .eq(1)
             .And(image.select("degrade_flag").eq(0))
             .And(image.select("sensitivity").gte(MIN_SENSITIVITY))
-            .And(rh98.lt(MAX_RH98_M))
+            .And(rh98.lte(MAX_RH98_M))
         )
         return rh98.updateMask(good)
 
     image = (
         ee.ImageCollection("LARSE/GEDI/GEDI02_A_002_MONTHLY")
         .filterBounds(client.region(grid))
+        .filterDate(*GEDI_DATES)
+        .filter(ee.Filter.calendarRange(*GEDI_MONTHS, "month"))
         .map(good_shots)
         .mosaic()
     )
