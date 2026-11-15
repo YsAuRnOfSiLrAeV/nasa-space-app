@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { LocatedPoint } from '@/data/schema';
-import type { BurnGroup } from '@/components/study/burnGroups';
+import type { BurnGroup } from '@/domain/study/burnGroups';
 import type { CompositionProps } from '../types';
 import { useEarthMap } from './useEarthMap';
 import { mapHref } from '@/app/route';
@@ -81,14 +81,13 @@ export function useEarthView({
     if (phase !== 'region' || !flyPending.current || !mapView) return;
     flyPending.current = false;
     const id = requestAnimationFrame(() => {
+      mapView.showWholeEarth();
       void mapView.fitStudyArea({ durationMs: 3200, curve: 1.6 }).then(() => setArrived(true));
     });
     return () => cancelAnimationFrame(id);
   }, [phase, mapView]);
 
   const enterRegion = () => {
-    if (!mapView) return;
-    mapView.showWholeEarth();
     flyPending.current = true;
     focusNext.current = 'region';
     setArrived(false);
@@ -129,7 +128,7 @@ export function useEarthView({
   return {
     phase,
     status,
-    canEnter: study !== null && mapView !== null,
+    canEnter: study !== null,
     enterRegion,
     goPlanet,
     sourcesOpen,

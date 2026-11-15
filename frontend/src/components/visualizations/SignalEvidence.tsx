@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import type { PointProperties } from '@/data/schema';
-import { rankSignals } from '@/components/study/signalEvidence';
+import { rankSignals } from '@/domain/study/signalEvidence';
 import { SignalHeightPanel } from './SignalHeightPanel';
 
 /**

@@ -1,43 +1,42 @@
-import { useCallback, useEffect, useMemo, useRef, type PointerEvent, type RefObject } from 'react';
-import { cn } from '@/lib/utils';
-import { formatExtent } from '@/components/map/graticule';
-import { describeOrbits } from '@/data/missions';
-import { useFireCatalog } from '@/hooks/useFireCatalog';
-import { useRecoveryData } from '@/hooks/useRecoveryData';
 import type { DemoFire } from '@/data/fireSchema';
-import type { RecoveryFile, RecoveryImage } from '@/data/recoverySchema';
+import { describeOrbits } from '@/data/missions';
+import { formatExtent } from '@/domain/globe/graticule';
+import { cn } from '@/lib/utils';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent,
+  type RefObject,
+} from 'react';
+import { createLeaderLayout } from './planet/leaderLayout';
 import type { StudyLoad, StudyView } from '../types';
 import { ContourGround } from './ContourGround';
+import styles from './EarthIntelligence.module.css';
 import { GlobeLegend, LandingFooter, LandingLead } from './LandingOverlays';
 import { ObservationSchematic } from './ObservationSchematic';
 import { ObservationWindow } from './ObservationWindow';
-import { latestImage } from './planet/observationWindow';
 import { PlanetHero, type GlobeAnchors, type GlobeStudy, type PointerRef } from './PlanetHero';
-import { useLandOutline } from './useLandOutline';
-import styles from './EarthIntelligence.module.css';
 import cartography from './ScientificLanding.module.css';
+import { useLandOutline } from './useLandOutline';
 
 /** Where the camera looks when nothing has loaded yet: central Canada. */
 const CANADA: [number, number] = [-100, 54];
 
 /**
- * The Ontario burn whose Landsat scenes fill the observation window (the one
- * burn-scar group with rendered imagery; `npm run data:landsat`). If its record
- * is absent the window and its mark on the globe are simply not drawn.
- */
-const OBSERVATION_GROUP = '2002_205_-376';
-
-/**
  * Landing, composed as one scientific plate around a central figure:
  *   centre  FIG. 01, the globe: Earth, the Ontario study, the fires.
  *   left    the lead: one finding and the one action, on the shared datum line.
- *   right   FIG. 01A, a real Landsat observation of an Ontario burn, joined to
+ *   right   FIG. 01A, NISAR HV samples from the study region, joined to
  *           its true position on the globe by leader lines; FIG. 02, a labelled
  *           schematic of greenness versus structure.
  *   ground  charcoal technical paper with decorative contours.
  *   bottom  the figure index, with the legend and Sources.
  */
 export function PlanetView({
+  fires,
   hidden,
   load,
   study,
@@ -46,7 +45,9 @@ export function PlanetView({
   onEnter,
   sourcesOpen,
   onSources,
+  onCloseSources,
 }: {
+  fires: DemoFire[];
   hidden: boolean;
   load: StudyLoad;
   study: StudyView | null;
@@ -55,52 +56,53 @@ export function PlanetView({
   onEnter: () => void;
   sourcesOpen: boolean;
   onSources: () => void;
+  onCloseSources: () => void;
 }) {
   const pointer = useRef({ x: 0, y: 0 });
   const stageRef = useRef<HTMLElement>(null);
   const windowRef = useRef<HTMLDivElement>(null);
   const leaderRef = useRef<SVGPathElement>(null);
-  const catalog = useFireCatalog();
+  const [layersOpen, setLayersOpen] = useState(false);
+  const onLayersOpenChange = useCallback(
+    (open: boolean) => {
+      setLayersOpen(open);
+      if (open && sourcesOpen) onCloseSources();
+    },
+    [onCloseSources, sourcesOpen],
+  );
+  const handleSources = useCallback(() => {
+    setLayersOpen(false);
+    onSources();
+  }, [onSources]);
   // The first catalogued fire is named on the globe; every fire dot opens its page.
-  const selectedFireId = catalog.fires[0]?.id ?? null;
+  const selectedFireId = fires[0]?.id ?? null;
   const footprints = study ? study.located.length : null;
   const site = study?.manifest.sites[0] ? titleCase(study.manifest.sites[0]) : null;
 
-  const recovery = useRecoveryData(OBSERVATION_GROUP);
-  const observed = useMemo<{ record: RecoveryFile; image: RecoveryImage } | null>(() => {
-    if (recovery.status !== 'ready') return null;
-    const image = latestImage(recovery.data);
-    return image ? { record: recovery.data, image } : null;
-  }, [recovery]);
+  const observed = study?.located.some((point) => Number.isFinite(point.nisar_hv_db))
+    ? study
+    : null;
 
   // Leader lines from the window's mark on the globe to the window, every frame
   // (the globe drifts). Hidden when the mark faces away or the window is not laid out.
   const lastAnchors = useRef<GlobeAnchors | null>(null);
-  const placeLeaders = useCallback((anchors: GlobeAnchors) => {
-    lastAnchors.current = anchors;
-    const { canvas, window: mark } = anchors;
-    const path = leaderRef.current;
-    const stage = stageRef.current;
-    const frame = windowRef.current;
-    if (!path) return;
-    const shown = frame?.offsetParent != null;
-    if (!mark || !stage || !frame || !shown) {
-      path.setAttribute('d', '');
-      return;
-    }
-    const s = stage.getBoundingClientRect();
-    const c = canvas.getBoundingClientRect();
-    const f = frame.getBoundingClientRect();
-    const ox = c.left - s.left;
-    const oy = c.top - s.top;
-    const fx = f.left - s.left;
-    const fy = f.top - s.top;
-    path.setAttribute(
-      'd',
-      `M${ox + mark.x1} ${oy + mark.y0}L${fx} ${fy}` +
-        `M${ox + mark.x1} ${oy + mark.y1}L${fx} ${fy + f.height}`,
-    );
-  }, []);
+  const [leaderLayout] = useState(createLeaderLayout);
+  const placeLeaders = useCallback(
+    (anchors: GlobeAnchors) => {
+      lastAnchors.current = anchors;
+      const { canvas, window: mark } = anchors;
+      const path = leaderRef.current;
+      const stage = stageRef.current;
+      const frame = windowRef.current;
+      if (!path) return;
+      if (!stage || !frame) {
+        path.setAttribute('d', '');
+        return;
+      }
+      path.setAttribute('d', leaderLayout.path(mark, stage, canvas, frame));
+    },
+    [leaderLayout],
+  );
 
   // A still globe paints rarely: re-place the leaders whenever the layout around
   // them settles (web fonts, the image arriving, resizes).
@@ -108,6 +110,7 @@ export function PlanetView({
     // Next frame: by then the canvas has repainted for the new size as well.
     let raf = 0;
     const replace = () => {
+      leaderLayout.invalidate();
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         if (lastAnchors.current) placeLeaders(lastAnchors.current);
@@ -120,13 +123,14 @@ export function PlanetView({
     window.addEventListener('resize', replace);
     let live = true;
     document.fonts?.ready.then(() => live && replace());
+    replace();
     return () => {
       live = false;
       cancelAnimationFrame(raf);
       ro.disconnect();
       window.removeEventListener('resize', replace);
     };
-  }, [placeLeaders, observed]);
+  }, [placeLeaders, observed, leaderLayout]);
 
   const track = (e: PointerEvent<HTMLElement>) => {
     if (e.pointerType !== 'mouse') return;
@@ -157,15 +161,17 @@ export function PlanetView({
       <ContourGround className={cartography.ground} />
       <div aria-hidden="true" className={cartography.datum} />
       <GlobeStage
-        fires={catalog.fires}
+        fires={fires}
         selectedFireId={selectedFireId}
         study={study}
         site={site}
         footprints={footprints}
         pointer={pointer}
         animate={!hidden}
-        observation={observed?.record.bbox ?? null}
+        observation={observed?.manifest.bbox ?? null}
         onAnchors={placeLeaders}
+        layersOpen={layersOpen}
+        onLayersOpenChange={onLayersOpenChange}
       />
       <svg aria-hidden="true" className={cartography.leaders}>
         <path ref={leaderRef} />
@@ -173,20 +179,17 @@ export function PlanetView({
       <LandingLead study={study} load={load} canEnter={canEnter} onEnter={onEnter} />
       <div className={cartography.annotations}>
         {observed && (
-          <ObservationWindow
-            record={observed.record}
-            image={observed.image}
-            imageRef={windowRef}
-            className={cartography.panel}
-          />
+          <ObservationWindow study={observed} frameRef={windowRef} className={cartography.panel} />
         )}
         <ObservationSchematic className={cartography.panel} />
       </div>
       <LandingFooter
         footprints={footprints}
         site={site}
+        layersOpen={layersOpen}
+        onLayersOpenChange={onLayersOpenChange}
         sourcesOpen={sourcesOpen}
-        onSources={onSources}
+        onSources={handleSources}
       />
     </section>
   );
@@ -208,6 +211,8 @@ function GlobeStage({
   animate,
   observation,
   onAnchors,
+  layersOpen,
+  onLayersOpenChange,
 }: {
   fires: DemoFire[];
   selectedFireId: string | null;
@@ -218,8 +223,11 @@ function GlobeStage({
   animate: boolean;
   observation: readonly [number, number, number, number] | null;
   onAnchors: (anchors: GlobeAnchors) => void;
+  layersOpen: boolean;
+  onLayersOpenChange: (open: boolean) => void;
 }) {
-  const rings = useLandOutline();
+  const { state: outline } = useLandOutline();
+  const rings = outline.status === 'ready' ? outline.data : null;
   const globeStudy = useMemo<GlobeStudy | null>(
     () =>
       study
@@ -238,7 +246,7 @@ function GlobeStage({
       ? `In blue, the study region in ${site ?? 'Canada'} (${formatExtent(study.manifest.bbox)}) and its ${footprints} GEDI lidar footprints.`
       : '',
     observation
-      ? 'A small outlined square marks the extent of the Landsat observation shown beside the globe.'
+      ? 'An outlined region marks the extent of the NISAR HV sample plot shown beside the globe.'
       : '',
     `Around it, drawn spacecraft on illustrative orbits with real inclinations: ${describeOrbits()}.`,
     fires.length
@@ -251,6 +259,11 @@ function GlobeStage({
 
   return (
     <figure className={cartography.figure}>
+      {outline.status === 'error' && (
+        <p role="status" className="sr-only">
+          The land outline could not be loaded. Study locations remain available.
+        </p>
+      )}
       <div className={cartography.figureLabel} aria-hidden="true">
         <span className={cartography.figureIndex}>FIG. 01 / GEOGRAPHIC CONTEXT</span>
         <span>{site ? `${site.toUpperCase()} / STUDY REGION` : 'CANADA'}</span>
@@ -272,7 +285,12 @@ function GlobeStage({
         <span>Graticule 30° / 20°</span>
       </figcaption>
       <div className={cartography.legend}>
-        <GlobeLegend footprints={footprints} site={site} />
+        <GlobeLegend
+          footprints={footprints}
+          site={site}
+          open={layersOpen}
+          onOpenChange={onLayersOpenChange}
+        />
       </div>
     </figure>
   );

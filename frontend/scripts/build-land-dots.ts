@@ -15,7 +15,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { fibonacciSphere, inRings } from '../src/components/graphics/sphere';
+import { fibonacciSphere, inRings } from '../src/domain/globe/sphere';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const INPUT = resolve(ROOT, 'data/reference/ne_110m_land.geojson');

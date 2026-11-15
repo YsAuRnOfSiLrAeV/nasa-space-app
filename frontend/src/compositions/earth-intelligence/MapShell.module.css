@@ -90,28 +90,77 @@
 .collapsed > div:last-child {
   display: none;
 }
-.fireWorkspace {
-  position: absolute;
-  inset: 76px calc(var(--panel-width) + 2.5rem) 0 0;
-  z-index: 21;
-  overflow: auto;
-  overscroll-behavior: contain;
-  background: var(--background);
-  padding: 1.5rem;
+.fire > * + * {
+  margin-top: 1rem;
 }
-.fireWorkspace[data-hidden] {
-  visibility: hidden;
-  pointer-events: none;
+.eyebrow {
+  font: var(--eyebrow-weight) var(--eyebrow-size) / 1.4 var(--eyebrow-font);
+  letter-spacing: var(--eyebrow-tracking);
+  text-transform: var(--eyebrow-transform);
 }
-.fireWorkspace h1 {
-  font: 500 1.6rem/1.2 var(--font-section);
-  margin-block: 1rem;
+.fireTitle {
+  margin-top: 0.25rem;
+  font: 400 1.25rem/1.25 var(--font-section);
+  color: var(--foreground);
 }
-.fireWorkspace :global(.nasa-page-header) {
-  padding-top: 0;
+.fixture {
+  border: 1px solid var(--amber);
+  padding: 0.75rem;
 }
-.fireWorkspace > section > * + * {
-  margin-top: 1.25rem;
+.fixture > * + *,
+.note > * + * {
+  margin-top: 0.4rem;
+}
+.controls {
+  display: grid;
+  gap: 0.15rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 0.75rem;
+}
+.controls legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 0.25rem;
+  font: 500 0.75rem/1.4 var(--font-section);
+  color: var(--foreground);
+}
+.controls label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 36px;
+  cursor: pointer;
+}
+.controls label[data-disabled] {
+  cursor: not-allowed;
+  color: var(--faint);
+}
+.controls input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--signal);
+}
+.controls small {
+  color: var(--muted-foreground);
+}
+.facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.3rem 1rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 0.75rem;
+}
+.facts dt {
+  color: var(--muted-foreground);
+}
+.facts dd {
+  font: 400 0.75rem/1.6 var(--font-data);
+}
+.listHead {
+  border-top: 1px solid var(--rule);
+  padding-top: 1rem;
+  font: 500 0.75rem/1.4 var(--font-section);
 }
 @media (max-width: 767.98px) {
   .panel {
@@ -124,9 +173,46 @@
   .collapsed {
     top: auto;
   }
-  .fireWorkspace {
-    inset: 100px 0 0;
-    padding: 1rem;
-    padding-bottom: 52dvh;
+}
+.search {
+  display: grid;
+  gap: 0.75rem;
+}
+.search label {
+  display: grid;
+  gap: 0.25rem;
+}
+.search input:not([type='checkbox']),
+.search select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem;
+  color: var(--foreground);
+  background: var(--background);
+  border: 1px solid var(--rule);
+}
+.search :focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.mapLegend {
+  position: absolute;
+  left: 16px;
+  bottom: 72px;
+  z-index: 26;
+  max-width: min(290px, 40vw);
+  max-height: 38vh;
+  overflow: auto;
+  padding: 0.65rem;
+  background: var(--panel-bg);
+  border: 1px solid var(--rule);
+  font-size: 0.7rem;
+}
+@media (max-width: 700px) {
+  .mapLegend {
+    top: 112px;
+    bottom: auto;
+    max-height: 18vh;
+    max-width: 65vw;
   }
 }

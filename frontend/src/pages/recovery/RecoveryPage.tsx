@@ -1,5 +1,5 @@
 import type { RecoveryView } from '@/app/route';
-import type { StudyLoad, StudyView } from '@/components/study/studyView';
+import type { StudyLoad, StudyView } from '@/domain/study/studyView';
 import { GrowthView } from './GrowthView';
 import { ObservedRecovery } from './ObservedRecovery';
 import { RecoveryHero, RecoveryLoading } from './RecoveryHero';

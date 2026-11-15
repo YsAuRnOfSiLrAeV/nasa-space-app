@@ -2,9 +2,9 @@
  * One frame of the landing globe: canvas, time, camera, projection and theme
  * colours, computed once per paint and handed to every layer.
  */
-import { orthographic } from '@/components/graphics/sphere';
+import { orthographic } from '@/domain/globe/sphere';
 import { lambert } from '@/components/graphics/globe';
-import { cssVar, type CanvasFrame } from '@/components/graphics/useCanvasRenderer';
+import type { CanvasFrame } from '@/components/graphics/useCanvasRenderer';
 import { ASSEMBLE_SPREAD, DOT_GROW, SETTLED, clamp01, quintOut } from './choreography';
 
 export interface Projected {
@@ -77,23 +77,25 @@ export function followPointer(smooth: Pointer, pointer: Pointer | null, still: b
 }
 
 export function readColors(el: Element): PlanetColors {
+  const style = getComputedStyle(el);
+  const value = (name: string, fallback: string) => style.getPropertyValue(name).trim() || fallback;
   return {
-    ocean: cssVar(el, '--cartography-ocean', '#171b20'),
-    land: cssVar(el, '--cartography-land', '#5b6067'),
-    coast: cssVar(el, '--cartography-coast', '#c3c6c8'),
-    grid: cssVar(el, '--cartography-grid', '#373b41'),
-    mint: cssVar(el, '--mint', '#9fd5c8'),
-    silver: cssVar(el, '--silver', '#c8cdd2'),
-    milky: cssVar(el, '--foreground', '#f1ede6'),
-    ground: cssVar(el, '--background', '#0b0b0e'),
-    forest: cssVar(el, '--forest', '#3aa994'),
-    burn: cssVar(el, '--burn', '#b53e5d'),
-    burnText: cssVar(el, '--burn-text', '#d37487'),
-    signal: cssVar(el, '--signal', '#60b4ec'),
-    amber: cssVar(el, '--amber', '#f7b755'),
-    mono: cssVar(el, '--font-coord', 'monospace'),
-    panel: cssVar(el, '--cartography-panel', '#22344a'),
-    label: cssVar(el, '--font-label', 'sans-serif'),
+    ocean: value('--cartography-ocean', '#171b20'),
+    land: value('--cartography-land', '#5b6067'),
+    coast: value('--cartography-coast', '#c3c6c8'),
+    grid: value('--cartography-grid', '#373b41'),
+    mint: value('--mint', '#9fd5c8'),
+    silver: value('--silver', '#c8cdd2'),
+    milky: value('--foreground', '#f1ede6'),
+    ground: value('--background', '#0b0b0e'),
+    forest: value('--forest', '#3aa994'),
+    burn: value('--burn', '#b53e5d'),
+    burnText: value('--burn-text', '#d37487'),
+    signal: value('--signal', '#60b4ec'),
+    amber: value('--amber', '#f7b755'),
+    mono: value('--font-coord', 'monospace'),
+    panel: value('--cartography-panel', '#22344a'),
+    label: value('--font-label', 'sans-serif'),
   };
 }
 

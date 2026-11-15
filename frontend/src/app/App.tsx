@@ -1,17 +1,16 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { cn } from '@/lib/utils';
-import { StudyMap } from '@/components/map/StudyMap';
 import type { StudyMapController } from '@/components/map/StudyMapController';
-import { buildStudyView } from '@/components/study/studyView';
-import { COMPOSITIONS } from '@/compositions';
-import type { StudyLoad, StudyView } from '@/components/study/studyView';
+import { buildStudyView } from '@/domain/study/studyView';
+import type { Manifest, PointCollection } from '@/data/schema';
+import { EarthIntelligenceComposition } from '@/compositions/earth-intelligence/EarthIntelligenceComposition';
+import type { StudyLoad, StudyView } from '@/domain/study/studyView';
 import { PageLoading } from '@/components/shell/PageLayout';
 import { useHashRoute } from '@/hooks/useHashRoute';
 import { INITIAL_MAP_STATE, mapHref, mapStateOf, type Route } from './route';
 import { MapNavigationContext } from './mapNavigation';
 import { useOccludedInsets } from '@/hooks/useOccludedInsets';
 import { useStudyData } from '@/hooks/useStudyData';
-import { useTheme } from '@/theme/theme-context';
 import { PageActiveContext } from './pageActive';
 
 /** Loaded on first visit: the explorer does not pay for the Research and Recovery pages' code. */
@@ -25,16 +24,23 @@ const RecoveryPage = lazy(() =>
 const Forest3DPage = lazy(() =>
   import('@/pages/forest3d/Forest3DPage').then((m) => ({ default: m.Forest3DPage })),
 );
+/** The landing is a canvas globe; load the WebGL map only when its workspace opens. */
+const StudyMap = lazy(() =>
+  import('@/components/map/StudyMap').then((m) => ({ default: m.StudyMap })),
+);
+
+/** Until (or unless) the Ontario study loads: no sample points, a Canada-wide extent. */
+const NO_POINTS: PointCollection = { type: 'FeatureCollection', features: [] };
+const CANADA_BBOX: Manifest['bbox'] = [-141, 41.7, -52.6, 70];
 
 /**
- * Owns all behaviour (data, map controller, theme, route) once. The explorer
- * (the active theme's composition over the map) is always mounted; every other
+ * Owns all behaviour (data, map controller, route) once. The explorer (the
+ * Earth Intelligence composition over the map) is always mounted; every other
  * page (see `route.ts`) opens over it, so returning keeps the view, the picked
  * fire year and the camera.
  */
 export function App() {
-  const { retry, ...state } = useStudyData();
-  const { themeId } = useTheme();
+  const { retry, state } = useStudyData();
   const route = useHashRoute();
   const currentMap = mapStateOf(route);
   const [lastMap, setLastMap] = useState(currentMap ?? INITIAL_MAP_STATE);
@@ -48,19 +54,16 @@ export function App() {
   const load: StudyLoad =
     state.status === 'error'
       ? { status: 'error', message: state.message, retry }
-      : { status: state.status };
+      : { status: state.status === 'ready' ? 'ready' : 'loading' };
   const covered = currentMap === null;
+  const [mapRequested, setMapRequested] = useState(
+    () => currentMap !== null && currentMap.presentation !== 'intro',
+  );
+  // Once opened, keep this same map mounted across mode and page changes.
+  if (!mapRequested && currentMap && currentMap.presentation !== 'intro') setMapRequested(true);
 
-  useOccludedInsets(scopeRef, [
-    themeId,
-    state.status,
-    covered,
-    mapState.presentation,
-    mapState.mode,
-  ]);
+  useOccludedInsets(scopeRef, [state.status, covered, mapState.presentation, mapState.mode]);
   useExplorerFocusReturn(scopeRef, covered);
-
-  const Composition = COMPOSITIONS[themeId];
 
   return (
     <MapNavigationContext value={mapState}>
@@ -75,20 +78,34 @@ export function App() {
         )}
       >
         <PageActiveContext value={!covered}>
-          <div
-            className={cn('absolute inset-0', mapState.presentation === 'fire' && 'invisible')}
-            inert={mapState.presentation === 'fire'}
-          >
-            {data && (
-              <StudyMap
-                points={data.points}
-                bbox={data.manifest.bbox}
-                themeId={themeId}
-                onReady={setMapView}
-              />
+          {/* The one map instance: example fires are drawn on it, not on a map of their own. */}
+          <div className="absolute inset-0">
+            {/* Mounted whatever the study data does: the example fires must not depend on it. */}
+            {mapRequested && (
+              <Suspense
+                fallback={
+                  <p
+                    role="status"
+                    className="absolute inset-x-0 top-1/2 text-center text-sm text-muted-foreground"
+                  >
+                    Loading interactive map…
+                  </p>
+                }
+              >
+                <StudyMap
+                  points={data?.points ?? NO_POINTS}
+                  bbox={data?.manifest.bbox ?? CANADA_BBOX}
+                  onReady={setMapView}
+                />
+              </Suspense>
             )}
           </div>
-          <Composition load={load} study={study} mapView={mapView} mapState={mapState} />
+          <EarthIntelligenceComposition
+            load={load}
+            study={study}
+            mapView={mapView}
+            mapState={mapState}
+          />
         </PageActiveContext>
       </main>
       <Suspense fallback={<PageLoading label={loadingLabel(route)} />}>

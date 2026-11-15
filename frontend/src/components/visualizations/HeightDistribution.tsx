@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Bar, BarChart, Cell, ReferenceLine, XAxis, YAxis } from 'recharts';
 import { bin, max, range } from 'd3-array';
-import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { STAGE_BREAKS_M, type PointProperties } from '@/data/schema';
 import { stageFromHeight } from '@/data/transform';
 
@@ -16,7 +16,6 @@ interface Bin {
 const DOMAIN: [number, number] = [0, 35];
 const X_TICKS = [0, 5, 10, 15, 20, 25, 30, 35];
 const AXIS_TICK = { fill: 'var(--muted-foreground)', fontSize: 9, fontFamily: 'var(--font-data)' };
-const chartConfig = { count: { label: 'Points', color: 'var(--chart-1)' } } satisfies ChartConfig;
 
 /**
  * Distribution of the observed GEDI canopy heights (1 m bins), coloured by the
@@ -38,7 +37,7 @@ export function HeightDistribution({ points }: { points: PointProperties[] }) {
 
   return (
     <figure aria-label={`Distribution of GEDI canopy heights for ${points.length} points`}>
-      <ChartContainer config={chartConfig} className="aspect-auto h-(--chart-height) w-full">
+      <ChartContainer className="aspect-auto h-(--chart-height) w-full">
         <BarChart
           data={bins}
           margin={{ top: 4, right: 4, bottom: 0, left: -18 }}

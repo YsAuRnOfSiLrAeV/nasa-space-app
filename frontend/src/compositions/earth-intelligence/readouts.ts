@@ -27,16 +27,6 @@ export function formatAcquisitionDates(dates: readonly string[]): string | null 
   return parsed.map((p) => `${p.day} ${MONTHS[p.mo - 1]} ${p.y}`).join(' · ');
 }
 
-/** Month and year shared by every date ("Jul 2026"), or null. */
-export function sharedMonth(dates: readonly string[]): string | null {
-  const m = dates.map((d) => /^(\d{4})-(\d{2})-\d{2}$/.exec(d));
-  if (!m.length || m.some((x) => !x)) return null;
-  const [y, mo] = [m[0]![1], m[0]![2]];
-  if (!m.every((x) => x![1] === y && x![2] === mo)) return null;
-  const i = Number(mo) - 1;
-  return i >= 0 && i < 12 ? `${MONTHS[i]} ${y}` : null;
-}
-
 /**
  * Plot geometry for a bounding box [west, south, east, north]: an
  * equirectangular frame with longitude scaled by cos(mid-latitude), so the
@@ -54,11 +44,4 @@ export function regionPlot(bbox: readonly [number, number, number, number], widt
       y: ((n - lat) / (n - s)) * height,
     }),
   };
-}
-
-/** Whole degrees strictly inside [min, max]: graticule ticks for the plot. */
-export function wholeDegrees(min: number, max: number): number[] {
-  const out: number[] = [];
-  for (let d = Math.floor(min) + 1; d < max; d++) out.push(d);
-  return out;
 }

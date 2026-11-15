@@ -13,7 +13,15 @@ export function SourcesPanel({ study, onClose }: { study: StudyView | null; onCl
   useEffect(() => {
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     ref.current?.focus();
-    return () => opener?.focus();
+    return () => {
+      const activeElement = document.activeElement;
+      if (
+        opener &&
+        (!activeElement || activeElement === document.body || !activeElement.isConnected)
+      ) {
+        opener.focus();
+      }
+    };
   }, []);
 
   return (

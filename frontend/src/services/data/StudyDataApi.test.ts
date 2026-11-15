@@ -229,3 +229,57 @@ describe('Canadian geographic context', () => {
     expect(await api({}).api.loadCanadianContext('missing')).toBeNull();
   });
 });
+
+describe('land-outline and image service adapters', () => {
+  it('loads and validates a supplied land asset through the injected fetch', async () => {
+    const land = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 0],
+              ],
+            ],
+          },
+        },
+      ],
+    };
+    const { api: data, urls } = api({ 'land.geojson': JSON.stringify(land) });
+    expect(await data.loadLandOutline('/assets/land.geojson')).toEqual([
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 0],
+      ],
+    ]);
+    expect(urls).toEqual(['/assets/land.geojson']);
+  });
+  it('exposes an invalid outline or failed request as an error', async () => {
+    await expect(
+      api({ 'land.geojson': '{}' }).api.loadLandOutline('/land.geojson'),
+    ).rejects.toThrow('not valid');
+    await expect(api({ 'land.geojson': 503 }).api.loadLandOutline('/land.geojson')).rejects.toThrow(
+      'HTTP 503',
+    );
+  });
+  it('delegates optional-image checks with the supplied URL and abort signal', async () => {
+    const calls: unknown[][] = [];
+    const data = new StudyDataApi({
+      baseUrl: '/data',
+      probeImage: async (url, signal) => {
+        calls.push([url, signal]);
+        return true;
+      },
+    });
+    const controller = new AbortController();
+    expect(await data.imageLoads('/optical.png', controller.signal)).toBe(true);
+    expect(calls).toEqual([['/optical.png', controller.signal]]);
+  });
+});

@@ -1,5 +1,5 @@
-import { SPECIES } from '@/components/forest/species';
-import type { Scene } from '@/components/forest/growth';
+import { SPECIES } from '@/domain/forest/species';
+import type { Scene } from '@/domain/forest/growth';
 import { ForestScene } from './ForestScene';
 import ui from '@/components/shell/primitives.module.css';
 import { PLATE } from './palette';

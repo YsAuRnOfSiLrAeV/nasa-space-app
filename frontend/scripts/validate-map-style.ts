@@ -17,7 +17,7 @@ const ROOT = resolve(import.meta.dirname, '..');
 const STYLE_DIR = join(ROOT, 'public', 'map');
 
 /** App overlay layers are added at runtime with these prefixes (src/components/map). */
-const RESERVED_PREFIXES = ['points-', 'fires-', 'raster-', 'selection-'];
+const RESERVED_PREFIXES = ['points-', 'fires-', 'raster-', 'selection-', 'land-'];
 
 interface StyleLike {
   sources?: Record<string, { attribution?: string }>;

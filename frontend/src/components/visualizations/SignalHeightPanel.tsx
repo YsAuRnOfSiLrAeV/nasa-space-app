@@ -3,9 +3,9 @@ import { CartesianGrid, ReferenceLine, Scatter, ScatterChart, XAxis, YAxis, ZAxi
 import { extent } from 'd3-array';
 import { format } from 'd3-format';
 import { scaleLinear } from 'd3-scale';
-import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { STAGE_BREAKS_M, type PointProperties } from '@/data/schema';
-import type { SignalSpec } from '@/components/study/signalEvidence';
+import type { SignalSpec } from '@/domain/study/signalEvidence';
 
 interface Datum {
   id: string;
@@ -20,10 +20,6 @@ const X_DOMAIN: [number, number] = [0, 35];
 const X_TICKS = [0, 5, 10, 20, 30];
 /** Theme-relative: SVG presentation attributes resolve CSS variables. */
 const AXIS_TICK = { fill: 'var(--muted-foreground)', fontSize: 10, fontFamily: 'var(--font-data)' };
-
-const chartConfig = {
-  value: { label: 'Signal', color: 'var(--chart-1)' },
-} satisfies ChartConfig;
 
 interface SignalHeightPanelProps {
   points: PointProperties[];
@@ -82,7 +78,7 @@ export function SignalHeightPanel({
         </span>
       </figcaption>
 
-      <ChartContainer config={chartConfig} className="aspect-auto h-(--chart-height) w-full">
+      <ChartContainer className="aspect-auto h-(--chart-height) w-full">
         <ScatterChart margin={{ top: 6, right: 6, bottom: 0, left: -12 }} accessibilityLayer>
           <CartesianGrid
             vertical={false}
@@ -133,7 +129,7 @@ export function SignalHeightPanel({
           />
           <Scatter
             data={data}
-            fill="var(--color-value)"
+            fill="var(--chart-1)"
             fillOpacity="var(--chart-point-opacity)"
             stroke="var(--card)"
             strokeWidth={0.75}

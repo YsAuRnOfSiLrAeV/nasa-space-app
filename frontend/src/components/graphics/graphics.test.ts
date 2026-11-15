@@ -3,9 +3,9 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { LocatedPoint, Manifest, PointCollection } from '@/data/schema';
-import { computeBurnGroups } from '@/components/study/burnGroups';
+import { computeBurnGroups } from '@/domain/study/burnGroups';
 import { buildCloud, countAtOrAbove, sweepHeight } from './pointCloud';
-import { decodeDots, fibonacciSphere, inRings, orthographic } from './sphere';
+import { decodeDots, fibonacciSphere, inRings, orthographic } from '../../domain/globe/sphere';
 
 const ROOT = resolve(import.meta.dirname, '../../..');
 const json = <T>(p: string) => JSON.parse(readFileSync(resolve(ROOT, p), 'utf8')) as T;

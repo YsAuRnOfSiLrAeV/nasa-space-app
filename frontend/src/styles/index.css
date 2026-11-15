@@ -2,28 +2,17 @@
  * Stylesheet entry. Order matters:
  *   1. framework + vendor base
  *   2. shared tokens (variable → utility mapping, no values)
- *   3. themes (values only, one file each, scoped by <html data-theme="…">)
+ *   3. the theme's values (scoped by <html data-theme="earth-intelligence">; the
+ *      variables it must define are listed in src/theme/themes.ts)
  *   4. global styles (base, semantic utilities, third-party DOM)
- *
- * Add a theme: create themes/<id>.css defining every variable in
- * REQUIRED_THEME_VARS, import it here, and register it in src/theme/themes.ts.
+ *   5. page layout, then the light "paper" surface of the document pages
  */
 @import 'tailwindcss';
 @import 'shadcn/tailwind.css';
 
-/* Self-hosted type (no CDN). @font-face only: a browser downloads a file when
-   text first renders in that family.
-   Earth Intelligence uses Geist (editorial, labels, UI) + JetBrains Mono (readouts).
-   Poppins, Inter, IBM Plex Mono and Space Grotesk stay imported for now so the
-   previous typography can be restored from the theme file alone; their files
-   download only if a theme names them.
-   (Archived themes' fonts are listed in archive/README.md.) */
-@import '@fontsource/poppins';
-@import '@fontsource-variable/inter';
-@import '@fontsource/ibm-plex-mono';
+/* Self-hosted families of the theme (--font-* in themes/earth-intelligence.css). */
 @import '@fontsource-variable/geist';
 @import '@fontsource-variable/jetbrains-mono';
-@import '@fontsource-variable/space-grotesk';
 
 @import './tokens.css';
 

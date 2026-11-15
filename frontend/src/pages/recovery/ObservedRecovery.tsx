@@ -1,9 +1,9 @@
 import { cn } from '@/lib/utils';
 import ui from '@/components/shell/primitives.module.css';
 import { NumberedSection } from '@/components/shell/NumberedSection';
-import { observationTimeline, type GroupRecovery } from '@/components/study/recovery';
+import { observationTimeline, type GroupRecovery } from '@/domain/study/recovery';
 import { SourcesList } from '@/components/study/SourcesList';
-import type { StudyView } from '@/components/study/studyView';
+import type { StudyView } from '@/domain/study/studyView';
 import type { RecoveryDataState } from '@/hooks/useRecoveryData';
 import { PreFireCover } from './GroupEvidence';
 import { ImageryExplorer } from './ImageryExplorer';

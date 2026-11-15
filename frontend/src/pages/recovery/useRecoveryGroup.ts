@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, type RefObject } from 'react';
-import type { BurnGroup } from '@/components/study/burnGroups';
-import { groupRecovery, type GroupRecovery } from '@/components/study/recovery';
+import type { BurnGroup } from '@/domain/study/burnGroups';
+import { groupRecovery, type GroupRecovery } from '@/domain/study/recovery';
 import { APP_TITLE } from '@/components/shell/brand';
-import type { StudyView } from '@/components/study/studyView';
+import type { StudyView } from '@/domain/study/studyView';
 import { useRecoveryData, type RecoveryDataState } from '@/hooks/useRecoveryData';
 
 export interface RecoveryGroup {
@@ -30,7 +30,7 @@ export function useRecoveryGroup(study: StudyView | null, groupId: string | null
     () => (group && study ? groupRecovery(group, study.located) : null),
     [group, study],
   );
-  const landsatState = useRecoveryData(group?.id ?? null);
+  const { state: landsatState } = useRecoveryData(group?.id ?? null);
 
   useEffect(() => {
     document.title = group ? `Recovery · burned ${group.fireYear} · ${APP_TITLE}` : APP_TITLE;

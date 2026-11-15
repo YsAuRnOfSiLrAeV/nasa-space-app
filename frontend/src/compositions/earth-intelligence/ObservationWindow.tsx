@@ -1,59 +1,64 @@
 import type { Ref } from 'react';
-import type { RecoveryFile, RecoveryImage } from '@/data/recoverySchema';
-import { groundWidthKm } from './planet/observationWindow';
-import { extentLines } from './planet/region';
+import type { StudyView } from '@/domain/study/studyView';
+import { formatAcquisitionDates, regionPlot } from './readouts';
 import cartography from './ScientificLanding.module.css';
 
-const platformName = (p: string) => p.replace(/^landsat-/i, 'Landsat ');
-
-/**
- * FIG. 01A: where the globe's flat cartography gives way to a real observation.
- * One Landsat surface-reflectance scene, cropped to one Ontario burn, at its
- * true extent (marked on the globe and joined to this window by leader lines).
- * Every label comes from the recovery record.
- */
+/** NISAR HV samples at their supplied coordinates, not a continuous radar image. */
 export function ObservationWindow({
-  record,
-  image,
-  imageRef,
+  study,
+  frameRef,
   className,
 }: {
-  record: RecoveryFile;
-  image: RecoveryImage;
-  imageRef: Ref<HTMLDivElement>;
+  study: StudyView;
+  frameRef: Ref<HTMLDivElement>;
   className?: string;
 }) {
-  const km = groundWidthKm(record.bbox);
-  const barKm = km >= 10 ? 5 : km >= 4 ? 2 : 1;
-  const [lat, lon] = extentLines(record.bbox);
+  const samples = study.located.filter((point) => Number.isFinite(point.nisar_hv_db));
+  if (!samples.length) return null;
+
+  const values = samples.map((point) => point.nisar_hv_db);
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const dates = [
+    ...new Set(samples.flatMap((point) => (point.nisar_date ? [point.nisar_date] : []))),
+  ];
+  const { at, height } = regionPlot(study.manifest.bbox, 240);
+  const site = study.manifest.sites.join(', ');
+
   return (
     <figure className={className}>
       <div className={cartography.panelLabel}>
-        <span className={cartography.figureIndex}>FIG. 01A / OBSERVATION WINDOW</span>
-        <span>ONTARIO</span>
+        <span className={cartography.figureIndex}>NISAR · L-band radar</span>
       </div>
-      <div ref={imageRef} className={cartography.windowFrame}>
-        <img
-          src={image.natural}
-          alt={`${platformName(image.platform)} natural-colour image of a ${record.fire_year} Ontario burn, ${image.date}, about ${Math.round(km)} km across.`}
-          width={512}
-          height={512}
-          loading="lazy"
-          decoding="async"
-        />
-        <div aria-hidden="true" className={cartography.scaleBar}>
-          <span style={{ width: `${(barKm / km) * 100}%` }} />
-          {barKm} km
-        </div>
+      <div
+        ref={frameRef}
+        className={cartography.windowFrame}
+        style={{ aspectRatio: `252 / ${height + 12}` }}
+      >
+        <svg
+          viewBox={`-6 -6 252 ${height + 12}`}
+          className={cartography.radarSamples}
+          role="img"
+          aria-label={`NISAR HV backscatter at ${samples.length} sampled locations${site ? ` in ${site}` : ''}. North is up. Brighter points indicate stronger backscatter, from ${low.toFixed(1)} to ${high.toFixed(1)} dB. Samples only, not a continuous radar image or a canopy-height map.`}
+        >
+          {samples.map((point) => {
+            const { x, y } = at(point.lon, point.lat);
+            const strength = high === low ? 1 : (point.nisar_hv_db - low) / (high - low);
+            return (
+              <circle key={point.point_id} cx={x} cy={y} r={2} opacity={0.35 + strength * 0.65}>
+                <title>{`${point.nisar_hv_db.toFixed(3)} dB · ${point.nisar_date ?? 'Date unavailable'}`}</title>
+              </circle>
+            );
+          })}
+        </svg>
       </div>
       <figcaption className={cartography.panelCaption}>
-        <span>
-          {platformName(image.platform).toUpperCase()} · {image.date} · NATURAL COLOUR
+        <span>{samples.length} HV samples · dB</span>
+        <span className={cartography.signalRange}>
+          <span>{low.toFixed(1)} (dimmer)</span>
+          <span>{high.toFixed(1)} (brighter)</span>
         </span>
-        <span>
-          BURN OF {record.fire_year} · {lat}
-        </span>
-        <span>{lon}</span>
+        <span>{formatAcquisitionDates(dates) ?? 'Acquisition dates unavailable'}</span>
       </figcaption>
     </figure>
   );

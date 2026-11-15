@@ -38,9 +38,9 @@ stage encodings when changing surrounding UI.
 
 The current theme uses Geist for display, interface and prose, with JetBrains Mono
 for coordinates and data. Fonts are self-hosted through `@fontsource` imports.
-Other imported families support earlier typography; their presence does not make
-them the current design specification. Use the theme's font-role tokens and
-tabular numerals for aligned readouts.
+Only these active families are imported; restore archived families only when their
+theme is enabled. Use the theme's font-role tokens and tabular numerals for aligned
+readouts.
 
 Prefer square corners, hairlines, flat fills and a consistent spacing rhythm based
 on 4px increments. Avoid decorative gradients, glows and shadows. Keep each color's
@@ -78,9 +78,11 @@ elevations, forest coverage or measured canopy geometry.
 
 - `ContourGround.tsx` and `planet/contours.ts` draw seeded decorative contours.
   Keep the visible "not measured terrain" caveat; do not give them measured elevations.
-- `ObservationWindow.tsx` shows a Landsat natural-color scene from the recovery
-  record for `2002_205_-376`, with its geographic extent and leader lines. If the
-  record is absent, omit both the window and the geographic mark.
+- `ObservationWindow.tsx` plots NISAR HV backscatter at the study's supplied sample
+  coordinates, with acquisition dates and a labeled dB range. Brighter points mean
+  stronger backscatter, not greater canopy height. It is a sample plot, not a
+  continuous radar image. Its leader lines mark the study extent; omit the preview
+  and mark when no valid samples exist. Landsat imagery remains in recovery views.
 - `ObservationSchematic.tsx` compares equal greenness with different stand
   structure. Keep its schematic and conceptual-illustration labels on the figure.
 - `planet/drawSatellites.ts` illustrates NISAR, Landsat and the ISS carrying GEDI.
@@ -115,9 +117,9 @@ and its loaded data. URL changes and panel collapse must not reset cameras.
 Explicit Explore, Back to Globe, fire selection and study-tool actions own camera
 transitions. Camera coordinates are not serialized into the URL.
 
-The study map and fire-detail renderer retain separate cameras. Clearing a fire
-reveals the study camera; reopening the same cached fire retains its detail view.
-Preserve Research and Recovery routes and keyboard focus when returning to the map.
+The map remains mounted across modes and Research navigation. Selected fire grids
+are overlays on that same map, controlled through `StudyMapController`. Preserve
+camera state and keyboard focus when returning to the map.
 
 ## Accessibility and validation
 

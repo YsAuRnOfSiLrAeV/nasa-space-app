@@ -2,7 +2,7 @@
  * Study-region geometry, DOM-free (pure, tested): the bounding box as a ring on
  * the sphere, and its extent as text. Drawn by `drawStudyRegion.ts`.
  */
-import { formatLat, formatLon } from '@/components/map/graticule';
+import { formatLat, formatLon } from '@/domain/globe/graticule';
 
 /** [west, south, east, north] in degrees. */
 export type BBox = readonly [number, number, number, number];

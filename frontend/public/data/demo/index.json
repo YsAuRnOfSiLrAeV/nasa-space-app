@@ -13,8 +13,62 @@
       51.145
     ],
     "recovery_today_avg": 0.36,
-    "area_recovered_80pct": 0.0,
+    "area_recovered_80pct": 0,
     "year_80pct": 2044,
     "result": "bc_2003_490/result.json"
+  },
+  {
+    "id": "quebec_1995_fixture",
+    "name": {
+      "en": "Quebec (dev fixture)",
+      "uk": ""
+    },
+    "year": 1995,
+    "area_ha": null,
+    "summer": 2026,
+    "center_lonlat": [
+      -77.8,
+      48.6
+    ],
+    "recovery_today_avg": null,
+    "area_recovered_80pct": null,
+    "year_80pct": null,
+    "result": "quebec_1995_fixture/result.json"
+  },
+  {
+    "id": "quebec_2010_fixture",
+    "name": {
+      "en": "Quebec (dev fixture)",
+      "uk": ""
+    },
+    "year": 2010,
+    "area_ha": null,
+    "summer": 2026,
+    "center_lonlat": [
+      -70,
+      51.3
+    ],
+    "recovery_today_avg": null,
+    "area_recovered_80pct": null,
+    "year_80pct": null,
+    "result": "quebec_2010_fixture/result.json"
+  },
+  {
+    "id": "ontario_1988_fixture",
+    "name": {
+      "en": "Ontario (dev fixture)",
+      "uk": ""
+    },
+    "year": 1988,
+    "area_ha": null,
+    "summer": 2026,
+    "center_lonlat": [
+      -87.5,
+      50.6
+    ],
+    "recovery_today_avg": null,
+    "area_recovered_80pct": null,
+    "year_80pct": null,
+    "result": "ontario_1988_fixture/result.json"
   }
 ]

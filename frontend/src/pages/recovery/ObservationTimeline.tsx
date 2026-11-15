@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { TIMELINE_START, type TimelineLane } from '@/components/study/recovery';
+import { TIMELINE_START, type TimelineLane } from '@/domain/study/recovery';
 
 /** Lanes with more markers than this rely on the year axis instead of per-marker labels. */
 const MAX_MARKER_LABELS = 6;

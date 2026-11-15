@@ -9,7 +9,13 @@
  */
 import type { Map as MapLibreMap, ExpressionSpecification } from 'maplibre-gl';
 
-import { LAYER_HILLSHADE, LAYER_IMAGERY, LAYER_POINTS } from './layers';
+import {
+  LAYER_HILLSHADE,
+  LAYER_IMAGERY,
+  LAYER_LAND_FILL,
+  LAYER_LAND_LINE,
+  LAYER_POINTS,
+} from './layers';
 
 export { LAYER_HILLSHADE, LAYER_IMAGERY, LAYER_POINTS, SOURCE_POINTS } from './layers';
 
@@ -18,6 +24,9 @@ const FONT_ITALIC = ['Noto Sans Italic'];
 
 export interface MapTheme {
   background: string;
+  /** Local fallback land fill and coastline; empty hides them (theme without a land basemap). */
+  land: string;
+  landLine: string;
   water: string;
   waterOpacity: number;
   waterway: string;
@@ -50,6 +59,8 @@ export function readMapTheme(root: HTMLElement = document.documentElement): MapT
   };
   return {
     background: str('map-background', '#000'),
+    land: str('map-land', ''),
+    landLine: str('map-land-line', ''),
     water: str('map-water', '#123'),
     waterOpacity: num('map-water-opacity', 1),
     waterway: str('map-waterway', '#234'),
@@ -109,6 +120,13 @@ const stageColor = (t: MapTheme): ExpressionSpecification => [
 
 export function applyMapTheme(map: MapLibreMap, t: MapTheme): void {
   for (const layer of map.getStyle().layers) {
+    if (layer.id === LAYER_LAND_FILL || layer.id === LAYER_LAND_LINE) {
+      const fill = layer.id === LAYER_LAND_FILL;
+      const color = fill ? t.land : t.landLine;
+      map.setLayoutProperty(layer.id, 'visibility', color ? 'visible' : 'none');
+      if (color) map.setPaintProperty(layer.id, fill ? 'fill-color' : 'line-color', color);
+      continue;
+    }
     if (layer.id === LAYER_IMAGERY) {
       // Hidden layers don't request tiles, so themes without imagery cost no bandwidth.
       map.setLayoutProperty(LAYER_IMAGERY, 'visibility', t.imageryOpacity > 0 ? 'visible' : 'none');

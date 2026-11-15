@@ -12,7 +12,7 @@ export function OpticalHistory({
   groupId: string;
   landsatState: RecoveryDataState;
 }) {
-  const modis = useRecoveryData(groupId, undefined, 'appeears');
+  const { state: modis } = useRecoveryData(groupId, undefined, 'appeears');
   const [source, setSource] = useState<'landsat' | 'appeears'>('landsat');
   const state = source === 'landsat' ? landsatState : modis;
   return (

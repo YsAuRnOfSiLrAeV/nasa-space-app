@@ -1,4 +1,3 @@
-import { FOREST_3D_HREF } from '@/app/route';
 import cartography from './ScientificLanding.module.css';
 
 const W = 240;
@@ -33,41 +32,37 @@ const MATURE = [14, 38, 60, 84, 104].map((x, i) => ({ x: COL + GAP + x, h: 56 + 
  */
 export function ObservationSchematic({ className }: { className?: string }) {
   return (
-    <figure
-      className={className}
-      aria-label="Schematic: a regrowing burn and an unburned forest can look equally green to optical satellites while their structure differs."
-    >
-      <div className={cartography.panelLabel}>
-        <span className={cartography.figureIndex}>FIG. 02 / COMPARISON</span>
-        <span>SCHEMATIC</span>
-      </div>
-      <div className={cartography.schematicColumns} aria-hidden="true">
-        <span>Regrowing burn</span>
-        <span>Unburned forest</span>
-      </div>
-      <p className={cartography.schematicRow}>Optical · surface greenness</p>
-      <svg viewBox={`0 0 ${W} 8`} className={cartography.schematicBand} aria-hidden="true">
-        <rect x={0} y={0} width={COL} height={8} />
-        <rect x={COL + GAP} y={0} width={COL} height={8} />
-      </svg>
-      <p className={cartography.schematicRow}>Structure · L-band radar, lidar</p>
-      <svg
-        viewBox={`0 0 ${W} ${GROUND + 1}`}
-        className={cartography.schematicStand}
-        aria-hidden="true"
+    <details className={className}>
+      <summary className={cartography.comparisonToggle}>Why structure matters</summary>
+      <figure
+        className={cartography.comparisonFigure}
+        aria-label="Schematic: a regrowing burn and an unburned forest can look equally green to optical satellites while their structure differs."
       >
-        <g>
-          {REGROWING.map((t, i) => conifer(t.x, t.h, `r${i}`))}
-          {MATURE.map((t, i) => conifer(t.x, t.h, `m${i}`))}
-        </g>
-        <path d={`M0 ${GROUND}H${COL}M${COL + GAP} ${GROUND}H${W}`} data-ground />
-      </svg>
-      <figcaption className={cartography.panelCaption}>
-        <span>Conceptual illustration, not measured forest geometry.</span>
-        <a href={FOREST_3D_HREF} className={cartography.panelLink}>
-          Open the 3D forest block →
-        </a>
-      </figcaption>
-    </figure>
+        <div className={cartography.schematicColumns} aria-hidden="true">
+          <span>Regrowing burn</span>
+          <span>Unburned forest</span>
+        </div>
+        <p className={cartography.schematicRow}>Optical · surface greenness</p>
+        <svg viewBox={`0 0 ${W} 8`} className={cartography.schematicBand} aria-hidden="true">
+          <rect x={0} y={0} width={COL} height={8} />
+          <rect x={COL + GAP} y={0} width={COL} height={8} />
+        </svg>
+        <p className={cartography.schematicRow}>Structure · L-band radar, lidar</p>
+        <svg
+          viewBox={`0 0 ${W} ${GROUND + 1}`}
+          className={cartography.schematicStand}
+          aria-hidden="true"
+        >
+          <g>
+            {REGROWING.map((t, i) => conifer(t.x, t.h, `r${i}`))}
+            {MATURE.map((t, i) => conifer(t.x, t.h, `m${i}`))}
+          </g>
+          <path d={`M0 ${GROUND}H${COL}M${COL + GAP} ${GROUND}H${W}`} data-ground />
+        </svg>
+        <figcaption className={cartography.panelCaption}>
+          <span>Conceptual illustration, not measured forest geometry.</span>
+        </figcaption>
+      </figure>
+    </details>
   );
 }

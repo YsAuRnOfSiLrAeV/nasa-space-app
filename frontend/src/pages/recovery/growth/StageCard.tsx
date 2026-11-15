@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import ui from '@/components/shell/primitives.module.css';
-import type { Stage } from '@/components/forest/growth';
+import type { Stage } from '@/domain/forest/growth';
 
 /** The illustrative stage for the selected year, with the caveat that stages are a reading aid. */
 export function StageCard({ stage }: { stage: Stage }) {

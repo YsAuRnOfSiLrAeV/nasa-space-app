@@ -10,7 +10,7 @@
  * phase are display only, and the landing says so in its figure index.
  * Flat fills and hairlines; no gradients or glow.
  */
-import { orthographic } from '@/components/graphics/sphere';
+import { orthographic } from '@/domain/globe/sphere';
 import { orbitPoint } from '@/components/graphics/globe';
 import { MISSIONS, type MissionId } from '@/data/missions';
 import type { PlanetFrame } from './frame';

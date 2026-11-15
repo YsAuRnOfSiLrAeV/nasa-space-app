@@ -49,6 +49,10 @@
   --stage-0: #1b5e20;
   --stage-1: #388e3c;
   --stage-2: #81c784;
+  /* Research figures on white: optical, model, and GEDI as the ink reference. */
+  --evidence-optical: #2e7d32; /* 5.1:1 */
+  --evidence-model: #145fa8; /* 6.6:1 */
+  --evidence-gedi: #0d0d0d;
 
   --panel-bg: rgb(255 255 255 / 0.94);
   --chart-reference: rgb(13 13 13 / 0.35);
@@ -101,6 +105,9 @@
   --burn-text: #d37487;
   --panel-bg: rgb(6 6 6 / 0.86);
   --chart-reference: rgb(243 240 234 / 0.3);
+  --evidence-optical: #66bb6a;
+  --evidence-model: #60b4ec;
+  --evidence-gedi: #f3f0ea;
   color: var(--foreground);
 }
 .nasa-page .nasa-page-header,

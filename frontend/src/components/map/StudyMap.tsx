@@ -9,27 +9,25 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './maplibreSetup';
 import { config } from '@/config';
 import type { Manifest, PointCollection } from '@/data/schema';
-import type { ThemeId } from '@/theme/themes';
 import { visiblePadding } from './camera';
 // Map layer conventions: `<entity>-<role>`; sources are named after the entity.
 import { LAYER_POINTS, SOURCE_POINTS, applyMapTheme, readMapTheme } from './mapTheme';
+import { addLocalLand } from './localLand';
 import { StudyMapController } from './StudyMapController';
 
 interface StudyMapProps {
   points: PointCollection;
   bbox: Manifest['bbox'];
-  /** Active theme; the map re-reads theme variables whenever it changes. */
-  themeId: ThemeId;
   /** Receives the map controller once the data layers exist (null on teardown). */
   onReady?: (view: StudyMapController | null) => void;
 }
 
 /**
- * Owns the MapLibre instance and its lifecycle. Created once; data and theme
- * updates are applied to the existing map. Everything else (camera, layer
- * switches, projection, selection) goes through the StudyMapController it hands out.
+ * Owns the MapLibre instance and its lifecycle. Created once; data updates are
+ * applied to the existing map. Everything else (camera, projection, selection,
+ * fire layers) goes through the StudyMapController it hands out.
  */
-export function StudyMap({ points, bbox, themeId, onReady }: StudyMapProps) {
+export function StudyMap({ points, bbox, onReady }: StudyMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   /** Set once our layers exist. (`isStyleLoaded()` is false while tiles load, so not usable here.) */
@@ -65,6 +63,7 @@ export function StudyMap({ points, bbox, themeId, onReady }: StudyMapProps) {
     map.addControl(new ScaleControl({ unit: 'metric' }), 'bottom-right');
 
     map.on('load', () => {
+      addLocalLand(map);
       map.addSource(SOURCE_POINTS, { type: 'geojson', data: initial.current.points });
 
       // Burned points: filled. Unburned reference points: ring only.
@@ -111,28 +110,14 @@ export function StudyMap({ points, bbox, themeId, onReady }: StudyMapProps) {
     };
   }, []);
 
-  // Data updates without re-creating the map.
+  // Data updates without re-creating the map. The study may arrive after the map
+  // (or never): points and extent are applied whenever they change.
   useEffect(() => {
+    initial.current = { points, bbox };
     const source = mapRef.current?.getSource<GeoJSONSource>(SOURCE_POINTS);
     source?.setData(points);
-  }, [points]);
-
-  // Theme switch: <html data-theme> is already updated (layout effect), so
-  // computed variables are current. Before 'load', the load handler applies it.
-  // Order matters: undo the previous theme's overrides first, then apply the new
-  // theme's colours. This effect runs before the new composition's effects (it is
-  // an earlier sibling), so the composition then layers its own overrides on top.
-  // The composition changes too, so re-fit the study area to the new free space.
-  useEffect(() => {
-    const map = mapRef.current;
-    const view = viewRef.current;
-    if (!map || !view) return;
-    view.resetThemeOverrides();
-    applyMapTheme(map, readMapTheme());
-    map.resize();
-    const id = requestAnimationFrame(() => void view.fitStudyArea({ durationMs: 0 }));
-    return () => cancelAnimationFrame(id);
-  }, [themeId]);
+    viewRef.current?.setStudyBounds(bbox);
+  }, [points, bbox]);
 
   // Positioning lives on a wrapper: MapLibre's own (unlayered) CSS sets
   // `.maplibregl-map { position: relative }`, which beats Tailwind's layered

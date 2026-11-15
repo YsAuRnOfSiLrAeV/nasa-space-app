@@ -2,7 +2,7 @@ import { useRef, type ReactNode } from 'react';
 import { scaleLinear } from 'd3-scale';
 import { cn } from '@/lib/utils';
 import ui from '@/components/shell/primitives.module.css';
-import { ndviRecovery, type NdviRecovery } from '@/components/study/recovery';
+import { ndviRecovery, type NdviRecovery } from '@/domain/study/recovery';
 import { ndviDomain } from '@/data/landsat';
 import type { RecoveryFile } from '@/data/recoverySchema';
 import { useElementWidth } from '@/hooks/useElementWidth';

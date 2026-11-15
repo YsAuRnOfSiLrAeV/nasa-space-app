@@ -79,7 +79,6 @@
 }
 .figureLabel,
 .figureCaption,
-.coordinate,
 .figureIndex,
 .panelLabel,
 .panelCaption {
@@ -173,28 +172,17 @@
 .secondaryLink:hover svg {
   transform: translateX(3px);
 }
-.secondaryLink:focus-visible,
-.panelLink:focus-visible {
+.secondaryLink:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 3px;
 }
-.panelLink {
-  margin-top: 0.375rem;
-  color: var(--cartography-ink);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  pointer-events: auto;
-}
-.panelLink:hover {
-  color: var(--cartography-action);
-}
-/* Right column: FIG. 01A above the datum, FIG. 02 below it. */
+/* A small observation above the datum; an optional comparison below it. */
 .annotations {
   position: absolute;
   inset-block: 0;
   right: 3rem;
   /* Also bounded by height, so FIG. 01A always clears the header above the datum. */
-  width: min(15rem, var(--side), calc(50dvh - 11rem));
+  width: min(11rem, var(--side), calc(50dvh - 11rem));
 }
 .annotations > .panel {
   position: absolute;
@@ -223,34 +211,42 @@
   font-size: 0.5625rem;
   line-height: 1.55;
 }
+.comparisonToggle {
+  min-height: 44px;
+  padding-block: 0.75rem;
+  border-top: 1px solid var(--cartography-rule);
+  color: var(--cartography-muted);
+  font: 400 0.6875rem/1.5 var(--font-ui);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.comparisonToggle:hover,
+.comparisonToggle:focus-visible {
+  color: var(--cartography-action);
+}
+.comparisonToggle:focus-visible {
+  outline: 2px solid var(--cartography-action);
+  outline-offset: 4px;
+}
+.comparisonFigure {
+  margin: 0;
+}
 .windowFrame {
   position: relative;
   aspect-ratio: 1;
   border: 1px solid var(--cartography-coast);
   background: var(--cartography-ocean);
 }
-.windowFrame img {
+.radarSamples {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  fill: var(--cartography-action);
 }
-.scaleBar {
-  position: absolute;
-  left: 0.5rem;
-  right: 0.5rem;
-  bottom: 0.5rem;
+.signalRange {
   display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  font: 400 0.5625rem/1 var(--font-data);
-  color: var(--cartography-ink);
-}
-.scaleBar span {
-  height: 5px;
-  border: 1px solid var(--cartography-ink);
-  border-top: 0;
-  box-shadow: 0 1px 0 var(--cartography-ground);
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 .schematicColumns {
   display: grid;
@@ -337,21 +333,6 @@
 }
 /* Reusable figure grammar for future measured plots and conceptual diagrams.
    These rules add layout and annotation only, never synthetic terrain/data. */
-.scientificPlate {
-  position: relative;
-  border-block: 1px solid var(--cartography-rule, var(--rule));
-  border-radius: 0;
-}
-.sectionRule {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-block: 0.75rem;
-  border-bottom: 1px solid var(--cartography-rule, var(--rule));
-}
-.coordinate {
-  font-family: var(--font-data);
-}
 .globeInstruments a > span:first-child {
   width: 11px;
   height: 11px;

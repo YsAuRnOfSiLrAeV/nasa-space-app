@@ -1,20 +1,33 @@
-import { lazy, Suspense, useState } from 'react';
-import type { CompositionProps } from '../types';
 import { mapHref } from '@/app/route';
-import { PageActiveContext, usePageActive } from '@/app/pageActive';
+import { FireGridMap } from '@/components/fire/FireGridMap';
+import { ForecastYearBar } from '@/components/fire/ForecastYearBar';
+import type { StudyMapController } from '@/components/map/StudyMapController';
 import type { DemoFire } from '@/data/fireSchema';
-import { useFireCatalog } from '@/hooks/useFireCatalog';
+import { useFireCamera } from '@/hooks/useFireCamera';
+import { EMPTY_FIRES, useFireCatalog } from '@/hooks/useFireCatalog';
+import { type FireState } from '@/hooks/useFireData';
+import { useFireInvestigation } from '@/hooks/useFireInvestigation';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
+import type { CompositionProps } from '../types';
 import { EarthHeader } from './EarthHeader';
+import { FireInvestigation } from './FireInvestigation';
+import { InvestigationPanel } from './InvestigationPanel';
 import { PlanetView } from './PlanetView';
-import { RegionView, AnalysisSections } from './RegionView';
 import { SourcesPanel } from './SourcesPanel';
+import { FireSearch } from './FireSearch';
+import { AnalysisClient } from '@/services/search/AnalysisClient';
+import { config } from '@/config';
+import type { FireData } from '@/data/fireSchema';
+import { FireLegend } from '@/components/fire/FireLegend';
+import { layerCoverage, overlayAvailability } from '@/domain/fire/fireGrid';
+import { drawnOverlays } from '@/domain/fire/overlays';
+import searchStyles from './MapShell.module.css';
 import { useEarthView } from './useEarthView';
 import { useLandDots } from './useLandDots';
-import { InvestigationPanel } from './InvestigationPanel';
-import shell from './MapShell.module.css';
 
-const FirePage = lazy(() =>
-  import('@/pages/fire/FirePage').then((module) => ({ default: module.FirePage })),
+const RegionView = lazy(() => import('./RegionView').then((m) => ({ default: m.RegionView })));
+const AnalysisSections = lazy(() =>
+  import('./AnalysisSections').then((m) => ({ default: m.AnalysisSections })),
 );
 
 /**
@@ -22,30 +35,56 @@ const FirePage = lazy(() =>
  * Opens on a dotted globe of the real Earth with the study area located; the
  * primary action flies the (globe-projected) map from orbit into the region,
  * where analysis floats in thin-bordered panels over cool-graded imagery.
+ *
+ * Examples mode: catalogued fires are markers on the same map; the selected fire
+ * (from the URL) is drawn on that map, never on a second one.
  */
 export function EarthIntelligenceComposition({ load, study, mapView, mapState }: CompositionProps) {
   const view = useEarthView({ study, mapView, mapState });
-  const land = useLandDots();
-  const pageActive = usePageActive();
+  const [regionRequested, setRegionRequested] = useState(view.phase === 'region');
+  if (!regionRequested && view.phase === 'region') setRegionRequested(true);
+  const { state: land } = useLandDots(undefined, regionRequested);
   const catalog = useFireCatalog();
-  // Keep the last result mounted and its camera intact when a workflow clears selection.
-  // One result renderer only; another fire replaces its data, not a stack of maps.
-  const [cachedFireId, setCachedFireId] = useState(mapState.fireId);
-  if (mapState.fireId && mapState.fireId !== cachedFireId) setCachedFireId(mapState.fireId);
-  const fireOpen = mapState.presentation === 'fire';
-  const selectFire = (fire: DemoFire) => {
-    mapView?.focus(fire.center_lonlat, { minZoom: 8 });
-    window.location.hash = mapHref({ mode: 'examples', presentation: 'fire', fireId: fire.id });
+  const fires = catalog.state.status === 'ready' ? catalog.state.data : EMPTY_FIRES;
+  const examples = mapState.mode === 'examples';
+  const fireId = mapState.fireId;
+  const fireOpen = fireId !== null;
+  const [completed, setCompleted] = useState<FireData | null>(null);
+  const resultRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => resultRequest.current?.abort(), [fireId, examples]);
+  const investigation = useFireInvestigation(fireId, mapView, completed);
+  const { data: fireData, fire, curve, forecastYear, pickYear } = investigation;
+  const entry = fires.find((f) => f.id === fireId);
+
+  const selectFire = (target: DemoFire | string) => {
+    const id = typeof target === 'string' ? target : target.id;
+    window.location.hash = mapHref({ mode: 'examples', presentation: 'fire', fireId: id });
   };
+
+  useFireMarkers(
+    examples ? mapView : null,
+    examples && view.phase === 'region' ? fires : null,
+    fireId,
+    selectFire,
+  );
+  useFireCamera({
+    mapView,
+    fireId: examples || completed?.result.fire.id === fireId ? fireId : null,
+    presentation: mapState.presentation,
+    grid: fire.status === 'ready' ? fire.data.result.map_grid : null,
+    failed: fire.status === 'error' || fire.status === 'absent',
+    entry,
+  });
 
   return (
     <>
       <p role="status" className="sr-only">
-        {view.status}
+        {fireOpen ? fireStatus(fire, entry?.name.en ?? fireId) : view.status}
       </p>
       <EarthHeader view={view} />
       {view.sourcesOpen && <SourcesPanel study={study} onClose={view.closeSources} />}
       <PlanetView
+        fires={fires}
         hidden={view.phase !== 'planet'}
         load={load}
         study={study}
@@ -54,26 +93,52 @@ export function EarthIntelligenceComposition({ load, study, mapView, mapState }:
         onEnter={view.enterRegion}
         sourcesOpen={view.sourcesOpen}
         onSources={view.toggleSources}
+        onCloseSources={view.closeSources}
       />
-      <RegionView
-        hidden={view.phase !== 'region' || fireOpen}
-        showPanel={false}
-        study={study}
-        land={land}
-        selection={view.selection}
-        burn={view.burn}
-        mapView={mapView}
-        headingRef={view.regionHeadingRef}
-        onPlanet={view.goPlanet}
-        onSources={view.toggleSources}
-      />
-      {cachedFireId && (
-        <div className={shell.fireWorkspace} data-hidden={!fireOpen || undefined} inert={!fireOpen}>
-          <Suspense fallback={<p role="status">Loading fire recovery…</p>}>
-            <PageActiveContext value={pageActive && fireOpen}>
-              <FirePage fireId={cachedFireId} embedded />
-            </PageActiveContext>
-          </Suspense>
+      {regionRequested && (
+        <Suspense fallback={null}>
+          <RegionView
+            hidden={view.phase !== 'region' || fireOpen}
+            study={study}
+            land={land}
+            burn={view.burn}
+            mapView={mapView}
+            onPlanet={view.goPlanet}
+          />
+        </Suspense>
+      )}
+      {fireData && view.phase === 'region' && (
+        <FireGridMap
+          key={fireData.result.fire.id}
+          mapView={mapView}
+          data={fireData}
+          layer={investigation.layer}
+          overlays={investigation.overlays}
+          opticalReady={investigation.optical === 'ready'}
+          inspected={investigation.inspected}
+          onInspect={investigation.inspect}
+        />
+      )}
+      {curve && forecastYear !== null && view.phase === 'region' && (
+        <ForecastYearBar curve={curve} year={forecastYear} onYear={pickYear} />
+      )}
+      {fireData && view.phase === 'region' && (
+        <div className={searchStyles.mapLegend}>
+          <FireLegend
+            layer={investigation.layer}
+            coverage={layerCoverage(fireData.cells, investigation.layer)}
+            overlays={drawnOverlays(
+              investigation.overlays,
+              overlayAvailability(fireData),
+              investigation.optical === 'ready',
+            )}
+          />
+        </div>
+      )}
+      {!examples && !fireData && view.phase === 'region' && (
+        <div className={searchStyles.mapLegend}>
+          Catalog points and supplied outlines. Applicability boundaries carry provider labels;
+          analysis requires evaluated coverage.
         </div>
       )}
       {view.phase === 'region' && (
@@ -83,12 +148,87 @@ export function EarthIntelligenceComposition({ load, study, mapView, mapState }:
           onFireSelect={selectFire}
           onPlanet={view.goPlanet}
           headingRef={view.regionHeadingRef}
+          search={
+            <FireSearch
+              state={mapState}
+              mapView={mapView}
+              onResult={async (url, selectedId) => {
+                resultRequest.current?.abort();
+                const request = new AbortController();
+                resultRequest.current = request;
+                const data = await new AnalysisClient(config.apiBaseUrl).result(
+                  url,
+                  request.signal,
+                );
+                if (data.result.fire.id !== selectedId)
+                  throw new Error('Result does not match the selected fire.');
+                if (!request.signal.aborted) setCompleted(data);
+              }}
+            />
+          }
+          fireDetail={
+            fireId &&
+            (examples || entry || completed?.result.fire.id === fireId) && (
+              <FireInvestigation
+                investigation={investigation}
+                entry={entry}
+                closeHref={mapHref({ ...mapState, presentation: 'explore', fireId: null })}
+              />
+            )
+          }
         >
           {study && !fireOpen && (
-            <AnalysisSections study={study} selection={view.selection} burn={view.burn} animate />
+            <Suspense fallback={<p role="status">Loading study tools…</p>}>
+              <AnalysisSections study={study} selection={view.selection} burn={view.burn} animate />
+            </Suspense>
           )}
         </InvestigationPanel>
       )}
     </>
   );
+}
+
+function fireStatus(state: FireState, name: string | null): string {
+  switch (state.status) {
+    case 'loading':
+      return `Loading ${name}.`;
+    case 'ready':
+      return `${state.data.result.fire.name.en} ${state.data.result.fire.year} shown on the map.`;
+    case 'absent':
+      return `${name} is not in the example catalog.`;
+    case 'error':
+      return `${name} could not be loaded.`;
+    default:
+      return '';
+  }
+}
+
+/** Catalogue fires as markers on the shared map (null hides them). */
+function useFireMarkers(
+  mapView: StudyMapController | null,
+  fires: DemoFire[] | null,
+  selectedId: string | null,
+  onPick: (id: string) => void,
+) {
+  const pick = useRef(onPick);
+  useEffect(() => {
+    pick.current = onPick;
+  });
+  const markers = useMemo(
+    () =>
+      fires?.map((f) => ({
+        id: f.id,
+        label: `${f.name.en} · ${f.year}`,
+        lonlat: f.center_lonlat,
+      })) ?? null,
+    [fires],
+  );
+  useEffect(() => {
+    if (!mapView) return;
+    if (!markers) {
+      mapView.hideFireMarkers();
+      return;
+    }
+    mapView.showFireMarkers(markers, selectedId, (id) => pick.current(id));
+  }, [mapView, markers, selectedId]);
 }

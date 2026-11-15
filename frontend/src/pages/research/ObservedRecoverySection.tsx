@@ -1,19 +1,19 @@
-import { useMemo, type ReactNode } from 'react';
-import { cn } from '@/lib/utils';
 import { recoveryHref } from '@/app/route';
 import ui from '@/components/shell/primitives.module.css';
-import type { BurnGroup } from '@/components/study/burnGroups';
-import { groupRecovery, observationTimeline } from '@/components/study/recovery';
-import type { StudyView } from '@/components/study/studyView';
+import type { BurnGroup } from '@/domain/study/burnGroups';
+import { groupRecovery, observationTimeline } from '@/domain/study/recovery';
+import type { StudyView } from '@/domain/study/studyView';
 import { useRecoveryData } from '@/hooks/useRecoveryData';
+import { cn } from '@/lib/utils';
 import { ImageryExplorer } from '@/pages/recovery/ImageryExplorer';
-import { OpticalHistory } from '@/pages/recovery/OpticalHistory';
 import { ObservationTimeline } from '@/pages/recovery/ObservationTimeline';
+import { OpticalHistory } from '@/pages/recovery/OpticalHistory';
 import { RecoveryAcrossAges } from '@/pages/recovery/RecoveryAcrossAges';
 import { WithLandsat } from '@/pages/recovery/WithLandsat';
+import { useMemo, type ReactNode } from 'react';
+import { Prose } from './Prose';
 import { SamplingGroupPicker } from './SamplingGroupPicker';
 import styles from './research.module.css';
-import { Prose } from './Prose';
 
 /**
  * Observed recovery: the 2026 measurements across every fire age, then the
@@ -30,7 +30,7 @@ export function ObservedRecoverySection({
   onPick: (groupId: string) => void;
 }) {
   const r = useMemo(() => groupRecovery(group, study.located), [group, study.located]);
-  const landsatState = useRecoveryData(group.id);
+  const { state: landsatState } = useRecoveryData(group.id);
   const fire = group.fireYear;
 
   return (

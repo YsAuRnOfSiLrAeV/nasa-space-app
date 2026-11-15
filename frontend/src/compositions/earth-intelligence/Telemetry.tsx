@@ -1,6 +1,6 @@
 import { keepGreekCase } from '@/lib/text';
 import { FigureRow } from '@/components/shell/FigureRow';
-import type { StudyFigure } from '@/components/study/studyFigures';
+import type { StudyFigure } from '@/domain/study/studyFigures';
 
 const SHOWN: StudyFigure['id'][] = ['points', 'burnGroups', 'fireYears', 'nisarRho'];
 

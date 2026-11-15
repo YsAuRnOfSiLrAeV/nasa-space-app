@@ -8,9 +8,9 @@ import {
   chronosequence,
   type ChronoColumn,
   type MetricInfo,
-} from '@/components/study/recovery';
+} from '@/domain/study/recovery';
 import ui from '@/components/shell/primitives.module.css';
-import type { StudyView } from '@/components/study/studyView';
+import type { StudyView } from '@/domain/study/studyView';
 import { AxisText, YGrid } from '@/components/visualizations/svgAxes';
 import { ChartLegend } from '@/components/visualizations/ChartLegend';
 import { useElementWidth } from '@/hooks/useElementWidth';

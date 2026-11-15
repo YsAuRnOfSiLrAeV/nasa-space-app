@@ -2,7 +2,7 @@ import { useId, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { LocatedPoint } from '@/data/schema';
 import type { RecoveryFile, RecoveryImage } from '@/data/recoverySchema';
-import { platformLabel } from '@/components/study/recovery';
+import { platformLabel } from '@/domain/study/recovery';
 import ui from '@/components/shell/primitives.module.css';
 import styles from './Recovery.module.css';
 

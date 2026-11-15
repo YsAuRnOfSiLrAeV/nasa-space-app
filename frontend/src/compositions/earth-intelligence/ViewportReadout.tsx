@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { StudyMapController } from '@/components/map/StudyMapController';
-import { formatLonLat } from '@/components/map/graticule';
+import { formatLonLat } from '@/domain/globe/graticule';
 import { measureInsets } from '@/components/map/measureInsets';
 
 interface Frame {

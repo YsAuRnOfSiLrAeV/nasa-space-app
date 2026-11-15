@@ -65,6 +65,22 @@
   --stage-0: #1b5e20;
   --stage-1: #2e7d32;
   --stage-2: #66bb6a;
+  /*
+   * Fire grid categories on the map (read by src/components/fire). Ordered bands as
+   * lightness ramps, distinct hues per layer, no red-green pair (project rule).
+   */
+  --grid-stage-0: #5c6bc0; /* below 5 m */
+  --grid-stage-1: #26a69a; /* 5-10 m */
+  --grid-stage-2: #d4e157; /* above 10 m */
+  --grid-prob-0: #3d6fa8; /* low probability above 5 m */
+  --grid-prob-1: #6aa8dc;
+  --grid-prob-2: #c4e3fb;
+  --grid-outside: #6b6b6b; /* outside the model's geographic domain */
+  --grid-zone: #f3f0ea; /* neighbouring-forest wash and outline */
+  /* Research figures: three readings of recovery. GEDI is the neutral reference. */
+  --evidence-optical: #66bb6a;
+  --evidence-model: #60b4ec;
+  --evidence-gedi: #f3f0ea;
   --chart-1: #2e7d32;
   --chart-2: #0b3d91;
   --chart-3: #1976d2;
@@ -115,6 +131,9 @@
 
   /* Map: satellite imagery with a neutral, slightly cool grade */
   --map-background: #060606;
+  /* Local muted land under the imagery: the basemap when GIBS or vector tiles fail. */
+  --map-land: #1a1b1e;
+  --map-land-line: #3a3c42;
   --map-water: #0a1d3a;
   --map-water-opacity: 0.65;
   --map-waterway: #1a3a52;

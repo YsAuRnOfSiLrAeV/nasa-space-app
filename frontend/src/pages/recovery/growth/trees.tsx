@@ -5,8 +5,8 @@
  * Origin is the base of the trunk; the tree grows towards negative y.
  */
 import { memo, type ReactNode } from 'react';
-import { hashString, seededRandom } from '@/components/forest/growth';
-import type { SpeciesId } from '@/components/forest/species';
+import { hashString, seededRandom } from '@/domain/forest/growth';
+import type { SpeciesId } from '@/domain/forest/species';
 import { PLATE as C } from './palette';
 
 interface DrawProps {

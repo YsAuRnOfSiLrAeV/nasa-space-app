@@ -10,3 +10,11 @@ export const LAYER_POINT_SELECTED = 'points-selected';
 /** Basemap layers in public/map/explorer.json, hidden unless a theme enables them. */
 export const LAYER_IMAGERY = 'imagery';
 export const LAYER_HILLSHADE = 'hillshade';
+/**
+ * Local muted land (Natural Earth 1:110m, bundled), under the imagery. It keeps a
+ * geographic basemap when the GIBS imagery or vector tiles fail. The `land-` prefix
+ * is reserved for it.
+ */
+export const SOURCE_LAND = 'land';
+export const LAYER_LAND_FILL = 'land-fill';
+export const LAYER_LAND_LINE = 'land-line';

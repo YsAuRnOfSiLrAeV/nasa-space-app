@@ -1,6 +1,6 @@
 import { createElement, createRef } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { INITIAL_MAP_STATE } from '@/app/route';
 import { MapNavigationContext } from '@/app/mapNavigation';
 import { SiteNav } from '@/components/shell/SiteNav';
@@ -10,7 +10,15 @@ const panel = (status: 'loading' | 'ready' | 'error', mode: 'examples' | 'search
   renderToStaticMarkup(
     createElement(InvestigationPanel, {
       state: { ...INITIAL_MAP_STATE, mode, presentation: 'explore' },
-      catalog: { fires: [], status, retry: () => {} },
+      catalog: {
+        state:
+          status === 'ready'
+            ? { status, data: [] }
+            : status === 'error'
+              ? { status, message: 'Failed' }
+              : { status },
+        retry: () => {},
+      },
       headingRef: createRef<HTMLHeadingElement>(),
       onFireSelect: () => {},
       onPlanet: () => {},
@@ -18,6 +26,22 @@ const panel = (status: 'loading' | 'ready' | 'error', mode: 'examples' | 'search
   );
 
 describe('Map shell accessible states', () => {
+  it('leaves closed study tools unmounted while keeping their disclosure accessible', () => {
+    const ExpensiveTools = vi.fn(() => createElement('div', null, 'Heavy charts'));
+    const html = renderToStaticMarkup(
+      createElement(InvestigationPanel, {
+        state: { ...INITIAL_MAP_STATE, presentation: 'explore' },
+        catalog: { state: { status: 'ready', data: [] }, retry: () => {} },
+        headingRef: createRef<HTMLHeadingElement>(),
+        onFireSelect: () => {},
+        onPlanet: () => {},
+        children: createElement(ExpensiveTools),
+      }),
+    );
+    expect(html).toContain('Existing Ontario study tools');
+    expect(ExpensiveTools).not.toHaveBeenCalled();
+    expect(html).not.toContain('Heavy charts');
+  });
   it('distinguishes a genuinely empty catalog from loading and failure', () => {
     expect(panel('ready')).toContain('No example fires have been published yet');
     expect(panel('loading')).toContain('Loading available fires');

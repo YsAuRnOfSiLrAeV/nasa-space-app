@@ -85,7 +85,7 @@ export function PageLoading({ label = 'Loading page' }: { label?: string }) {
         <p className="nasa-page-header-eyebrow">{label}…</p>
         <div aria-hidden className="nasa-space-lg max-w-[46rem] nasa-stack">
           <Skeleton className="h-12 w-3/4 md:h-16" />
-          <div className="nasa-stack-tight">
+          <div>
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-11/12" />
             <Skeleton className="h-4 w-2/3" />

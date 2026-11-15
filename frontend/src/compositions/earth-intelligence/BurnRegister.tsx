@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
-import { formatLonLat } from '@/components/map/graticule';
-import type { BurnGroup } from '@/components/study/burnGroups';
+import { formatLonLat } from '@/domain/globe/graticule';
+import type { BurnGroup } from '@/domain/study/burnGroups';
 import primitives from '@/components/shell/primitives.module.css';
 
 /**

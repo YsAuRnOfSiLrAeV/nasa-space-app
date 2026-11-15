@@ -26,23 +26,11 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
+      manifest: true,
       // MapLibre alone is ~1 MB minified (~280 kB gzip); that is the floor for a WebGL map.
       chunkSizeWarningLimit: 1100,
-      rolldownOptions: {
-        output: {
-          // Vendor chunks change rarely, so they stay cached across app deploys.
-          codeSplitting: {
-            groups: [
-              { name: 'maplibre', test: /node_modules[\\/]maplibre-gl[\\/]/ },
-              {
-                name: 'charts',
-                test: /node_modules[\\/](recharts|d3-[a-z-]+|victory-vendor|es-toolkit|immer|reselect|redux|@reduxjs|decimal\.js-light|eventemitter3)[\\/]/,
-              },
-              { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
-            ],
-          },
-        },
-      },
+      // Keep automatic entry-aware splitting: a manual chart vendor group can
+      // pull shared helpers into a chunk that the landing must then import.
     },
     test: {
       environment: 'node',

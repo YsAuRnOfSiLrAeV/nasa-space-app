@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { cn } from '@/lib/utils';
 import ui from '@/components/shell/primitives.module.css';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 import styles from './research.module.css';
 
 export interface ContentsEntry {
@@ -17,9 +17,12 @@ export interface ContentsEntry {
  */
 export function ResearchContents({
   entries,
+  label = 'On this page',
   className,
 }: {
   entries: ContentsEntry[];
+  /** Heading and accessible name of the list. */
+  label?: string;
   className?: string;
 }) {
   const current = useCurrentSection(entries);
@@ -33,8 +36,8 @@ export function ResearchContents({
   };
 
   return (
-    <nav aria-label="On this page" className={className}>
-      <p className={cn(ui.micro, 'mb-4 text-[9px]')}>On this page</p>
+    <nav aria-label={label} className={className}>
+      <p className={cn(ui.micro, 'mb-4 text-[9px]')}>{label}</p>
       <ol className={styles.contents}>
         {entries.map((e) => (
           <li key={e.id}>

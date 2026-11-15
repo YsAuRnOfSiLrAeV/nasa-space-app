@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import type { RecoveryFile } from '@/data/recoverySchema';
-import type { GroupRecovery } from '@/components/study/recovery';
-import { illustrativeComposition } from '@/components/forest/composition';
-import { MAX_YEAR, planForest, sceneAt, stageAt } from '@/components/forest/growth';
+import type { GroupRecovery } from '@/domain/study/recovery';
+import { illustrativeComposition } from '@/domain/forest/composition';
+import { MAX_YEAR, planForest, sceneAt, stageAt } from '@/domain/forest/growth';
 import { useMediaQuery, usePrefersReducedMotion } from '@/hooks/useMediaQuery';
 import { IllustrationPlate } from './IllustrationPlate';
 import { ObservationRibbon, ObservationsForYear } from './ObservationsForYear';

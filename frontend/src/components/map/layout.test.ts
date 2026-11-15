@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ManifestSchema, PointCollectionSchema } from '@/data/schema';
-import { computeBurnGroups } from '@/components/study/burnGroups';
-import { computeStudyFigures } from '@/components/study/studyFigures';
+import { computeBurnGroups } from '@/domain/study/burnGroups';
+import { computeStudyFigures } from '@/domain/study/studyFigures';
 import {
   formatExtent,
   formatLat,
@@ -11,7 +11,7 @@ import {
   formatLonLat,
   graticuleStep,
   graticuleTicks,
-} from './graticule';
+} from '@/domain/globe/graticule';
 import { insetsFromRects } from './occluders';
 
 describe('insetsFromRects', () => {

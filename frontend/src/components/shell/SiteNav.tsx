@@ -1,17 +1,16 @@
 import { RESEARCH_HREF, changeMapMode, mapHref, type Section } from '@/app/route';
 import { useMapNavigation } from '@/app/mapNavigation';
-import { SiteHeader, type NavItem } from './SiteHeader';
+import { SiteHeader } from './SiteHeader';
 import { APP_TITLE } from './brand';
 import styles from './nav.module.css';
 
 /**
- * The app's primary navigation, the same on every page: Explore, Research,
- * Your Own Fire, with the current section marked.
+ * The app's primary navigation, the same on every page: the two map modes
+ * (Examples, Find Your Fire) and the research page, with the current one marked.
  */
 export function SiteNav({
   current,
   onExplore,
-  extra = [],
   fade,
 }: {
   current: Section;
@@ -20,8 +19,6 @@ export function SiteNav({
    * instead of following a link to the page that is already open.
    */
   onExplore?: () => void;
-  /** Page-specific controls shown after the primary items (the explorer's Sources panel). */
-  extra?: NavItem[];
   fade?: boolean;
 }) {
   const map = useMapNavigation();
@@ -54,7 +51,6 @@ export function SiteNav({
           href: RESEARCH_HREF,
           current: current === 'research',
         },
-        ...extra,
       ]}
     />
   );

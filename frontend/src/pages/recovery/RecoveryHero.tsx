@@ -1,7 +1,7 @@
 import type { RefObject } from 'react';
-import type { GroupRecovery } from '@/components/study/recovery';
+import type { GroupRecovery } from '@/domain/study/recovery';
 import { StudyStateView } from '@/components/shell/StudyStateView';
-import type { StudyLoad } from '@/components/study/studyView';
+import type { StudyLoad } from '@/domain/study/studyView';
 import type { RecoveryDataState } from '@/hooks/useRecoveryData';
 import { Reveal } from '@/components/shell/Reveal';
 import { GreennessFinding } from './GreennessFinding';

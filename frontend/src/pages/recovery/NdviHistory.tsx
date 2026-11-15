@@ -3,7 +3,7 @@ import { scaleLinear } from 'd3-scale';
 import { cn } from '@/lib/utils';
 import type { NdviYear, RecoveryFile } from '@/data/recoverySchema';
 import { ndviDomain } from '@/data/landsat';
-import { platformLabel } from '@/components/study/recovery';
+import { platformLabel } from '@/domain/study/recovery';
 import ui from '@/components/shell/primitives.module.css';
 import { AxisText, YGrid } from '@/components/visualizations/svgAxes';
 import { ChartLegend } from '@/components/visualizations/ChartLegend';

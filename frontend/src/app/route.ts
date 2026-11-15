@@ -24,6 +24,7 @@ export type Section = 'explore' | 'research' | 'analyze';
 export type MapMode = 'examples' | 'search';
 export type MapPresentation = 'intro' | 'explore' | 'fire';
 export interface MapState {
+  country?: string;
   mode: MapMode;
   presentation: MapPresentation;
   fireId: string | null;
@@ -62,6 +63,7 @@ export function mapHref(state: MapState): string {
       : state.presentation;
   if (state.mode === 'examples' && presentation === 'intro') return EXPLORE_HREF;
   const query = new URLSearchParams({ view: presentation, mode: state.mode });
+  if (state.mode === 'search' && state.country) query.set('country', state.country);
   if (presentation === 'fire' && state.fireId) query.set('fire', state.fireId);
   return `#/?${query}`;
 }
@@ -124,6 +126,7 @@ export function parseRoute(hash: string): Route {
           page: 'explore',
           map: {
             mode: query.get('mode') === 'search' ? 'search' : 'examples',
+            ...(query.get('country') ? { country: query.get('country')! } : {}),
             presentation: fireId
               ? 'fire'
               : view === 'explore' || view === 'fire'

@@ -4,7 +4,7 @@ import type { StudyMapController } from '@/components/map/StudyMapController';
 /**
  * Earth Intelligence's map presentation: a globe (planet → region on the real
  * Earth), luminous points (p01) and click selection drawn as a white ring (p04).
- * No cleanup needed: StudyMap resets theme overrides on every theme switch.
+ * No cleanup: the composition and the map live for the whole visit.
  */
 export function useEarthMap(
   mapView: StudyMapController | null,

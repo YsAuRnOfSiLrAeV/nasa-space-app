@@ -12,8 +12,8 @@ import {
   type Scene,
   type SceneSnag,
   type SceneTree,
-} from '@/components/forest/growth';
-import { SPECIES, type SpeciesId } from '@/components/forest/species';
+} from '@/domain/forest/growth';
+import { SPECIES, type SpeciesId } from '@/domain/forest/species';
 import { PLATE as C } from './palette';
 import { Tree } from './trees';
 

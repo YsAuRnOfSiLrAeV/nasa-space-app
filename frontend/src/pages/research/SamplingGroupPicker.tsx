@@ -1,4 +1,4 @@
-import type { BurnGroup } from '@/components/study/burnGroups';
+import type { BurnGroup } from '@/domain/study/burnGroups';
 import styles from '@/pages/recovery/Recovery.module.css';
 
 /**

@@ -104,3 +104,868 @@
     animation: none;
   }
 }
+
+/*
+ * ── The research document ────────────────────────────────────────────────
+ * nasa.gov as the reference, for this page only: Inter for all text and numbers
+ * (tabular), the mono face only for small uppercase labels; full-width sections
+ * alternating white and black; flat grey panels in place of boxes. Colours come
+ * from the theme tokens (themes/paper.css on this page).
+ */
+.doc {
+  --font-display: 'Inter Variable', 'Helvetica Neue', Arial, sans-serif;
+  --font-section: 'Inter Variable', 'Helvetica Neue', Arial, sans-serif;
+  --font-ui: 'Inter Variable', 'Helvetica Neue', Arial, sans-serif;
+  --font-prose: 'Inter Variable', 'Helvetica Neue', Arial, sans-serif;
+  --font-data: 'Inter Variable', 'Helvetica Neue', Arial, sans-serif;
+  --font-label: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  /* Height of the fixed navigation, which the chapter bar sits under. */
+  --nav-height: 4.25rem;
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Opening band: title, one sentence, and the headline comparison beside it. */
+.doc :global(.nasa-page-header) {
+  gap: 1.5rem;
+  padding-top: 7.5rem;
+  padding-bottom: 3.5rem;
+  margin-bottom: 0;
+}
+.doc :global(.nasa-page-header-eyebrow) {
+  font: 500 0.75rem/1.4 var(--font-label);
+  letter-spacing: 0.1em;
+}
+.doc :global(.nasa-page-header-title) {
+  max-width: 16ch;
+  font: 700 clamp(2.75rem, 1.6rem + 4.4vw, 5rem) / 1 var(--font-display);
+  letter-spacing: -0.03em;
+}
+.doc :global(.nasa-page-header-subtitle) {
+  display: grid;
+  gap: 2.5rem 4rem;
+  max-width: none;
+  font-size: 1.1875rem;
+  line-height: 1.55;
+}
+.doc :global(.nasa-page-header-subtitle) > * + * {
+  margin-top: 0;
+}
+.doc :global(.nasa-page-header-subtitle) p {
+  max-width: 34rem;
+  font-size: inherit;
+  line-height: inherit;
+}
+.heroText {
+  display: grid;
+  align-content: start;
+  gap: 1.5rem;
+}
+@media (min-width: 1000px) {
+  .doc :global(.nasa-page-header-subtitle) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+/* nasa.gov's text action: bold label with a filled circle arrow. */
+.doc .cta {
+  gap: 1rem;
+  min-height: 3rem;
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+  justify-self: start;
+}
+.doc .cta b {
+  font: 700 1rem/1.2 var(--font-ui);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.doc .cta small {
+  font: 400 0.75rem/1.3 var(--font-label);
+}
+.doc .cta > span:last-child {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--signal);
+  color: var(--background);
+  font-size: 1rem;
+}
+
+/* The headline comparison: one fire, three readings. */
+.headline {
+  display: grid;
+  gap: 1rem;
+}
+.headline ul {
+  display: grid;
+  gap: 0.9rem;
+}
+.headline li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3.5rem;
+  align-items: center;
+  gap: 0.4rem 1rem;
+}
+.headline li > .kind {
+  grid-column: 1 / -1;
+}
+.headlineTrack {
+  display: block;
+  height: 14px;
+  background: var(--rule);
+}
+.headlineTrack > span {
+  display: block;
+  height: 100%;
+}
+.headline b {
+  font: 700 1.5rem/1 var(--font-display);
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+  text-align: end;
+}
+.headline figcaption {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+/* The four kinds of numbers: one mark each, the same everywhere. */
+.kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font: 500 0.8125rem/1.3 var(--font-ui);
+  color: var(--foreground);
+}
+.kind i {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  background: var(--foreground);
+}
+.kind[data-kind='observation'] i {
+  border-radius: 50%;
+}
+.kind[data-kind='reference'] i {
+  background: none;
+  border: 2px solid var(--foreground);
+  transform: rotate(45deg);
+}
+.kind[data-kind='forecast'] i {
+  width: 14px;
+  height: 0;
+  background: none;
+  border-top: 2px dashed var(--foreground);
+}
+.kindRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.5rem;
+  flex-basis: 100%;
+  order: 4;
+}
+.kindRow .kind {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+/* Chapter bar: stays under the navigation, marks the chapter being read. */
+.chapterBar {
+  position: sticky;
+  top: var(--nav-height);
+  z-index: 5;
+  border-top: 1px solid var(--rule);
+}
+.chapterBar nav > p {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.chapterBar .contents {
+  display: flex;
+  gap: 0 2rem;
+  border-left: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.chapterBar .entry {
+  flex: none;
+  width: auto;
+  min-height: 3rem;
+  margin-left: 0;
+  padding: 0;
+  border-left: 0;
+  border-bottom: 2px solid transparent;
+  align-items: center;
+  font: 500 0.8125rem/1.2 var(--font-ui);
+  white-space: nowrap;
+}
+.chapterBar .entry > span:first-child {
+  font: 500 0.6875rem/1 var(--font-label);
+  letter-spacing: 0.08em;
+}
+.chapterBar .entry[aria-current='true'] {
+  border-left-color: transparent;
+  border-bottom-color: var(--select);
+}
+
+/* Chapters: full-width sections, one reading column. */
+.chapter {
+  scroll-margin-top: calc(var(--nav-height) + 3rem);
+  padding-block: 6rem;
+}
+.chapter > * + * {
+  margin-top: 2.5rem;
+}
+.question {
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+  font: 500 0.75rem/1.5 var(--font-label);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--signal);
+}
+.question b {
+  font-weight: 500;
+  color: var(--foreground);
+}
+.question b::after {
+  content: '';
+  display: inline-block;
+  width: 2rem;
+  height: 1px;
+  margin-left: 0.9rem;
+  vertical-align: middle;
+  background: var(--rule-strong);
+}
+.chapterTitle {
+  margin-top: 1.25rem;
+  max-width: 18ch;
+  font: 700 clamp(2.25rem, 1.2rem + 3.6vw, 4rem) / 1.02 var(--font-display);
+  letter-spacing: -0.03em;
+  color: var(--foreground);
+  outline: none;
+  text-wrap: balance;
+}
+.lede {
+  margin-top: 1.75rem;
+  max-width: 44rem;
+  font-size: 1.1875rem;
+  line-height: 1.55;
+  color: var(--foreground);
+}
+
+/* Figure: a flat grey panel. Label and kinds above the title, caption below. */
+.figure {
+  background: var(--secondary);
+}
+.figureHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.6rem 0.9rem;
+  padding: 2rem 2rem 0;
+}
+.figureLabel,
+.tag {
+  font: 500 0.625rem/1 var(--font-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.tag::before {
+  content: '/ ';
+}
+.tag[data-warning] {
+  color: var(--amber);
+}
+.tag[data-warning]::before {
+  content: none;
+}
+.figureTitle {
+  flex-basis: 100%;
+  order: 3;
+  font: 700 1.5rem/1.2 var(--font-display);
+  letter-spacing: -0.015em;
+  color: var(--foreground);
+}
+.figureBody {
+  padding: 2rem;
+}
+.caption {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0 2rem 2rem;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--muted-foreground);
+}
+.caption p {
+  max-width: 62rem;
+}
+.source {
+  font: 400 0.625rem/1.5 var(--font-label);
+  letter-spacing: 0.04em;
+  color: var(--faint);
+}
+/* Charts measure their column: the column must not grow to fit the chart. */
+.chartStack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+.chartStack svg,
+.calibrationPlot svg {
+  display: block;
+  overflow: visible;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.75rem;
+}
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.legendBar {
+  width: 18px;
+  height: 10px;
+}
+.legendLine {
+  width: 2px;
+  height: 16px;
+  margin-inline: 8px;
+  background: var(--evidence-gedi);
+}
+
+/* Findings and unresolved assumptions under a figure. */
+.afterFigure {
+  display: grid;
+  gap: 2rem 3rem;
+}
+@media (min-width: 900px) {
+  .afterFigure {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+  }
+}
+.minorHead,
+.unresolvedHead {
+  margin-bottom: 0.75rem;
+  font: 500 0.625rem/1.4 var(--font-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.unresolvedHead {
+  color: var(--amber);
+}
+.findings {
+  display: grid;
+  gap: 0.9rem;
+  counter-reset: finding;
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  color: var(--foreground);
+}
+.findings li {
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  counter-increment: finding;
+}
+.findings li::before {
+  content: counter(finding, decimal-leading-zero);
+  padding-top: 0.35rem;
+  font: 500 0.625rem/1.4 var(--font-label);
+  color: var(--faint);
+}
+.unresolved {
+  padding: 1.5rem;
+  background: var(--secondary);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--muted-foreground);
+}
+.unresolved ul {
+  display: grid;
+  gap: 0.6rem;
+}
+/* A plain statement the chapter turns on: larger text, no box, no stripe. */
+.statement {
+  max-width: 44rem;
+}
+.statement p {
+  font: 500 1.375rem/1.4 var(--font-display);
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+
+/* Accordion rows: a bold label and a circled plus, ruled above and below. */
+.supporting {
+  border-top: 1px solid var(--rule-strong);
+}
+.chapter > .supporting + .supporting {
+  margin-top: 0;
+}
+.chapter > .supporting:last-child {
+  border-bottom: 1px solid var(--rule-strong);
+}
+.supporting summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1rem;
+  min-height: 4rem;
+  padding: 1rem 0;
+  cursor: pointer;
+  font: 700 1.0625rem/1.3 var(--font-display);
+  color: var(--foreground);
+  list-style: none;
+}
+.supporting summary::-webkit-details-marker {
+  display: none;
+}
+.supporting summary::after {
+  content: '+';
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--signal);
+  color: var(--background);
+  font: 400 1.125rem/1 var(--font-ui);
+}
+.supporting[open] summary::after {
+  content: '−';
+}
+.supporting summary small {
+  font: 400 0.6875rem/1.4 var(--font-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.supporting summary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.supportingBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  padding: 0.5rem 0 2.5rem;
+}
+
+/* Data tables. */
+.tableScroll {
+  overflow-x: auto;
+  min-width: 0;
+}
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+.dataTable caption {
+  caption-side: top;
+  padding-bottom: 0.75rem;
+  text-align: start;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.dataTable th,
+.dataTable td {
+  padding: 0.65rem 1rem 0.65rem 0;
+  border-bottom: 1px solid var(--rule);
+  text-align: start;
+  font-weight: 400;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  color: var(--foreground);
+}
+.dataTable thead th {
+  font: 500 0.625rem/1.4 var(--font-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  white-space: normal;
+  vertical-align: bottom;
+}
+.dataTable tbody th {
+  font-weight: 600;
+}
+.dataTable tbody th small {
+  display: block;
+  font: 400 0.6875rem/1.4 var(--font-ui);
+  color: var(--faint);
+}
+
+/* Pipeline (chapter 2): five stages joined by a thin line. */
+.pipeline {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.pipeline > li {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+  padding: 1.5rem 1.25rem 0.25rem 0;
+  border-top: 1px solid var(--rule-strong);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.pipeline > li::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  background: var(--foreground);
+}
+.pipeline > li[data-reference]::before {
+  background: var(--secondary);
+  border: 2px solid var(--foreground);
+  transform: rotate(45deg);
+}
+.pipeline > li:not(:last-child)::after {
+  content: '→';
+  position: absolute;
+  top: -0.72rem;
+  right: 0.5rem;
+  padding: 0 0.3rem;
+  background: var(--secondary);
+  font: 400 0.75rem/1 var(--font-ui);
+  color: var(--faint);
+}
+.pipeline h4 {
+  font: 700 1.125rem/1.25 var(--font-display);
+  color: var(--foreground);
+}
+.stageNo {
+  font: 500 0.5625rem/1.4 var(--font-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.sensorList,
+.plainList {
+  display: grid;
+  gap: 0.2rem;
+  color: var(--foreground);
+}
+.featureGroups {
+  display: grid;
+  gap: 0.5rem;
+}
+.featureGroups dt {
+  font-size: 0.6875rem;
+  color: var(--faint);
+}
+.featureGroups dd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.chip {
+  padding: 0.2rem 0.5rem;
+  background: var(--muted);
+  font: 600 0.75rem/1.3 var(--font-ui);
+  color: var(--foreground);
+  white-space: nowrap;
+}
+@media (max-width: 899.98px) {
+  .pipeline {
+    grid-template-columns: 1fr;
+  }
+  .pipeline > li {
+    padding: 1.1rem 0 1.25rem 1.25rem;
+    border-top: 0;
+    border-left: 1px solid var(--rule-strong);
+  }
+  .pipeline > li::before {
+    top: 1.3rem;
+    left: -4px;
+  }
+  .pipeline > li:not(:last-child)::after {
+    content: none;
+  }
+}
+
+/* Bar panels (chapters 3 and 5): the bar leads, its value sits beside the label. */
+.panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2.5rem 3rem;
+}
+@media (min-width: 900px) {
+  .panels {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.panel {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  min-width: 0;
+}
+.panel h4 {
+  font: 700 1rem/1.3 var(--font-display);
+  color: var(--foreground);
+}
+.panel h4 span {
+  display: block;
+  margin-top: 0.25rem;
+  font: 400 0.75rem/1.4 var(--font-ui);
+  color: var(--muted-foreground);
+}
+.barRow p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.6rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+}
+.barRow b {
+  margin-left: auto;
+  font: 600 0.9375rem/1 var(--font-ui);
+  color: var(--foreground);
+}
+.barRow small {
+  flex-basis: 100%;
+  font-size: 0.6875rem;
+  color: var(--faint);
+}
+.track {
+  position: relative;
+  height: 14px;
+  background: var(--rule);
+}
+.track[data-diverging]::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: 50%;
+  width: 1px;
+  background: var(--foreground);
+}
+.fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: var(--evidence-model);
+}
+.track[data-diverging] .fill {
+  left: auto;
+}
+.fill[data-tone='weak'] {
+  background: var(--faint);
+}
+.marker {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--foreground);
+}
+.marker i {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  transform: translateX(-50%);
+  font: 400 0.6875rem/1.2 var(--font-ui);
+  font-style: normal;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+}
+.barRow:has(.marker) {
+  padding-bottom: 1rem;
+}
+.scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.625rem;
+  line-height: 1.2;
+  color: var(--faint);
+}
+.panelNote {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.ageRibbon {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 2px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+.ageRibbon span {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem;
+  background: var(--muted);
+}
+.ageRibbon b {
+  font: 600 0.875rem/1.2 var(--font-ui);
+  color: var(--foreground);
+}
+.ageRibbon [data-extrapolation] {
+  background:
+    repeating-linear-gradient(135deg, transparent 0 6px, var(--rule) 6px 7px), var(--muted);
+}
+
+/* Calibration scatter with its table (chapter 4). */
+.calibration {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem 3rem;
+  align-items: start;
+}
+@media (min-width: 1100px) {
+  .calibration {
+    grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
+  }
+}
+.calibrationPlot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+.shapeKey {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.shapeKey li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Concept pair and limitation list. */
+.twoConcepts {
+  display: grid;
+  gap: 1.5rem 0;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+.twoConcepts > div {
+  padding-right: 2rem;
+}
+@media (min-width: 900px) {
+  .twoConcepts {
+    grid-template-columns: 1fr 1fr;
+  }
+  .twoConcepts > div + div {
+    padding-left: 2rem;
+    border-left: 1px solid var(--rule-strong);
+  }
+}
+.limits {
+  display: grid;
+  gap: 1rem 3rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+@media (min-width: 900px) {
+  .limits {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.limits dt {
+  margin-bottom: 0.2rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.limits dd {
+  color: var(--muted-foreground);
+}
+
+/* Provisional curve block (chapter 5). */
+.provisional {
+  display: grid;
+  gap: 1.5rem 3rem;
+  align-items: center;
+  padding: 2rem;
+  background: var(--secondary);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+.provisional > div {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: start;
+}
+.provisional svg {
+  width: 100%;
+  max-width: 340px;
+  overflow: visible;
+}
+.equation {
+  font: 700 1.5rem/1.3 var(--font-display);
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+@media (min-width: 900px) {
+  .provisional {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+}
+
+@media (max-width: 699.98px) {
+  .doc :global(.nasa-page-header) {
+    padding-top: 6rem;
+    padding-bottom: 2.5rem;
+  }
+  .doc :global(.nasa-page-header-subtitle) {
+    font-size: 1.0625rem;
+  }
+  .chapter {
+    padding-block: 3.75rem;
+  }
+  .lede {
+    font-size: 1.0625rem;
+  }
+  .statement p {
+    font-size: 1.125rem;
+  }
+  .figureHead {
+    padding: 1.25rem 1rem 0;
+  }
+  .figureBody {
+    padding: 1.25rem 1rem;
+  }
+  .caption {
+    padding: 0 1rem 1.25rem;
+  }
+  .figureTitle {
+    font-size: 1.25rem;
+  }
+  /* A scrolling table's caption stays readable at phone width. */
+  .dataTable caption {
+    max-width: calc(100vw - 5rem);
+  }
+}

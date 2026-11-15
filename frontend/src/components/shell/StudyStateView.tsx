@@ -2,7 +2,7 @@ import { AlertIcon, RetryIcon } from './icons';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { StudyLoad } from '@/components/study/studyView';
+import type { StudyLoad } from '@/domain/study/studyView';
 
 /** Shared loading / error presentation (styled by theme tokens). Renders nothing when ready. */
 export function StudyStateView({ load }: { load: StudyLoad }) {

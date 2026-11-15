@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { recoveryHref, type RecoveryView } from '@/app/route';
-import type { BurnGroup } from '@/components/study/burnGroups';
+import type { BurnGroup } from '@/domain/study/burnGroups';
 import ui from '@/components/shell/primitives.module.css';
 import styles from './Recovery.module.css';
 

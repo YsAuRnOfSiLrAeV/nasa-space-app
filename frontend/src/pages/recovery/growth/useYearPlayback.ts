@@ -1,5 +1,5 @@
 import { useEffect, useReducer } from 'react';
-import { initialPlayback, playbackReducer } from '@/components/forest/playback';
+import { initialPlayback, playbackReducer } from '@/domain/forest/playback';
 
 export interface YearPlayback {
   year: number;

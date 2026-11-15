@@ -24,6 +24,59 @@ export default tseslint.config(
     },
   },
   {
+    files: ['src/domain/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: ['react', 'react-dom', 'maplibre-gl'],
+          patterns: [
+            {
+              group: [
+                '@/components/**',
+                '@/compositions/**',
+                '@/pages/**',
+                '@/hooks/**',
+                '@/services/**',
+                '**/components/**',
+                '**/compositions/**',
+                '**/pages/**',
+                '**/hooks/**',
+                '**/services/**',
+              ],
+              message: 'Domain logic must remain independent of UI, hooks and services.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/services/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@/components/**',
+                '@/compositions/**',
+                '@/pages/**',
+                '@/hooks/**',
+                '**/components/**',
+                '**/compositions/**',
+                '**/pages/**',
+                '**/hooks/**',
+              ],
+              message: 'Services may depend on data and domain modules, not the UI.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // Vendored shadcn/ui components export variant helpers next to components by design.
     files: ['src/components/ui/**'],
     rules: { 'react-refresh/only-export-components': 'off' },

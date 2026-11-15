@@ -1,0 +1,113 @@
+/*
+ * Theme: Retro-Futurist Research Lab
+ * Moodboard p02 · p03 · p05 · p16: a credible scientific instrument.
+ * Black and near-black, monochrome white/grey interface, one amber accent used
+ * for meaning only (stage breaks, status lamp, focus). Mono labels, thin rules,
+ * corner-bracket modules, real graticule on the map. Deliberately no green.
+ *
+ * Variables only. Layout lives in src/compositions/research-lab/.
+ */
+:root[data-theme='research-lab'] {
+  color-scheme: dark;
+
+  /* Surfaces & text */
+  --background: #050505;
+  --foreground: #f2eee8;
+  --card: #0a0a0a;
+  --card-foreground: #f2eee8;
+  --popover: #0e0e0e;
+  --popover-foreground: #f2eee8;
+  --primary: #f2eee8;
+  --primary-foreground: #050505;
+  --secondary: #141414;
+  --secondary-foreground: #f2eee8;
+  --muted: #141414;
+  --muted-foreground: #8a8a8a;
+  --accent: #1a1a1a;
+  --accent-foreground: #f2eee8;
+  --destructive: #ff6a4d;
+  --border: rgb(255 255 255 / 0.12);
+  --input: rgb(255 255 255 / 0.22);
+  --ring: #e8a33d;
+
+  /* Domain */
+  --highlight: #e8a33d;
+  --faint: #6b6b6b;
+  --rule: rgb(255 255 255 / 0.14);
+  --forest: #a39d93;
+  --satellite: #b8b8b8;
+  --amber: #e8a33d;
+  /* Ordinal ramp (warm grey → white, after p02's point cloud).
+     Validated: --ordinal, dark, surface #050505. */
+  --stage-0: #5e5a54;
+  --stage-1: #a39d93;
+  --stage-2: #f2eee8;
+  --chart-1: #f2eee8;
+  --chart-2: #e8a33d;
+  --chart-3: #8a8a8a;
+  --chart-4: #ff6a4d;
+  --chart-5: #6b6b6b;
+
+  /* Typography: IBM Plex Mono for measurements, labels and the mark;
+     IBM Plex Sans for interface text and prose. */
+  --font-ui: 'IBM Plex Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-section: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-label: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-numeric: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-coord: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-data: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-prose: 'IBM Plex Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --display-size: 0.8125rem;
+  --display-weight: 500;
+  --display-tracking: 0.22em;
+  --display-leading: 1.3;
+  --display-transform: uppercase;
+  --eyebrow-font: var(--font-data);
+  --eyebrow-weight: 500;
+  --eyebrow-tracking: 0.2em;
+  --eyebrow-transform: uppercase;
+  --eyebrow-style: normal;
+  --eyebrow-size: 0.5625rem;
+  --figure-size: 1.75rem;
+  --figure-weight: 300;
+  --figure-tracking: -0.02em;
+
+  /* Shape & layout */
+  --radius: 0rem;
+  --panel-width: 360px;
+  --panel-bg: rgb(5 5 5 / 0.96);
+  --panel-shadow: none;
+  --section-gap: 1.5rem;
+  --chart-height: 112px;
+  --chart-grid-dash: 1 3;
+  --chart-reference: #e8a33d;
+  --chart-point-opacity: 0.85;
+
+  /* Atmosphere & decorative details */
+  --app-backdrop: #050505;
+  --map-overlay: radial-gradient(ellipse at 60% 50%, transparent 55%, rgb(0 0 0 / 0.55) 100%);
+
+  /* Map: monochrome instrument display */
+  --map-background: #050505;
+  --map-water: #161616;
+  --map-water-opacity: 1;
+  --map-waterway: #242424;
+  --map-road: #1a1a1a;
+  --map-road-opacity: 0.8;
+  --map-boundary: #4a4a4a;
+  --map-label: #7a7a7a;
+  --map-water-label: #666666;
+  --map-label-halo: #050505;
+  --map-imagery-opacity: 0;
+  --map-imagery-saturation: 0;
+  --map-imagery-brightness: 1;
+  --map-imagery-contrast: 0;
+  --map-hillshade-exaggeration: 0;
+  --map-hillshade-shadow: #000000;
+  --map-hillshade-highlight: #ffffff;
+  --map-water-label-italic: 0;
+  --map-point-stroke: #050505;
+  --map-point-scale: 0.95;
+  --map-control-icon-filter: invert(1) opacity(0.75);
+}

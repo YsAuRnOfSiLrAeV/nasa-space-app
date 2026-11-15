@@ -1,0 +1,175 @@
+.tooltip {
+  position: absolute;
+  z-index: 30;
+  max-width: min(280px, calc(100vw - 32px));
+  padding: 0.625rem 0.75rem;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--rule-strong);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  pointer-events: none;
+}
+.tooltip[data-pinned] {
+  border-color: var(--ring);
+}
+.tooltip dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.75rem;
+}
+.tooltip dt {
+  color: var(--muted-foreground);
+  font: 500 0.6875rem/1.45 var(--font-label);
+}
+.tooltipTitle {
+  margin-bottom: 0.4rem;
+  font: 500 0.6875rem/1.4 var(--font-data);
+  color: var(--foreground);
+}
+.tooltipHint {
+  margin-top: 0.4rem;
+  color: var(--faint);
+  font-size: 0.6875rem;
+}
+
+.legend {
+  display: grid;
+  gap: 0.75rem;
+}
+.legend h3 {
+  font: 500 0.75rem/1.4 var(--font-section);
+  color: var(--foreground);
+}
+.legend ul {
+  display: grid;
+  gap: 0.35rem;
+}
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.swatch {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--rule-strong);
+}
+.lineSwatch {
+  flex: none;
+  width: 14px;
+  height: 0;
+  border-top: 2px solid currentColor;
+}
+.dashSwatch {
+  composes: lineSwatch;
+  border-top-style: dashed;
+  border-top-width: 1px;
+}
+.dotSwatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-inline: 2px;
+  border-radius: 50%;
+  border: 2px solid var(--foreground);
+  background: var(--map-background);
+}
+.empty {
+  background: transparent;
+  border-style: dashed;
+}
+
+.inspector {
+  display: grid;
+  gap: 0.75rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 0.75rem;
+}
+.inspector h3,
+.picker legend {
+  font: 500 0.75rem/1.4 var(--font-section);
+  color: var(--foreground);
+}
+.summary {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+.summary caption {
+  caption-side: top;
+  text-align: start;
+  padding-bottom: 0.4rem;
+  color: var(--muted-foreground);
+}
+.summary th,
+.summary td {
+  padding: 0.3rem 0.4rem 0.3rem 0;
+  border-bottom: 1px solid var(--rule);
+  text-align: start;
+  font-weight: 400;
+}
+.summary thead th {
+  color: var(--muted-foreground);
+  font: 500 0.6875rem/1.4 var(--font-label);
+}
+.summary tbody th {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.summary td {
+  font: 400 0.75rem/1.4 var(--font-data);
+  text-align: end;
+}
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+.picker legend {
+  float: left;
+  width: 100%;
+}
+.picker label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.picker input {
+  width: 4.5rem;
+  min-height: 36px;
+  padding: 0 0.4rem;
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  font: 400 0.8125rem/1 var(--font-data);
+}
+.picker input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.picker small {
+  color: var(--muted-foreground);
+}
+.pickerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+  width: 100%;
+}
+.readout {
+  display: block;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--rule-strong);
+  font-size: 0.75rem;
+}
+.readout dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.75rem;
+}
+.readout dt {
+  color: var(--muted-foreground);
+}

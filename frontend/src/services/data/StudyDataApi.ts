@@ -8,7 +8,8 @@
  * a fake fetch and the app's instance lives in `./index.ts`.
  */
 import { z } from 'zod';
-import { decodeDots } from '../../components/graphics/sphere';
+import { decodeDots } from '../../domain/globe/sphere';
+import { parseLandRings, type LandRing } from '../../domain/globe/landOutline';
 import {
   ManifestSchema,
   PointCollectionSchema,
@@ -58,14 +59,27 @@ export interface StudyDataApiConfig {
   baseUrl: string;
   /** Defaults to the global fetch. */
   fetch?: typeof fetch;
+  /** Whether an image URL decodes. The app injects the browser's image loader. */
+  probeImage?: ImageProbe;
 }
+
+export type ImageProbe = (url: string, signal?: AbortSignal) => Promise<boolean>;
 
 export class StudyDataApi {
   private readonly baseUrl: string;
   private readonly fetchImpl: typeof fetch;
+  private readonly probeImage: ImageProbe;
+  /** Fire exports are immutable during a visit: loaded once, unless a fresh copy is asked for. */
+  private readonly fires = new Map<string, FireData>();
+  private readonly fireVersions = new Map<string, number>();
+  private fireRevision = 0;
+  /** The latest catalog request: fire loads reuse it instead of asking for the file again. */
+  private fireIndex: Promise<DemoFire[]> | null = null;
 
   constructor(config: StudyDataApiConfig) {
     this.baseUrl = config.baseUrl;
+    // No DOM here: without an injected probe, optional images count as absent.
+    this.probeImage = config.probeImage ?? (() => Promise.resolve(false));
     // Bound: calling an unbound window.fetch as a method throws "Illegal invocation".
     this.fetchImpl = config.fetch ?? globalThis.fetch.bind(globalThis);
   }
@@ -88,7 +102,43 @@ export class StudyDataApi {
     return { dots: decodeDots(file.lonlat), source: file.source };
   }
 
-  async loadFireIndex(signal?: AbortSignal): Promise<DemoFire[]> {
+  /**
+   * Natural Earth land rings for the landing globe. The file is a bundled asset, so
+   * the caller passes its URL; it is not under the data folder.
+   */
+  async loadLandOutline(url: string, signal?: AbortSignal): Promise<LandRing[]> {
+    let response: Response;
+    try {
+      response = await this.fetchImpl(url, { signal });
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      throw new DataLoadError('The land outline could not be reached.');
+    }
+    if (!response.ok)
+      throw new DataLoadError(`The land outline failed to load (HTTP ${response.status}).`);
+    try {
+      return parseLandRings(await response.json());
+    } catch {
+      throw new DataLoadError('The land outline file is not valid.');
+    }
+  }
+
+  /** Whether an optional image (such as a fire's `optical.png`) exists and decodes. */
+  imageLoads(url: string, signal?: AbortSignal): Promise<boolean> {
+    return this.probeImage(url, signal);
+  }
+
+  loadFireIndex(signal?: AbortSignal): Promise<DemoFire[]> {
+    const request = this.fetchFireIndex(signal);
+    this.fireIndex = request;
+    // A failed or cancelled request is never reused.
+    request.catch(() => {
+      if (this.fireIndex === request) this.fireIndex = null;
+    });
+    return request;
+  }
+
+  private async fetchFireIndex(signal?: AbortSignal): Promise<DemoFire[]> {
     const file = 'demo/index.json';
     const response = await this.reach(file, signal);
     if (!response.ok)
@@ -112,8 +162,51 @@ export class StudyDataApi {
     return data;
   }
 
-  async loadFire(fireId: string, signal?: AbortSignal): Promise<FireData | null> {
-    const entry = (await this.loadFireIndex(signal)).find((fire) => fire.id === fireId);
+  /** A fire already loaded during this visit, without a request. */
+  cachedFire(fireId: string): FireData | undefined {
+    return this.fires.get(fireId);
+  }
+
+  /** Invalidate loaded exports and prevent older requests from repopulating the cache. */
+  clearFireCache(fireId?: string): void {
+    if (fireId === undefined) {
+      this.fires.clear();
+      this.fireVersions.clear();
+      this.fireIndex = null;
+    } else {
+      this.fires.delete(fireId);
+      this.fireVersions.set(fireId, ++this.fireRevision);
+    }
+  }
+
+  /** One fire's result and cells; `null` when the catalog has no such fire. */
+  async loadFire(
+    fireId: string,
+    signal?: AbortSignal,
+    options: { fresh?: boolean } = {},
+  ): Promise<FireData | null> {
+    signal?.throwIfAborted();
+    if (options.fresh) this.fires.delete(fireId);
+    const cached = this.fires.get(fireId);
+    if (cached) return cached;
+    const version = ++this.fireRevision;
+    this.fireVersions.set(fireId, version);
+    const data = await this.fetchFire(fireId, signal, options.fresh);
+    signal?.throwIfAborted();
+    if (data && this.fireVersions.get(fireId) === version) this.fires.set(fireId, data);
+    return data;
+  }
+
+  private async fetchFire(
+    fireId: string,
+    signal?: AbortSignal,
+    fresh = false,
+  ): Promise<FireData | null> {
+    // The catalog already asked for is reused; if that request failed or was cancelled
+    // by its own caller, this one asks again. A retry always asks for a fresh copy.
+    const index =
+      (!fresh && (await this.fireIndex?.catch(() => null))) || (await this.loadFireIndex(signal));
+    const entry = index.find((fire) => fire.id === fireId);
     if (!entry) return null;
     const path = `demo/${entry.result}`;
     const result = await this.parse(

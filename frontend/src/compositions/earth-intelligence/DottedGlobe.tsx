@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { orthographic } from '@/components/graphics/sphere';
+import { orthographic } from '@/domain/globe/sphere';
 import { graticuleLines, lambert, parallel } from '@/components/graphics/globe';
 import { drawLimb, traceVisible } from '@/components/graphics/globeCanvas';
 import { cssVar, useCanvasRenderer } from '@/components/graphics/useCanvasRenderer';

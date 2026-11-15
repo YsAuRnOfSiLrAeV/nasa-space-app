@@ -1,6 +1,6 @@
-import { formatLonLat } from '@/components/map/graticule';
+import { formatLonLat } from '@/domain/globe/graticule';
 import { FigureRow } from '@/components/shell/FigureRow';
-import type { GroupRecovery } from '@/components/study/recovery';
+import type { GroupRecovery } from '@/domain/study/recovery';
 import styles from './Recovery.module.css';
 
 /** Measured statistics of the selected group, as one line. */

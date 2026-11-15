@@ -1,36 +1,12 @@
 /**
- * Theme registry. The visual definition of each theme lives only in
- * src/styles/themes/<id>.css; this file just lists them for the UI and the
- * bootstrap script in index.html (keep that list in sync; a test checks it).
- *
- * Earth Intelligence is the only active theme. Research Lab and Living Atlas
- * are kept, unbuilt, in archive/ (see archive/README.md to restore one).
+ * The theme contract. Earth Intelligence is the app's one theme, set statically
+ * on <html data-theme> in index.html; its values live only in
+ * src/styles/themes/earth-intelligence.css. Research Lab and Living Atlas are
+ * kept, unbuilt, in archive/ (see archive/README.md).
  */
-export const THEMES = [
-  {
-    id: 'earth-intelligence',
-    label: 'Earth Intelligence',
-    mode: 'dark',
-    description: 'Earth observation: lit dotted globe, mint, burgundy burn and violet on black',
-    swatch: ['#0b0b0e', '#9fd5c8', '#b53e5d'],
-  },
-] as const;
+export const THEME_ID = 'earth-intelligence';
 
-export type Theme = (typeof THEMES)[number];
-export type ThemeId = Theme['id'];
-
-export const DEFAULT_THEME: ThemeId = 'earth-intelligence';
-export const THEME_STORAGE_KEY = 'fre-theme';
-
-export function isThemeId(value: unknown): value is ThemeId {
-  return THEMES.some((t) => t.id === value);
-}
-
-export function getTheme(id: ThemeId): Theme {
-  return THEMES.find((t) => t.id === id) ?? THEMES[0];
-}
-
-/** Every theme file must define all of these (enforced by themes.test.ts). */
+/** The theme file must define exactly these (enforced by themes.test.ts). */
 export const REQUIRED_THEME_VARS = [
   // shadcn semantic colors
   'background',
@@ -65,6 +41,18 @@ export const REQUIRED_THEME_VARS = [
   'stage-0',
   'stage-1',
   'stage-2',
+  // fire grid categories on the map (src/components/fire)
+  'grid-stage-0',
+  'grid-stage-1',
+  'grid-stage-2',
+  'grid-prob-0',
+  'grid-prob-1',
+  'grid-prob-2',
+  'grid-outside',
+  'grid-zone',
+  'evidence-optical',
+  'evidence-model',
+  'evidence-gedi',
   // identity: instrument signal, study region, navy plate, panel hairline
   'signal',
   'amber',
@@ -113,6 +101,8 @@ export const REQUIRED_THEME_VARS = [
   'map-overlay',
   // map (read by src/components/map/mapTheme.ts)
   'map-background',
+  'map-land',
+  'map-land-line',
   'map-water',
   'map-water-opacity',
   'map-waterway',

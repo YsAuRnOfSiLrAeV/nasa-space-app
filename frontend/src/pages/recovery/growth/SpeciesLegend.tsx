@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import ui from '@/components/shell/primitives.module.css';
-import { SPECIES, SPECIES_ORDER, type SpeciesId } from '@/components/forest/species';
+import { SPECIES, SPECIES_ORDER, type SpeciesId } from '@/domain/forest/species';
 import { PLATE } from './palette';
 import { Tree } from './trees';
 

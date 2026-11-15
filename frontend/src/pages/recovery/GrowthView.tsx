@@ -1,4 +1,4 @@
-import type { GroupRecovery } from '@/components/study/recovery';
+import type { GroupRecovery } from '@/domain/study/recovery';
 import type { RecoveryDataState } from '@/hooks/useRecoveryData';
 import { GrowthExplorer } from './growth/GrowthExplorer';
 import { NumberedSection } from '@/components/shell/NumberedSection';

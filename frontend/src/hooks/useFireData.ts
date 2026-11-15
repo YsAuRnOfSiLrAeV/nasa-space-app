@@ -1,56 +1,17 @@
-import { useEffect, useState } from 'react';
 import type { FireData } from '@/data/fireSchema';
 import { studyDataApi } from '@/services/data';
-import { loadErrorMessage } from './loadErrorMessage';
+import { useResource, type Resource } from './useResource';
 
-type FireState =
-  | { status: 'loading' }
-  | { status: 'absent' }
-  | { status: 'error'; message: string }
-  | { status: 'ready'; data: FireData };
+export type FireState = Resource<FireData>;
 
-const results = new Map<string, FireData>();
-
-export function useFireData(fireId: string) {
-  const [attempt, setAttempt] = useState(0);
-  const [state, setState] = useState<{ id: string; attempt: number; value: FireState } | null>(
-    null,
+/**
+ * One fire's result and cells (null: no fire selected). The service keeps loaded
+ * fires for the visit, so returning to one shows it at once; retry asks for a fresh copy.
+ */
+export function useFireData(fireId: string | null) {
+  return useResource(
+    fireId,
+    (signal, fresh) => studyDataApi.loadFire(fireId!, signal, { fresh }),
+    (id) => studyDataApi.cachedFire(id),
   );
-  useEffect(() => {
-    const controller = new AbortController();
-    // Static exports are immutable during a visit. Retry explicitly bypasses cache.
-    const request =
-      attempt === 0 && results.has(fireId)
-        ? Promise.resolve(results.get(fireId)!)
-        : studyDataApi.loadFire(fireId, controller.signal);
-    void request
-      .then((data) => {
-        if (!controller.signal.aborted) {
-          if (data) results.set(fireId, data);
-          setState({
-            id: fireId,
-            attempt,
-            value: data ? { status: 'ready', data } : { status: 'absent' },
-          });
-        }
-      })
-      .catch((error: unknown) => {
-        if (!controller.signal.aborted)
-          setState({
-            id: fireId,
-            attempt,
-            value: { status: 'error', message: loadErrorMessage(error) },
-          });
-      });
-    return () => controller.abort();
-  }, [fireId, attempt]);
-  return {
-    state:
-      state?.id === fireId && state.attempt === attempt
-        ? state.value
-        : results.has(fireId)
-          ? ({ status: 'ready', data: results.get(fireId)! } as FireState)
-          : ({ status: 'loading' } as FireState),
-    retry: () => setAttempt((value) => value + 1),
-  };
 }

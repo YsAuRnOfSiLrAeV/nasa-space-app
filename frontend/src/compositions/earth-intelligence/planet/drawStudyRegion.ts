@@ -1,83 +1,15 @@
-/**
- * Annotations grounded in data, drawn at their true coordinates:
- * - the GEDI coverage limit: the parallels at the ISS inclination (51.6°), north
- *   and south. GEDI samples only between them; the study region sits just inside.
- *   Labelled on the southern line, which runs far from the study region.
- * - the study region: the manifest bounding box traced on the sphere in mint (forest observation),
- *   with corner brackets and a leader to its extent in degrees. Its label sits on
- *   a knock-out plate, like a map label, so the lines beneath never cross the text.
- * Only the reveal timing is display. Positions are not.
- *
- * Draw the coverage limit first, then the study region over it.
- */
-import { parallel } from '@/components/graphics/globe';
-import { traceVisible } from '@/components/graphics/globeCanvas';
-import { GEDI_LIMIT_LAT } from '@/data/missions';
+/** The study bounding box and label, drawn at their true globe coordinates. */
 import { LEADER_AT, MARK_AT, TYPE_AT, clamp01, cubicOut, expoOut } from './choreography';
 import type { PlanetFrame, Projected } from './frame';
 import { boxRing, extentLines, type BBox } from './region';
 
 export type { BBox };
 
-const NORTH_LIMIT = parallel(GEDI_LIMIT_LAT, 2);
-const SOUTH_LIMIT = parallel(-GEDI_LIMIT_LAT, 2);
-const LIMIT_TEXT = `GEDI COVERAGE LIMIT ±${GEDI_LIMIT_LAT}°`;
 const REGION_TEXT = 'STUDY REGION';
-/** When the coverage limit draws in: after the land has assembled. */
-const LIMIT_AT = 1.2;
 
 type Tracked = CanvasRenderingContext2D & { letterSpacing?: string };
 function track(ctx: CanvasRenderingContext2D, px: number) {
   (ctx as Tracked).letterSpacing = `${px}px`;
-}
-
-/** Text with a thin halo in the ground colour, so it stays legible over the land dots. */
-function haloText(f: PlanetFrame, text: string, x: number, y: number) {
-  const { ctx, colors } = f;
-  const fill = ctx.fillStyle;
-  ctx.strokeStyle = colors.ground;
-  ctx.lineWidth = 3;
-  ctx.lineJoin = 'round';
-  ctx.strokeText(text, x, y);
-  ctx.fillStyle = fill;
-  ctx.fillText(text, x, y);
-}
-
-/** The GEDI coverage limit: dashed parallels at 51.6° north and south, labelled once. */
-export function drawCoverageLimit(f: PlanetFrame) {
-  const { ctx, t, still, project, colors, w, h } = f;
-  const shown = still ? 1 : cubicOut(clamp01((t - LIMIT_AT) / 1.2));
-  if (shown <= 0) return;
-
-  ctx.strokeStyle = colors.signal;
-  ctx.lineWidth = 1;
-  ctx.setLineDash([3, 4]);
-  ctx.globalAlpha = 0.65 * shown;
-  ctx.beginPath();
-  traceVisible(ctx, project, NORTH_LIMIT);
-  traceVisible(ctx, project, SOUTH_LIMIT);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Label under the lowest visible point of the southern line (beneath the planet).
-  let low: Projected | null = null;
-  for (const [lon, lat] of SOUTH_LIMIT) {
-    const q = project(lon, lat);
-    if (q.z <= 0.02) continue;
-    if (!low || q.y > low.y) low = q;
-  }
-  if (!low) return;
-  ctx.font = `600 10px ${colors.label}`;
-  track(ctx, 1.3);
-  const tw = ctx.measureText(LIMIT_TEXT).width;
-  const x = Math.min(Math.max(8, low.x - tw / 2), w - tw - 8);
-  const y = Math.min(low.y + 18, h - 6);
-  ctx.fillStyle = colors.signal;
-  ctx.globalAlpha = shown;
-  ctx.textAlign = 'left';
-  haloText(f, LIMIT_TEXT, x, y);
-  track(ctx, 0);
-  ctx.globalAlpha = 1;
 }
 
 /** The study region at its true extent, with a leader to its coordinates. */

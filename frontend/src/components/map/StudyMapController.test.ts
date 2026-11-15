@@ -1,7 +1,40 @@
 import { describe, expect, it } from 'vitest';
 import type { Map as MapLibreMap } from 'maplibre-gl';
-import { LAYER_HILLSHADE, LAYER_POINT_GLOW, LAYER_POINT_SELECTED, LAYER_POINTS } from './layers';
+import { LAYER_HILLSHADE, LAYER_POINT_GLOW, LAYER_POINTS } from './layers';
 import { StudyMapController } from './StudyMapController';
+import {
+  LAYER_FIRE_GEDI,
+  LAYER_FIRE_GRID,
+  LAYER_FIRE_MARKER_LABELS,
+  LAYER_FIRE_MARKERS,
+  LAYER_FIRE_OPTICAL,
+  LAYER_FIRE_PERIMETER,
+  LAYER_FIRE_ZONE,
+  SOURCE_FIRE_GRID,
+  type FireGridScene,
+} from './fireLayers';
+
+const SCENE: FireGridScene = {
+  corners: [
+    [-121, 52],
+    [-120, 52],
+    [-120, 51],
+    [-121, 51],
+  ],
+  gridImage: 'data:image/png;base64,grid',
+  zoneImage: null,
+  zoneOutline: [],
+  perimeter: null,
+  gedi: [[-120.5, 51.5]],
+  opticalImage: null,
+};
+const COLORS = {
+  zone: '#fff',
+  extent: '#999',
+  perimeter: '#fa0',
+  gediFill: '#000',
+  gediStroke: '#fff',
+};
 
 type Handler = (e?: unknown) => void;
 
@@ -19,9 +52,34 @@ function fakeMap() {
       (handlers.get(key) ?? []).filter((x) => x !== h),
     );
   const emit = (key: string, e?: unknown) => (handlers.get(key) ?? []).forEach((h) => h(e));
+  const sources = new Map<string, { data?: unknown; image?: unknown }>();
+  const layout = new Map<string, string>();
   const map = {
     getLayer: (id: string) => (layers.has(id) ? { id } : undefined),
-    setLayoutProperty: (id: string, p: string, v: string) => calls.push(`layout ${id} ${p}=${v}`),
+    getSource: (id: string) => {
+      const s = sources.get(id);
+      return s
+        ? {
+            setData: (data: unknown) => (s.data = data),
+            updateImage: (image: unknown) => (s.image = image),
+          }
+        : undefined;
+    },
+    addSource: (id: string, spec: { data?: unknown; url?: string }) => {
+      sources.set(id, { data: spec.data, image: spec.url });
+      calls.push(`source ${id}`);
+    },
+    removeSource: (id: string) => {
+      sources.delete(id);
+      calls.push(`unsource ${id}`);
+    },
+    getLayoutProperty: (id: string, p: string) => layout.get(`${id} ${p}`),
+    getCanvas: () => ({ style: { cursor: '' } }),
+    queryRenderedFeatures: () => [],
+    setLayoutProperty: (id: string, p: string, v: string) => {
+      layout.set(`${id} ${p}`, v);
+      calls.push(`layout ${id} ${p}=${v}`);
+    },
     addLayer: (spec: { id: string }, before?: string) => {
       layers.add(spec.id);
       calls.push(`add ${spec.id}${before ? ` before ${before}` : ''}`);
@@ -52,6 +110,7 @@ function fakeMap() {
     map: map as unknown as MapLibreMap,
     calls,
     layers,
+    sources,
     container,
     emit,
     handlers,
@@ -106,15 +165,7 @@ describe('StudyMapController camera', () => {
   });
 });
 
-describe('StudyMapController theme overrides', () => {
-  it('maps named layers to style layers and ignores missing ones', () => {
-    const { view, calls, layers } = setup();
-    view.setLayerVisible('relief', false);
-    layers.delete(LAYER_POINTS);
-    view.setLayerVisible('points', false);
-    expect(calls).toEqual([`layout ${LAYER_HILLSHADE} visibility=none`]);
-  });
-
+describe('StudyMapController presentation', () => {
   it('adds the glow under the points, once', () => {
     const { view, calls } = setup();
     view.showPointGlow();
@@ -131,30 +182,121 @@ describe('StudyMapController theme overrides', () => {
     expect(picked).toEqual(['b:ontario-1']);
     expect(handlers.get(`click:${LAYER_POINTS}`)).toHaveLength(1);
   });
+});
 
-  it('undoes every override in one call, whatever the previous theme did', () => {
-    const { view, layers, container, handlers, projection, calls } = setup();
-    // Earth Intelligence + Living Atlas style overrides:
-    view.setProjection('globe');
-    view.showPointGlow();
-    view.enablePointSelection(() => {});
-    view.setSelectedPoint('ontario-1');
-    view.setInteractive(false);
-    view.setLayerVisible('points', false);
-
-    view.resetThemeOverrides();
-
-    expect(projection()).toBe('mercator');
-    expect(layers.has(LAYER_POINT_GLOW)).toBe(false);
-    expect(layers.has(LAYER_POINT_SELECTED)).toBe(false);
-    expect(handlers.get(`click:${LAYER_POINTS}`)).toHaveLength(0);
-    expect(container.inert).toBe(false);
-    expect(calls.at(-1)).toBe(`layout ${LAYER_POINTS} visibility=visible`);
+describe('StudyMapController fires', () => {
+  it('draws markers once, hides the selected fire and reports picks without stacking handlers', () => {
+    const { view, calls, emit, handlers } = setup();
+    const picked: string[] = [];
+    const markers = [{ id: 'a', label: 'A · 1995', lonlat: [-75, 50] as [number, number] }];
+    view.showFireMarkers(markers, null, (id) => picked.push(`1:${id}`));
+    view.showFireMarkers(markers, 'a', (id) => picked.push(`2:${id}`));
+    expect(calls.filter((c) => c === `add ${LAYER_FIRE_MARKERS}`)).toHaveLength(1);
+    expect(calls).toContain(
+      `filter ${LAYER_FIRE_MARKER_LABELS} ${JSON.stringify(['!=', ['get', 'id'], 'a'])}`,
+    );
+    emit(`click:${LAYER_FIRE_MARKERS}`, { features: [{ properties: { id: 'a' } }] });
+    expect(picked).toEqual(['2:a']);
+    expect(handlers.get(`click:${LAYER_FIRE_MARKERS}`)).toHaveLength(1);
   });
 
-  it('is safe to reset when nothing was overridden', () => {
+  it('updates the grid image in place instead of adding a second source', () => {
+    const { view, calls, sources } = setup();
+    view.showFireGrid(SCENE, COLORS);
+    view.showFireGrid({ ...SCENE, gridImage: 'data:image/png;base64,other' }, COLORS);
+    expect(calls.filter((c) => c === `source ${SOURCE_FIRE_GRID}`)).toHaveLength(1);
+    expect(calls.filter((c) => c === `add ${LAYER_FIRE_GRID}`)).toHaveLength(1);
+    expect(sources.get(SOURCE_FIRE_GRID)?.image).toEqual({
+      url: 'data:image/png;base64,other',
+      coordinates: SCENE.corners,
+    });
+  });
+
+  it('adds optional layers only when their data exists and removes them when it goes', () => {
     const { view, layers } = setup();
-    expect(() => view.resetThemeOverrides()).not.toThrow();
-    expect(layers.has(LAYER_POINTS)).toBe(true);
+    view.showFireGrid({ ...SCENE, opticalImage: 'optical.png', zoneImage: 'zone.png' }, COLORS);
+    expect(layers.has(LAYER_FIRE_OPTICAL)).toBe(true);
+    expect(layers.has(LAYER_FIRE_ZONE)).toBe(true);
+    view.showFireGrid(SCENE, COLORS);
+    expect(layers.has(LAYER_FIRE_OPTICAL)).toBe(false);
+    expect(layers.has(LAYER_FIRE_ZONE)).toBe(false);
+  });
+
+  it('switches overlays by visibility and clears every fire layer', () => {
+    const { view, calls, layers } = setup();
+    view.showFireGrid(SCENE, COLORS);
+    view.setFireOverlays({ perimeter: false, zone: true, gedi: false, optical: true });
+    expect(calls).toContain(`layout ${LAYER_FIRE_PERIMETER} visibility=none`);
+    expect(calls).toContain(`layout ${LAYER_FIRE_GEDI} visibility=none`);
+    view.clearFireGrid();
+    expect([...layers].some((id) => id.startsWith('fires-'))).toBe(false);
+  });
+
+  it('flies to bounds with the shared padding and resolves when the camera stops', async () => {
+    const { view, calls } = setup();
+    await view.focusBounds(
+      [
+        [-121, 51],
+        [-120, 52],
+      ],
+      { durationMs: 2000 },
+    );
+    expect(calls[0]).toContain('"duration":2000');
+    expect(calls[0]).toContain('"bearing":0');
+  });
+
+  it('never passes an undefined curve to MapLibre (it would replace the default and yield NaN)', async () => {
+    const { view, map } = setup();
+    const options: Record<string, unknown>[] = [];
+    const fly = map.flyTo.bind(map);
+    map.flyTo = ((o: Record<string, unknown>) => {
+      options.push(o);
+      return fly(o as never);
+    }) as typeof map.flyTo;
+    await view.focusBounds([
+      [-121, 51],
+      [-120, 52],
+    ]);
+    await view.fitStudyArea();
+    await view.focusBounds(
+      [
+        [-121, 51],
+        [-120, 52],
+      ],
+      { curve: 1.6 },
+    );
+    expect(options.map((o) => 'curve' in o)).toEqual([false, false, true]);
+  });
+
+  it('outlines one inspected cell and clears it with the grid', () => {
+    const { view, layers, sources } = setup();
+    view.setFireHighlight(null, '#fff');
+    expect(layers.has('fires-highlight-line')).toBe(false);
+    const ring: [number, number][] = [
+      [-121, 52],
+      [-120, 52],
+      [-120, 51],
+      [-121, 52],
+    ];
+    view.setFireHighlight(ring, '#fff');
+    view.setFireHighlight(null, '#fff');
+    expect(layers.has('fires-highlight-line')).toBe(true);
+    expect(sources.get('fires-highlight')?.data).toMatchObject({ features: [] });
+    view.clearFireGrid();
+    expect(layers.has('fires-highlight-line')).toBe(false);
+  });
+
+  it('reports pointer moves, taps and exits, and unsubscribes', () => {
+    const { view, emit, handlers } = setup();
+    const seen: string[] = [];
+    const off = view.onFirePointer((e) => seen.push(`${e.type}:${e.lngLat?.join(',') ?? '-'}`));
+    const at = { lngLat: { lng: -120.5, lat: 51.5 }, point: { x: 1, y: 2 } };
+    emit('mousemove', at);
+    emit('click', at);
+    emit('mouseout');
+    emit('movestart');
+    expect(seen).toEqual(['move:-120.5,51.5', 'click:-120.5,51.5', 'leave:-', 'reset:-']);
+    off();
+    expect(handlers.get('mousemove')).toHaveLength(0);
   });
 });

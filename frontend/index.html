@@ -4,24 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>The Forest Remembers</title>
-    <script>
-      // Apply the saved theme before first paint (no flash). Must match src/theme/themes.ts;
-      // src/theme/themes.test.ts fails if these lists drift.
-      (function () {
-        var THEME_MODES = {
-          'earth-intelligence': 'dark',
-        };
-        var id = 'earth-intelligence';
-        try {
-          var saved = localStorage.getItem('fre-theme');
-          if (saved && THEME_MODES[saved]) id = saved;
-        } catch (e) {}
-        var root = document.documentElement;
-        root.setAttribute('data-theme', id);
-        root.classList.toggle('dark', THEME_MODES[id] === 'dark');
-        root.style.colorScheme = THEME_MODES[id];
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>

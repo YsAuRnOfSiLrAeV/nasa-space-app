@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { StudyMapController } from '@/components/map/StudyMapController';
-import { formatLonLat } from '@/components/map/graticule';
+import { formatLonLat } from '@/domain/globe/graticule';
 import { recoveryHref } from '@/app/route';
 import { measureInsets } from '@/components/map/measureInsets';
-import type { BurnGroup } from '@/components/study/burnGroups';
+import type { BurnGroup } from '@/domain/study/burnGroups';
 import styles from './EarthIntelligence.module.css';
 
 /** Call-outs drawn at once; the picked group always gets the first one. */

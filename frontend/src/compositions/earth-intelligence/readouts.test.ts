@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatAcquisitionDates, regionPlot, sharedMonth, wholeDegrees } from './readouts';
+import { formatAcquisitionDates, regionPlot } from './readouts';
 
 describe('acquisition dates readout', () => {
   it('compacts dates that share a month, in date order', () => {
@@ -13,11 +13,6 @@ describe('acquisition dates readout', () => {
   it('keeps unparseable values as given and leaves missing data missing', () => {
     expect(formatAcquisitionDates(['July 2026'])).toBe('July 2026');
     expect(formatAcquisitionDates([])).toBeNull();
-  });
-  it('names the shared month only when there is one', () => {
-    expect(sharedMonth(['2026-07-13', '2026-07-20'])).toBe('Jul 2026');
-    expect(sharedMonth(['2026-07-13', '2026-08-20'])).toBeNull();
-    expect(sharedMonth([])).toBeNull();
   });
 });
 
@@ -34,9 +29,5 @@ describe('region plot', () => {
     const se = at(-92.51, 49.56);
     expect(se.x).toBeCloseTo(300);
     expect(se.y).toBeCloseTo(height);
-  });
-  it('ticks whole degrees inside the box', () => {
-    expect(wholeDegrees(-95.5, -92.51)).toEqual([-95, -94, -93]);
-    expect(wholeDegrees(49.56, 51.5)).toEqual([50, 51]);
   });
 });

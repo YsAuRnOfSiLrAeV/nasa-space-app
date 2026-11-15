@@ -2,7 +2,7 @@ import { useRef, type RefObject } from 'react';
 import { fireHref } from '@/app/route';
 import { config } from '@/config';
 import type { DemoFire } from '@/data/fireSchema';
-import styles from '@/pages/fire/Fire.module.css';
+import styles from './PlanetHero.module.css';
 import cartography from './ScientificLanding.module.css';
 import { useCanvasRenderer } from '@/components/graphics/useCanvasRenderer';
 import { drawAtmosphere, drawGraticule, drawLimb } from './planet/drawBody';
@@ -10,7 +10,7 @@ import { drawLandmasses } from './planet/drawEarth';
 import { drawFootprints, drawObservationMark, type ScreenBox } from './planet/drawObservations';
 import { drawSatellites } from './planet/drawSatellites';
 import { drawStudyRegion } from './planet/drawStudyRegion';
-import type { LandRing } from './planet/landOutline';
+import type { LandRing } from '../../domain/globe/landOutline';
 import type { BBox } from './planet/region';
 import { followPointer, planetFrame, readColors, type Pointer } from './planet/frame';
 
@@ -111,8 +111,7 @@ export function PlanetHero({
         const position = f.project(...fire.center_lonlat);
         const marker = markers.current.get(fire.id);
         if (!marker) continue;
-        marker.style.left = `${position.x}px`;
-        marker.style.top = `${position.y}px`;
+        marker.style.transform = `translate3d(${position.x}px, ${position.y}px, 0) translate(-50%, -50%)`;
         marker.style.visibility = position.z > 0.05 ? 'visible' : 'hidden';
       }
     },

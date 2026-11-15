@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import type { LocatedPoint } from '@/data/schema';
 import { buildCloud, countAtOrAbove, sweepHeight } from '@/components/graphics/pointCloud';
 import { cssVar, useCanvasRenderer } from '@/components/graphics/useCanvasRenderer';
-import type { BurnGroup } from '@/components/study/burnGroups';
+import type { BurnGroup } from '@/domain/study/burnGroups';
 import primitives from '@/components/shell/primitives.module.css';
 import styles from './EarthIntelligence.module.css';
 

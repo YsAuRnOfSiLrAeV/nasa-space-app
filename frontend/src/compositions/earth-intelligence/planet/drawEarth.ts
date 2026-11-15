@@ -4,7 +4,7 @@
  */
 import { traceVisible } from '@/components/graphics/globeCanvas';
 import type { PlanetFrame } from './frame';
-import type { LandRing } from './landOutline';
+import type { LandRing } from '../../../domain/globe/landOutline';
 
 export function drawLandmasses(f: PlanetFrame, rings: LandRing[] | null) {
   if (!rings) return;

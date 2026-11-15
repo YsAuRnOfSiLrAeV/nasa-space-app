@@ -6,8 +6,8 @@ import {
   platformLabel,
   type GroupRecovery,
   type YearObservation,
-} from '@/components/study/recovery';
-import { MAX_YEAR } from '@/components/forest/growth';
+} from '@/domain/study/recovery';
+import { MAX_YEAR } from '@/domain/forest/growth';
 import ui from '@/components/shell/primitives.module.css';
 
 /**

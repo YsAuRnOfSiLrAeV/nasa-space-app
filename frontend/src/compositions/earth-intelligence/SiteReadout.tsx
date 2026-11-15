@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { recoveryHref } from '@/app/route';
-import { formatLonLat } from '@/components/map/graticule';
+import { formatLonLat } from '@/domain/globe/graticule';
 import type { LocatedPoint } from '@/data/schema';
 import { STAGE_LABELS } from '@/styles/tokens';
 import primitives from '@/components/shell/primitives.module.css';
