@@ -1,0 +1,17 @@
+{
+ "region": "mediterranean",
+ "valid": false,
+ "n_fires": 143,
+ "age_range": [
+  3.0,
+  19.96
+ ],
+ "spearman_age_recovery": 0.2,
+ "lofo_rmse": {
+  "const": 0.218,
+  "age_curve": 0.219,
+  "curve+feats": 0.219,
+  "ridge_linear": 0.216
+ },
+ "reason": "Для 143 пожеж (greece, turkey, spain) віком 3-20 років відновлення (висота / висота сусіднього лісу) не залежить від віку (Спірмен 0.20), а крива гірша за константу при leave-one-fire-out."
+}

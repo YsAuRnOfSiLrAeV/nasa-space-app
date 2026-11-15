@@ -12,7 +12,6 @@ The same kind of reduction gives the fire totals written to result.json:
     stage_share       model_result.stage_share, from the state model's stage map
     coverage          satellite_images.nisar.fire_covered
     optics_recovery   comparison.optics
-    warnings          warnings
 
 All functions take maps on the fire grid and the zones map (ZONE_BURN,
 ZONE_REFERENCE, NaN for excluded cells).
@@ -95,11 +94,3 @@ def optics_recovery(ndvi: np.ndarray, zones: np.ndarray) -> float | None:
     if reference_median <= 0:
         return None
     return round(float(np.median(burn)) / reference_median, 4)
-
-
-def warnings(covariate_values: Mapping[str, float | None], nisar_coverage: float) -> list[str]:
-    """Warning codes for result.json: covariates replaced by the Canada mean, low NISAR coverage."""
-    codes = [f"DEFAULT_{name.upper()}" for name, value in covariate_values.items() if value is None]
-    if nisar_coverage < MIN_NISAR_COVERAGE:
-        codes.append("LOW_NISAR_COVERAGE")
-    return codes

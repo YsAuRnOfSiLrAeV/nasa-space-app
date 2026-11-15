@@ -1,0 +1,723 @@
+<title>Ліс після пожежі</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: a full-bleed night globe; one control strip at the bottom, one fire list at the right, one title at top-left.
+   Single dark look by choice: this is a night-side Earth scene, so colors are fixed tokens, not a light/dark pair. */
+:root{
+  --bg:#060b12;            /* deep navy, slightly green-biased */
+  --panel:rgba(9,18,26,.78);
+  --fg:#e6eef0;
+  --muted:#8ea4ad;
+  --line:rgba(255,255,255,.13);
+  --leaf:#5fd08a;          /* grown forest */
+  --ember:#e5573b;         /* bare burn */
+  --pin:#f4a63c;           /* fire markers */
+  --gedi:#35e8ff;          /* GEDI laser measurements */
+  --display:"Space Grotesk",system-ui,sans-serif;
+  --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.45;overflow:hidden}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block}
+.pad-l{left:max(16px,env(safe-area-inset-left,0px))}
+.pad-r{right:max(16px,env(safe-area-inset-right,0px))}
+
+#top{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));max-width:min(420px,calc(100vw - 32px - 64px));pointer-events:none}
+#top h1{font:700 22px/1.15 var(--display);margin:0 0 4px;letter-spacing:-.01em;text-wrap:balance}
+#top .sub{margin:0;color:var(--muted);font-size:13px;max-width:44ch}
+#top details{pointer-events:auto;margin-top:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 12px;backdrop-filter:blur(8px)}
+#top summary{cursor:pointer;font-weight:600;font-size:13px}
+#top details p{margin:8px 0 0;font-size:12.5px;color:var(--fg);opacity:.9}
+#top details ul{margin:8px 0 0;padding-left:18px;font-size:12.5px}
+#top details li{margin:4px 0}
+#top .warn{color:var(--muted)}
+
+#lang{position:fixed;top:calc(14px + env(safe-area-inset-top,0px))}
+button{font:inherit;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 12px;cursor:pointer;backdrop-filter:blur(8px)}
+button:hover{border-color:var(--leaf)}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--gedi);outline-offset:2px}
+
+#card{position:fixed;top:calc(64px + env(safe-area-inset-top,0px));width:272px;display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 64px - 190px);overflow-y:auto;padding-right:2px}
+.row{display:grid;grid-template-columns:1fr auto;gap:2px 10px;text-align:left;padding:9px 12px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+.row[aria-pressed="true"]{border-color:var(--pin);box-shadow:0 0 0 1px var(--pin) inset}
+.row .nm{font-weight:600;font-size:13px}
+.row .pc{font:600 15px var(--display);font-variant-numeric:tabular-nums}
+.row .bar{grid-column:1/-1;height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden;margin:3px 0 2px}
+.row .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ember),var(--pin) 55%,var(--leaf))}
+.row .sub{grid-column:1/-1;font-size:11.5px;color:var(--muted)}
+
+#ctl{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px 14px;backdrop-filter:blur(10px)}
+#ctl .yr{display:flex;flex:1 1 320px;align-items:center;gap:12px;min-width:0}
+#ctl input[type=range]{flex:1;min-width:120px;accent-color:var(--leaf)}
+#year{font:700 26px var(--display);font-variant-numeric:tabular-nums;min-width:3.2ch}
+#ctl label{display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--muted);cursor:pointer}
+#phase{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(112px + env(safe-area-inset-bottom,0px));font-size:12.5px;
+  padding:5px 14px;border-radius:999px;background:var(--panel);border:1px solid var(--line);white-space:nowrap;pointer-events:none}
+
+#legend{position:fixed;bottom:calc(112px + env(safe-area-inset-bottom,0px));max-width:300px;padding:8px 12px;font-size:11.5px;background:var(--panel);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(8px);pointer-events:none}
+#poly{position:fixed;z-index:20;top:calc(176px + env(safe-area-inset-top,0px));width:min(340px,calc(100vw - 32px));max-height:calc(100vh - 176px - 210px);min-height:120px;overflow:auto;padding:10px 12px;font-size:12.5px;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(10px)}
+#poly .ph{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+#poly .ph button{padding:3px 9px;font-size:12px}
+#poly h4{margin:8px 0 4px;font:600 14px var(--display)}
+#poly p{margin:6px 0}#poly .note{color:var(--muted);font-size:11.5px}#poly .warn{color:#f4a63c}#poly .bad{color:#f4a63c;font-weight:600}
+#poly .big{font-size:13px}#poly .f2{display:flex;gap:8px;align-items:center;margin:4px 0;font-size:12px}#poly .f2 input[type=range]{flex:1}#poly .f2 input[type=number]{width:76px;background:transparent;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:2px 4px}
+#poly .lg i{display:inline-block;width:10px;height:3px;margin-right:4px;vertical-align:middle}
+#legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+#legend div{margin:2px 0}
+#legend .mut{color:var(--muted)}
+#scope{font-size:12px;color:var(--muted);flex:0 1 auto;min-width:0}
+#mapkit{position:fixed;bottom:calc(112px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:12px;padding:8px 12px;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(8px);pointer-events:none;color:var(--fg)}
+#scalewrap{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted)}
+#scalebar{height:6px;border:2px solid var(--fg);border-top:none;box-sizing:border-box}
+#coords{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+#labels{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;transform:translate(-50%,-135%);font:600 12px var(--body);padding:3px 8px;border-radius:999px;background:var(--panel);
+  border:1px solid var(--pin);white-space:nowrap;pointer-events:auto;cursor:pointer}
+
+@media (max-width:760px){
+  #card{top:auto;bottom:calc(150px + env(safe-area-inset-bottom,0px));left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));
+    width:auto;flex-direction:row;overflow-x:auto;overflow-y:visible;max-height:none;padding-bottom:2px}
+  .row{flex:0 0 200px}
+  #phase{bottom:calc(262px + env(safe-area-inset-bottom,0px))}
+  #mapkit{bottom:auto;top:calc(64px + env(safe-area-inset-top,0px));left:auto;right:max(16px,env(safe-area-inset-right,0px))}
+  #year{font-size:22px}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+<div id="stage" role="img" aria-label="3D globe with four Canadian wildfire scars"></div>
+<div id="labels"></div>
+
+<header id="top" class="pad-l">
+  <h1 data-i="title"></h1>
+  <p class="sub" data-i="sub"></p>
+  <details>
+    <summary data-i="how"></summary>
+    <p data-i="how0"></p>
+    <ul><li data-i="how1"></li><li data-i="how2"></li><li data-i="how3"></li></ul>
+    <p class="warn" data-i="how4"></p>
+  </details>
+</header>
+<button id="lang" class="pad-r" type="button">EN</button>
+<aside id="card" class="pad-r" aria-label="Fires"></aside>
+<div id="legend" class="pad-l" hidden></div>
+<aside id="poly" class="pad-l" hidden aria-live="polite"></aside>
+<div id="phase"></div>
+<div id="mapkit" class="pad-l" hidden>
+  <svg id="needle" width="46" height="46" viewBox="-23 -23 46 46" aria-label="North"><circle r="21" fill="none" stroke="currentColor" stroke-opacity=".35"/><path d="M0-15 L5 5 L0 2 L-5 5Z" fill="#f4a63c"/><text y="-17" x="0" font-size="8" text-anchor="middle" fill="currentColor" font-weight="700" dominant-baseline="auto">N</text></svg>
+  <div id="scalewrap"><div id="scalebar"></div><span id="scaletxt"></span></div>
+  <div id="coords"></div>
+</div>
+<footer id="ctl" class="pad-l pad-r">
+  <button id="play" type="button"></button>
+  <div class="yr">
+    <output id="year" for="slider"></output>
+    <span id="scope"></span>
+    <input id="slider" type="range" min="1986" max="2100" step="0.25" value="2026" aria-label="Year">
+    <button id="today" type="button"></button>
+  </div>
+  <label><input id="optics" type="checkbox"><span data-i="optics"></span></label>
+  <label><input id="gedi" type="checkbox" checked><span data-i="gedi"></span></label>
+  <label id="terrl" hidden><input id="terr" type="checkbox" checked><span data-i="terr"></span></label>
+  <label id="ptsl" hidden><input id="ptscb" type="checkbox" checked><span data-i="ptsl"></span></label>
+  <button id="draw" type="button" aria-pressed="false" hidden></button>
+  <button id="africa" type="button" hidden></button>
+  <button id="world" type="button"></button>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const WORLD = __WORLD__;
+const D = __FIRES__;
+const TERR = __TERRITORY__;   // GeoJSON регіонів (або null)
+const PTS = __POINTS__;       // {note_uk, note_en, pts: [[lon, lat, p], ...]} (або null)
+const F = D.fires, A = D.meta.A, NOW = D.meta.now, T80 = D.meta.t80;
+
+/* ---------------- text (uk / en) ---------------- */
+const TXT = {
+  uk: {
+    title: 'Ліс після пожежі',
+    sub: 'Як відростає ліс на згарищах Канади: радар NISAR, Sentinel і лазер GEDI. Натисніть мітку пожежі або обведіть її полігоном, щоб побачити ріст.',
+    how: 'Як це працює',
+    how0: 'Модель відновлення: крива за віком пожежі, навчена на 49 пожежах Канади. За стабільних умов типова пожежа досягає 80% висоти лісу, що був до неї, приблизно за ' + Math.round(T80) + ' років.',
+    how1: 'Стан кожної ділянки 360 м сьогодні береться з радара L-діапазону NISAR разом із Sentinel-1/2 (бібліотека forestrecovery).',
+    how2: 'Далі ділянка росте за кривою моделі до 100% висоти сусіднього лісу (її виміряв GEDI). Натисніть на пожежу, щоб відкрити її на карті: повзунок року тоді рухає лише її. Без вибору рухаються всі.',
+    how3: 'Блакитні стовпчики: реальні виміри висоти GEDI. Галочка «оптика» показує, як той самий ліс бачить NDVI.',
+    how4: 'Це ілюстрація за стабільних умов: без нових пожеж, зміни клімату й випадковості. Площа пожеж показана в реальному масштабі (клітинка 360 м), висоту дерев перебільшено. Висота дерев це відсоток від висоти сусіднього лісу, а не метри; блакитні стовпчики це виміряна висота GEDI в метрах. Роки до пожежі показують припущення: ліс такий, як сусідній, і він сірий. Точки GEDI були в навчанні. Для віку пожежі поза 9–35 роками прогноз є екстраполяцією.',
+    play: '▶ Рости', pause: '❚❚ Пауза', today: 'Сьогодні', world: 'Весь світ',
+    optics: 'Як бачить оптика (NDVI)', gedi: 'Виміри GEDI', terr: 'Де працює модель',  ptsl: 'Прогноз савани (точки)', africa: 'Савана ›', lgB: 'світліше: поширено на той самий тип лісу, напряму не перевірено', lgP: 'колір точки: ймовірність лісу >5 м (світла = низька, темна = висока)',
+    ha: 'га', rec: 'відновлення', share: '≥ 80% площі', eta: '80% ≈', before: 'до пожежі', burn: 'рік пожежі',
+    scopeAll: 'Рухаються всі пожежі', scopeOne: 'Рухається лише: ', staticNote: 'стан на 2026; прогнозу росту в часі для цього регіону немає', staticScope: 'Лише стан зараз (без росту): ',
+    phaseBefore: 'Ліс до пожежі', phaseFire: 'Пожежа', phaseGrow: 'Відростання', phaseNow: 'Сьогодні'
+  },
+  en: {
+    title: 'Forest After Fire',
+    sub: 'How forest grows back on Canadian burn scars: NISAR radar, Sentinel and GEDI lidar. Click a fire marker or draw a polygon around it to see it grow.',
+    how: 'How it works',
+    how0: 'Recovery model: a curve by fire age fitted on 49 Canadian fires. Under steady conditions a typical fire reaches 80% of its pre-fire forest height in about ' + Math.round(T80) + ' years.',
+    how1: 'Today’s state of each 360 m cell comes from NISAR L-band radar plus Sentinel-1/2 (the forestrecovery library).',
+    how2: 'From there each cell grows along the model curve to 100% of the neighbouring forest height (measured by GEDI). Click a fire to open it on the map: the year slider then moves only that fire. With nothing selected all of them move.',
+    how3: 'Cyan posts are real GEDI height measurements. The optics switch shows how the same forest looks through NDVI.',
+    how4: 'An illustration under steady conditions: no new fires, no climate change, no randomness. Fire areas are drawn at true scale (360 m cells); tree height is exaggerated. Tree height is a share of the neighbouring forest height, not metres; cyan posts are GEDI heights measured in metres. Years before the fire show an assumption: forest equal to its neighbour. GEDI points were part of training. For fire ages outside 9–35 years the forecast is an extrapolation.',
+    play: '▶ Grow', pause: '❚❚ Pause', today: 'Today', world: 'Whole world',
+    optics: 'As optics sees it (NDVI)', gedi: 'GEDI measurements', terr: 'Where the model works', ptsl: 'Savanna prediction (points)', africa: 'Savanna ›', lgB: 'lighter: extended to the same forest type, not directly validated', lgP: 'point colour: probability of forest >5 m (light = low, dark = high)',
+    ha: 'ha', rec: 'recovered', share: '≥ 80% of area', eta: '80% ≈', before: 'pre-fire', burn: 'fire year',
+    scopeAll: 'All fires move together', scopeOne: 'Only this fire moves: ', staticNote: 'state in 2026; no growth forecast in time for this region', staticScope: 'Current state only (no growth): ',
+    phaseBefore: 'Forest before the fire', phaseFire: 'Fire', phaseGrow: 'Regrowth', phaseNow: 'Today'
+  }
+};
+let lang = (navigator.language || 'uk').toLowerCase().startsWith('en') ? 'en' : 'uk';
+try { const s = localStorage.getItem('lang'); if (s === 'uk' || s === 'en') lang = s; } catch (e) {}
+const t = k => TXT[lang][k];
+
+/* ---------------- scene ---------------- */
+const R = 100, S = 0.082, HS = 0.5, TOP = 15;
+const stage = document.getElementById('stage');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.5, 9000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+renderer.setSize(innerWidth, innerHeight);
+stage.appendChild(renderer.domElement);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.minDistance = 130; controls.maxDistance = 520;
+controls.autoRotate = true; controls.autoRotateSpeed = 0.35;
+renderer.domElement.addEventListener('pointerdown', () => { controls.autoRotate = false; });
+
+scene.add(camera);
+const world = new THREE.Group(); scene.add(world);   // globe + fires; moved and scaled to open a fire like a map
+scene.add(new THREE.AmbientLight(0x9fb4c4, 0.55));
+const headlight = new THREE.DirectionalLight(0xfff3dc, 0.95);
+headlight.position.set(0.6, 0.8, 1); camera.add(headlight);
+
+const ll = (lon, lat, r) => {
+  const a = lon * Math.PI / 180, b = lat * Math.PI / 180;
+  return new THREE.Vector3(r * Math.cos(b) * Math.cos(a), r * Math.sin(b), -r * Math.cos(b) * Math.sin(a));
+};
+
+/* stars */
+{
+  const n = 1800, p = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const v = new THREE.Vector3(Math.random() - .5, Math.random() - .5, Math.random() - .5).normalize().multiplyScalar(900 + Math.random() * 100);
+    p.set([v.x, v.y, v.z], i * 3);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(p, 3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xaec4d4, size: 1.4, sizeAttenuation: false, transparent: true, opacity: .7 })));
+}
+
+/* globe texture drawn from country outlines */
+function earthTexture() {
+  const W = 4096, H = 2048, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const c = cv.getContext('2d');
+  const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#0d2236'); g.addColorStop(.5, '#0a1b2d'); g.addColorStop(1, '#0d2236');
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.strokeStyle = 'rgba(255,255,255,.05)'; c.lineWidth = 1;
+  for (let lo = -180; lo <= 180; lo += 30) { const x = (lo + 180) / 360 * W; c.beginPath(); c.moveTo(x, 0); c.lineTo(x, H); c.stroke(); }
+  for (let la = -90; la <= 90; la += 30) { const y = (90 - la) / 180 * H; c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
+  c.fillStyle = '#1c3a2d'; c.strokeStyle = '#3b6b52'; c.lineWidth = 1.4; c.lineJoin = 'round';
+  WORLD.forEach(ring => {
+    c.beginPath();
+    ring.forEach(([lo, la], i) => { const x = (lo + 180) / 360 * W, y = (90 - la) / 180 * H; i ? c.lineTo(x, y) : c.moveTo(x, y); });
+    c.closePath(); c.fill(); c.stroke();
+  });
+  if (TERR && TERR.features && window.__showTerr !== false) {
+    TERR.features.forEach(f => {
+      const col = f.properties.color || '#999', tier = f.properties.tier || 1;
+      c.fillStyle = col; c.globalAlpha = tier === 1 ? 0.62 : 0.28;
+      const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+      polys.forEach(poly => {
+        c.beginPath();
+        poly.forEach(ring => ring.forEach(([lo, la], i) => { const x = (lo + 180) / 360 * W, y = (90 - la) / 180 * H; i ? c.lineTo(x, y) : c.moveTo(x, y); }));
+        c.fill('evenodd');
+      });
+    });
+    c.globalAlpha = 1;
+  }
+  const tex = new THREE.CanvasTexture(cv); tex.anisotropy = 8; return tex;
+}
+const globeMat = new THREE.MeshLambertMaterial({ map: earthTexture() });
+const globe = new THREE.Mesh(new THREE.SphereGeometry(R, 96, 64), globeMat);
+world.add(globe);
+world.add(new THREE.Mesh(new THREE.SphereGeometry(R * 1.05, 64, 48),
+  new THREE.MeshBasicMaterial({ color: 0x4aa8ff, transparent: true, opacity: .11, side: THREE.BackSide, blending: THREE.AdditiveBlending, depthWrite: false })));
+
+/* ---------------- fire patches ---------------- */
+const coneGeo = new THREE.ConeGeometry(.5, 1, 7); coneGeo.translate(0, .5, 0);
+const cPre = new THREE.Color(0.62, 0.66, 0.6);
+const tmpM = new THREE.Matrix4(), tmpP = new THREE.Vector3(), tmpS = new THREE.Vector3(), tmpQ = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0);
+const cA = new THREE.Color(), cB = new THREE.Color(), cC = new THREE.Color();
+const ramp = p => p < .5 ? cA.setRGB(.84, .19, .15).lerp(cB.setRGB(.99, .88, .55), p * 2) : cA.setRGB(.99, .88, .55).lerp(cB.setRGB(.10, .60, .33), (p - .5) * 2);
+
+const pins = [];
+F.forEach((f, idx) => {
+  const n = f.c.length / 8;
+  f.n = n;
+  f.cell = new Array(n);
+  f.tau = new Float32Array(n); f.jit = new Float32Array(n * 2); f.burnIdx = [];
+  for (let k = 0; k < n; k++) {
+    const o = k * 8, i = f.c[o], j = f.c[o + 1], burn = f.c[o + 2], r0 = Math.min(Math.max(f.c[o + 3] / 100, .02), .97);
+    f.tau[k] = Math.min(Math.max(-f.ageNow / Math.log(1 - r0 / A), 1), 200);
+    const a = Math.sin(i * 127.1 + j * 311.7) * 43758.5453, b = Math.sin(i * 269.5 + j * 183.3) * 24634.6345;
+    f.jit[2 * k] = a - Math.floor(a); f.jit[2 * k + 1] = b - Math.floor(b);
+    if (burn) f.burnIdx.push(k);
+  }
+  const p = ll(f.lon, f.lat, R), nrm = p.clone().normalize();
+  const lo = f.lon * Math.PI / 180, la = f.lat * Math.PI / 180;
+  const east = new THREE.Vector3(-Math.sin(lo), 0, -Math.cos(lo));
+  const north = new THREE.Vector3(-Math.sin(la) * Math.cos(lo), Math.cos(la), Math.sin(la) * Math.sin(lo));
+  const south = north.clone().negate();
+  const basis = new THREE.Matrix4().makeBasis(east, nrm, south);
+  f.S = (f.cellKm || 0.36) / (6371 / R);   // реальний масштаб: одна клітинка = її справжній розмір на кулі радіуса R (R = 6371 км). Жодного збільшення
+  const g = new THREE.Group(); g.position.copy(p).addScaledVector(nrm, Math.min(0.15, 40 * f.S * Math.max(f.nc, f.nr) / 150));   // підйом над землею: після приближення (k) не більше ~40 одиниць, інакше мала пожежа зависає над кадром g.quaternion.setFromRotationMatrix(basis);
+  const inner = new THREE.Group(); inner.rotation.y = f.rot; inner.scale.setScalar(f.S); g.add(inner); f.inner = inner;
+  const body = new THREE.Group(); body.position.set(-f.nc / 2, 0, -f.nr / 2); inner.add(body);
+  f.mesh = new THREE.InstancedMesh(coneGeo, new THREE.MeshLambertMaterial({ color: 0xffffff }), n);
+  body.add(f.mesh);
+  f.gedi3 = new THREE.Group();
+  f.gedi.forEach(([x, y, h]) => {
+    const hh = (Math.max(h, .5) * HS + 4) ;
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(.55, .55, hh, 10), new THREE.MeshBasicMaterial({ color: 0x35e8ff }));
+    post.position.set(x, hh / 2, y); f.gedi3.add(post);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(1.1, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    cap.position.set(x, hh + .5, y); f.gedi3.add(cap);
+  });
+  body.add(f.gedi3);
+  world.add(g); f.g = g; g.visible = false;   // дерева видно лише коли пожежу вибрано кліком або обведено полігоном
+  f.qB = g.quaternion.clone(); f.k = 150 / (f.S * Math.max(f.nc, f.nr, 70));   // zoom so the fire is ~150 units wide
+  f.pos = p; f.nrm = nrm; f.south = south;
+  // marker
+  const pin = new THREE.Mesh(new THREE.SphereGeometry(1.1, 16, 12), new THREE.MeshBasicMaterial({ color: 0xf4a63c }));
+  pin.position.copy(p).addScaledVector(nrm, 7); pin.userData.idx = idx; world.add(pin);
+  const stick = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p.clone().addScaledVector(nrm, .5), pin.position]),
+                               new THREE.LineBasicMaterial({ color: 0xf4a63c }));
+  world.add(stick);
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(5, 8, 6), new THREE.MeshBasicMaterial({ visible: false }));
+  hit.position.copy(pin.position); hit.userData.idx = idx; world.add(hit);
+  f.pin = pin; f.hit = hit; f.stick = stick;
+  const lbl = document.createElement('div'); lbl.className = 'lbl'; lbl.addEventListener('click', () => select(idx));
+  document.getElementById('labels').appendChild(lbl); f.lbl = lbl;
+  pins.push(hit);
+});
+
+/* ---------------- time -> growth ---------------- */
+let year = NOW, opt = 0, optT = 0, dirty = true, playing = false, selected = -1;
+// with a fire selected only that fire follows the slider; the others stay at today. Nothing selected: all move together.
+const yearFor = i => (selected < 0 || selected === i) ? year : NOW;
+const polyOn = new Set();   // пожежі, що потрапили в намальований полігон
+function applyFires() {
+  F.forEach((f, i) => { f.g.visible = selected >= 0 ? i === selected : polyOn.has(i); });
+  F.forEach(f => { f.pin.visible = f.stick.visible = !f.g.visible; });   // мітку ховаємо, коли сцену видно
+  dirty = true;
+}
+const showGedi = () => document.getElementById('gedi').checked;
+
+function updateFire(f, yr) {
+  if (f._y === yr && f._o === opt) return;
+  f._y = yr; f._o = opt;
+  const age = yr - f.fireYear, before = age < 0;
+  let sum = 0, ok = 0;
+  const c = f.c;
+  for (let k = 0; k < f.n; k++) {
+    const o = k * 8, burn = c[o + 2];
+    const r = f.static ? (burn ? Math.min(Math.max(c[o + 3] / 100, .02), .97) : 1) : ((!burn || before) ? 1 : A * (1 - Math.exp(-age / f.tau[k])));   // static: стан зараз, без росту в часі
+    if (burn) { sum += r; if (r >= .8) ok++; }
+    const jt0 = f.jit[2 * k], jt1 = f.jit[2 * k + 1];
+    const hOpt = TOP * Math.min(Math.max((c[o + 4] / 100 - .2) / .6, 0), 1);
+    const hRad = TOP * r;
+    const h = Math.max((hRad + (hOpt - hRad) * opt) * HS * (.85 + .3 * jt0), .12);
+    const s = (.7 + .3 * Math.min(h / (TOP * HS), 1)) * (.9 + .2 * jt1);
+    tmpQ.setFromAxisAngle(Y, jt1 * 6.28);
+    tmpM.compose(tmpP.set(c[o + 1] + .5 + (jt0 - .5) * .5, 0, c[o] + .5 + (jt1 - .5) * .5), tmpQ, tmpS.set(s, h, s));
+    f.mesh.setMatrixAt(k, tmpM);
+    ramp(Math.min(r / .8, 1));
+    cC.setRGB(c[o + 5] / 100, c[o + 6] / 100, c[o + 7] / 100).lerp(cA.clone(), 1 - opt);
+    if (before && burn && !f.static) cC.lerp(cPre, 1 - opt);   // до пожежі: припущення, нейтральний сірий
+    f.mesh.setColorAt(k, cC);
+  }
+  f.mesh.instanceMatrix.needsUpdate = true; f.mesh.instanceColor.needsUpdate = true;
+  f.mean = f.burnIdx.length ? sum / f.burnIdx.length : 1;
+  f.share = f.burnIdx.length ? ok / f.burnIdx.length : 1;
+  f.age = age;
+}
+
+/* ---------------- UI ---------------- */
+const $ = id => document.getElementById(id);
+const card = $('card'), rows = [];
+F.forEach((f, idx) => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'row'; b.setAttribute('aria-pressed', 'false');
+  b.innerHTML = '<span class="nm"></span><span class="pc"></span><span class="bar"><i></i></span><span class="sub"></span>';
+  b.addEventListener('click', () => select(idx));
+  card.appendChild(b); rows.push(b);
+});
+const fmt = n => n.toLocaleString(lang === 'uk' ? 'uk-UA' : 'en-US').replace(/ /g, ' ');
+
+function render() {
+  F.forEach((f, i) => {
+    const b = rows[i], pc = Math.round(f.mean * 100);
+    b.querySelector('.nm').textContent = f[lang] + ' · ' + f.fireYear;
+    const pre = f.age < 0 && !f.static;   // для static рік не рухає сцену
+    b.querySelector('.pc').textContent = pre ? '—' : pc + '%';
+    b.querySelector('.bar i').style.width = (pre ? 100 : pc) + '%';
+    b.querySelector('.sub').textContent = f.static ? t('share') + ': ' + Math.round(f.share * 100) + '% · ' + t('staticNote') : pre
+      ? t('before') + ' · ' + fmt(f.ha) + ' ' + t('ha')
+      : t('share') + ': ' + Math.round(f.share * 100) + '% · ' + t('eta') + ' ' + Math.round(f.fireYear + T80);
+    f.lbl.textContent = '№' + String(f.id).split('_').pop().replace(/^-/, '') + ' · ' + f.fireYear;
+  });
+  $('year').textContent = Math.round(year);
+  $('scope').textContent = selected >= 0 ? (F[selected].static ? t('staticScope') : t('scopeOne')) + F[selected][lang] + ' ' + F[selected].fireYear : t('scopeAll');
+  const sel = selected >= 0 ? F[selected] : null, ref = sel || F[0];
+  let ph;
+  if (sel && sel.static) ph = t('staticNote');
+  else if (sel) { const a = year - sel.fireYear; ph = a < 0 ? t('phaseBefore') : a < 1 ? t('phaseFire') : (Math.abs(year - NOW) < .5 ? t('phaseNow') + ' · ' : '') + t('phaseGrow') + ' · ' + Math.round(a) + (lang === 'uk' ? ' р.' : ' y'); }
+  else ph = Math.abs(year - NOW) < .5 ? t('phaseNow') : '';
+  $('phase').textContent = ph; $('phase').hidden = !ph;
+}
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i]').forEach(e => { e.textContent = t(e.dataset.i); });
+  $('play').textContent = playing ? t('pause') : t('play');
+  $('today').textContent = t('today'); $('world').textContent = t('world'); $('africa').textContent = t('africa'); refreshLegend(); renderPoly();
+  $('lang').textContent = lang === 'uk' ? 'EN' : 'UK';
+  document.title = t('title');
+  render();
+}
+
+/* ---------------- regions legend, savanna prediction points ---------------- */
+let ptsObj = null;
+if (PTS && PTS.pts && PTS.pts.length) {
+  const n = PTS.pts.length, pos = new Float32Array(n * 3), col = new Float32Array(n * 3), lo = new THREE.Color('#f3e6a0'), hi = new THREE.Color('#1c2f7a'), cc = new THREE.Color();
+  PTS.pts.forEach(([lon, lat, p], i) => {
+    const v = ll(lon, lat, R * 1.004); pos.set([v.x, v.y, v.z], i * 3);
+    cc.copy(lo).lerp(hi, Math.max(0, Math.min(1, p))); col.set([cc.r, cc.g, cc.b], i * 3);
+  });
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  ptsObj = new THREE.Points(g, new THREE.PointsMaterial({ size: 3.2, sizeAttenuation: false, vertexColors: true }));
+  world.add(ptsObj);
+}
+function refreshLegend() {
+  const el = document.getElementById('legend');
+  if (!document.getElementById('poly').hidden) { el.hidden = true; return; }
+  if (!TERR && !ptsObj) { el.hidden = true; return; }
+  const seen = {}; let html = '';
+  if (TERR) TERR.features.forEach(f => { const r = f.properties.region; if (!seen[r]) { seen[r] = 1; html += '<div><i style="background:' + f.properties.color + '"></i>' + (lang === 'uk' ? f.properties.name : f.properties.name_en) + '</div>'; } });
+  if (TERR && TERR.features.some(f => f.properties.tier === 2)) html += '<div class="mut">' + t('lgB') + '</div>';
+  if (ptsObj) html += '<div class="mut">' + (lang === 'uk' ? PTS.note_uk : PTS.note_en) + '<br>' + t('lgP') + '</div>';
+  el.innerHTML = html; el.hidden = false;
+}
+if (TERR) document.getElementById('terrl').hidden = false;
+if (ptsObj) { document.getElementById('ptsl').hidden = false; document.getElementById('africa').hidden = false; }
+document.getElementById('terr').addEventListener('change', e => { window.__showTerr = e.target.checked; globeMat.map.dispose(); globeMat.map = earthTexture(); globeMat.needsUpdate = true; dirty = true; render(); });
+document.getElementById('ptscb').addEventListener('change', e => { if (ptsObj) ptsObj.visible = e.target.checked; dirty = true; render(); });
+
+/* ---------------- polygon drawing, territory check, forecast / scenario ---------------- */
+const ZONES = __ZONES__;   // {growth: GeoJSON Канади, ukraine: GeoJSON України} або null
+const SCEN = __SCEN__;     // {ua, med}: параметри сценаріїв сили пожежі, або null
+const P2 = {
+  uk: {
+    draw: 'Намалювати полігон', drawing: 'Малюю: клацайте по глобусу', done: 'Готово', clear: 'Очистити', go: 'Перейти:',
+    hint: 'Наблизьте глобус і клацайте, щоб поставити вершини (щонайменше 3), потім «Готово».', area: 'Площа ≈', km2: 'км²', pts: 'вершин',
+    inside: 'Усередині регіону «{r}»: {p}% полігона. Оцінка стану можлива.', outside: 'Прогноз на цю дату не можемо. Переоберіть територію так, щоб щонайменше 80% полігона лежало всередині підсвіченого регіону (там, де ми перевіряли модель). Поки показуємо лише знімки на зараз.',
+    best: 'найбільша частка в регіоні', rel: 'Надійність', relv: { good: 'добра (AUC 0.70+)', moderate: 'помірна (AUC 0.62-0.70)', low: 'низька' }, tierB: 'Більша частина полігона в рівні B: модель лише поширена на той самий тип лісу, напряму там не перевірена.',
+    gTitle: 'Прогноз росту (Канада)', gNote: 'Типова траєкторія за віком пожежі, НЕ вимір для цієї ділянки. Крива підтверджена для віку пожежі 9-35 років, далі екстраполяція.', fy: 'Рік пожежі', hz: 'Через', yrs: 'років', today: 'Сьогодні', then: 'Буде', y80: '80% висоти сусіднього лісу ≈', extr: 'Екстраполяція: за межами перевіреного віку.',
+    sTitle: 'Сценарій сили пожежі', sNote: 'Це рівень висоти, а не прогноз за роками: вік пожежі висоту тут не пояснює. Зв’язок кореляційний.', sev: 'Сила пожежі (частка території зі втратою крон)', lvl: 'Рівень висоти лісу', grn: 'Зелень (оптика)', gap: 'Оптика завищує на', ofnb: 'висоти сусіднього лісу', years: 'роки після пожежі', n: 'Дані:',
+    noC: 'Для цієї території прогнозу за роками немає: крива росту підтверджена лише для Канади, а сценарій сили пожежі лише для України й Середземномор’я. Стан лісу оцінити можна.',
+    noS: 'Для савани прогнозу немає: за нашими даними крони під час пожеж здебільшого не гинуть (98% точок без втрати крон), зелень не падає, а висота від віку не залежить. Відновлювати нічого.',
+    ua: 'Україна', ca: 'Канада', me: 'Середземномор’я', sv: 'Савана'
+  },
+  en: {
+    draw: 'Draw a polygon', drawing: 'Drawing: click the globe', done: 'Done', clear: 'Clear', go: 'Go to:',
+    hint: 'Zoom in and click to place vertices (at least 3), then press “Done”.', area: 'Area ≈', km2: 'km²', pts: 'vertices',
+    inside: 'Inside the “{r}” region: {p}% of the polygon. The state can be assessed.', outside: 'We cannot give a forecast for this date. Choose an area so that at least 80% of the polygon lies inside a highlighted region (where the model was validated). For now we only show current imagery.',
+    best: 'largest share in region', rel: 'Reliability', relv: { good: 'good (AUC 0.70+)', moderate: 'moderate (AUC 0.62-0.70)', low: 'low' }, tierB: 'Most of the polygon is in tier B: the model is only extended to the same forest type, not validated there.',
+    gTitle: 'Growth forecast (Canada)', gNote: 'A typical trajectory by fire age, NOT a measurement for this site. The curve is validated for fire ages 9-35 years; beyond that it is extrapolation.', fy: 'Fire year', hz: 'In', yrs: 'years', today: 'Today', then: 'Then', y80: '80% of neighbouring forest height ≈', extr: 'Extrapolation: outside the validated age.',
+    sTitle: 'Fire severity scenario', sNote: 'This is a height level, not a forecast by years: fire age does not explain height here. The link is correlational.', sev: 'Fire severity (share of area with canopy loss)', lvl: 'Forest height level', grn: 'Greenness (optics)', gap: 'Optics overstates by', ofnb: 'of neighbouring forest height', years: 'years after the fire', n: 'Data:',
+    noC: 'No forecast by years for this area: the growth curve is validated only for Canada, and the severity scenario only for Ukraine and the Mediterranean. The forest state can still be assessed.',
+    noS: 'No forecast for savanna: in our data canopies mostly survive fires (98% of points show no canopy loss), greenness does not drop and height does not depend on fire age. There is nothing to recover.',
+    ua: 'Ukraine', ca: 'Canada', me: 'Mediterranean', sv: 'Savanna'
+  }
+};
+const p2 = k => P2[lang][k];
+const REGION_NAME = f => (lang === 'uk' ? f.properties.name : f.properties.name_en);
+
+/* point-in-polygon with cached bounding boxes */
+function prep(gj) {
+  if (!gj) return [];
+  return gj.features.map(f => {
+    const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+    return { f, polys: polys.map(rings => { let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; rings[0].forEach(([x, y]) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }); return { rings, b: [x0, y0, x1, y1] }; }) };
+  });
+}
+function pip(x, y, ring) {
+  let ins = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) ins = !ins;
+  }
+  return ins;
+}
+function inPrep(x, y, pf) {
+  for (const p of pf.polys) {
+    if (x < p.b[0] || x > p.b[2] || y < p.b[1] || y > p.b[3]) continue;
+    let ins = false; for (const r of p.rings) if (pip(x, y, r)) ins = !ins;
+    if (ins) return true;
+  }
+  return false;
+}
+const TP = prep(TERR), GZP = prep(ZONES && ZONES.growth), UZP = prep(ZONES && ZONES.ukraine);
+
+function polyArea(v) {
+  const lat0 = v.reduce((s, p) => s + p[1], 0) / v.length, lon0 = v.reduce((s, p) => s + p[0], 0) / v.length, kx = 111.32 * Math.cos(lat0 * Math.PI / 180), ky = 110.57;
+  const q = v.map(p => [(p[0] - lon0) * kx, (p[1] - lat0) * ky]); let a = 0;
+  for (let i = 0; i < q.length; i++) { const j = (i + 1) % q.length; a += q[i][0] * q[j][1] - q[j][0] * q[i][1]; }
+  return Math.abs(a) / 2;
+}
+function sampleInside(v) {
+  const xs = v.map(p => p[0]), ys = v.map(p => p[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  for (const n of [24, 60, 140]) {
+    const out = [];
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { const x = x0 + (i + .5) / n * (x1 - x0), y = y0 + (j + .5) / n * (y1 - y0); if (pip(x, y, v)) out.push([x, y]); }
+    if (out.length >= 25 || n === 140) return out.length ? out : [[(x0 + x1) / 2, (y0 + y1) / 2]];
+  }
+}
+function analyse(v) {
+  const pts = sampleInside(v), cnt = {}, b = {}; let gz = 0, uz = 0;
+  const meta = {};
+  pts.forEach(([x, y]) => {
+    for (const pf of TP) if (inPrep(x, y, pf)) { const r = pf.f.properties.region; cnt[r] = (cnt[r] || 0) + 1; if (pf.f.properties.tier === 2) b[r] = (b[r] || 0) + 1; meta[r] = pf.f; break; }
+    if (GZP.some(pf => inPrep(x, y, pf))) gz++;
+    if (UZP.some(pf => inPrep(x, y, pf))) uz++;
+  });
+  const n = pts.length, best = Object.keys(cnt).sort((a, c) => cnt[c] - cnt[a])[0] || null;
+  return { n, best, bestFrac: best ? cnt[best] / n : 0, tierB: best ? (b[best] || 0) / cnt[best] : 0, gz: gz / n, uz: uz / n, feat: best ? meta[best] : null, area: polyArea(v), verts: v.length };
+}
+
+/* drawing state */
+let drawing = false, verts = [], dDown = null, lastPoly = null, gFY = 2005, gHZ = 25, sSEV = null;
+const dRay = new THREE.Raycaster(), dMouse = new THREE.Vector2(), drawGrp = new THREE.Group(); world.add(drawGrp);
+function toLL(p) { const v = world.worldToLocal(p.clone()), r = v.length(); return [Math.atan2(-v.z, v.x) * 180 / Math.PI, Math.asin(v.y / r) * 180 / Math.PI]; }
+function redrawPoly() {
+  while (drawGrp.children.length) { const c = drawGrp.children.pop(); if (c.geometry) c.geometry.dispose(); }
+  if (!verts.length) return;
+  const pts = verts.map(([lo, la]) => ll(lo, la, R * 1.007));
+  pts.forEach((p, i) => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.4, 10, 8), new THREE.MeshBasicMaterial({ color: i === 0 ? 0xffffff : 0xf4a63c })); m.position.copy(p); drawGrp.add(m); });
+  if (verts.length > 1) drawGrp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(verts.length > 2 && !drawing ? [...pts, pts[0]] : pts), new THREE.LineBasicMaterial({ color: 0xf4a63c })));
+}
+function setDrawing(on) {
+  drawing = on; controls.autoRotate = false;
+  if (on) { verts = []; lastPoly = null; polyOn.clear(); applyFires(); controls.minDistance = 104; } else { controls.minDistance = selected >= 0 ? 12 : 130; }
+  document.getElementById('draw').setAttribute('aria-pressed', String(on));
+  redrawPoly(); renderPoly(); dirty = true;
+}
+function flyToFires(list) {
+  if (!list.length) return;
+  const ref = list[0], q = ref.qB.clone().invert(), c = new THREE.Vector3();
+  list.forEach(f => c.add(f.pos)); c.multiplyScalar(1 / list.length);
+  let span = 0; list.forEach(a => list.forEach(b => { span = Math.max(span, a.pos.distanceTo(b.pos)); }));
+  const width = span + Math.max(...list.map(f => f.S * Math.max(f.nc, f.nr, 70))) * 1.15;   // ширина скупчення з запасом (реальний масштаб)
+  const k = 150 / Math.max(width, 1e-3);
+  startFly({ q, pos: c.clone().applyQuaternion(q).multiplyScalar(-k), sc: k, cam: FOCUS_CAM.clone(), tgt: ZERO.clone(), focus: true });
+}
+function finishPoly() { if (verts.length < 3) return; drawing = false; document.getElementById('draw').setAttribute('aria-pressed', 'false'); controls.minDistance = selected >= 0 ? 12 : 130; lastPoly = analyse(verts); sSEV = null; polyOn.clear(); F.forEach((f, i) => { if (pip(f.lon, f.lat, verts)) polyOn.add(i); }); applyFires(); if (polyOn.size) flyToFires([...polyOn].map(i => F[i])); redrawPoly(); renderPoly(); }
+function clearPoly() { drawing = false; verts = []; lastPoly = null; polyOn.clear(); applyFires(); document.getElementById('draw').setAttribute('aria-pressed', 'false'); controls.minDistance = selected >= 0 ? 12 : 130; redrawPoly(); renderPoly(); }
+renderer.domElement.addEventListener('pointerdown', e => { dDown = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!drawing || !dDown || Math.hypot(e.clientX - dDown[0], e.clientY - dDown[1]) > 5) return;
+  dMouse.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); dRay.setFromCamera(dMouse, camera);
+  const h = dRay.intersectObject(globe)[0]; if (!h) return;
+  verts.push(toLL(h.point)); redrawPoly(); renderPoly();
+});
+
+/* charts (SVG) */
+function svgChart(w, h, ax, ay, series, extra) {
+  const X = v => 34 + (v - ax[0]) / (ax[1] - ax[0]) * (w - 44), Y = v => h - 20 - (v - ay[0]) / (ay[1] - ay[0]) * (h - 30);
+  let s = `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" style="display:block">`;
+  [0, .25, .5, .75, 1].filter(t => t >= ay[0] && t <= ay[1]).forEach(t => { s += `<line x1="34" x2="${w - 10}" y1="${Y(t)}" y2="${Y(t)}" stroke="currentColor" stroke-opacity="${t === 0.8 ? .35 : .12}"/><text x="30" y="${Y(t) + 3}" text-anchor="end" font-size="9" fill="currentColor" opacity=".6">${Math.round(t * 100)}%</text>`; });
+  s += extra ? extra(X, Y) : '';
+  series.forEach(sr => { s += `<path d="${sr.d(X, Y)}" fill="${sr.fill || 'none'}" stroke="${sr.color || 'none'}" stroke-width="${sr.w || 2}" ${sr.dash ? 'stroke-dasharray="4 3"' : ''} opacity="${sr.op || 1}"/>`; });
+  return s + '</svg>';
+}
+const line = (xs, ys) => (X, Y) => xs.map((x, i) => (i ? 'L' : 'M') + X(x).toFixed(1) + ' ' + Y(ys[i]).toFixed(1)).join(' ');
+function growthHTML() {
+  const age = NOW - gFY, tau = -T80 / Math.log(.2), fn = a => A * (1 - Math.exp(-a / tau)), ages = Array.from({ length: 71 }, (_, i) => i);
+  const yr0 = gFY, fut = age + gHZ, warn = age < 9 || fut > 35;
+  const chart = svgChart(300, 150, [0, 70], [0, 1.0], [{ d: line(ages, ages.map(fn)), color: '#35e8ff' }], (X, Y) =>
+    `<rect x="${X(9)}" y="${Y(1)}" width="${X(35) - X(9)}" height="${Y(0) - Y(1)}" fill="currentColor" opacity=".07"/>` +
+    `<circle cx="${X(Math.max(0, age))}" cy="${Y(fn(Math.max(0, age)))}" r="4" fill="#fff"/><circle cx="${X(fut)}" cy="${Y(fn(fut))}" r="4" fill="#f4a63c"/>` +
+    [0, 20, 40, 60].map(a => `<text x="${X(a)}" y="144" text-anchor="middle" font-size="9" fill="currentColor" opacity=".6">${gFY + a}</text>`).join(''));
+  return `<h4>${p2('gTitle')}</h4>
+    <label class="f2">${p2('fy')} <input id="gfy" type="number" min="1985" max="${NOW - 1}" value="${gFY}"></label>
+    <label class="f2">${p2('hz')} <b id="ghzv">${gHZ}</b> ${p2('yrs')} <input id="ghz" type="range" min="0" max="60" step="1" value="${gHZ}"></label>${chart}
+    <p class="big">${p2('today')} (${NOW}): <b>${Math.round(fn(Math.max(0, age)) * 100)}%</b> → ${p2('then')} ${NOW + gHZ}: <b>${Math.round(fn(fut) * 100)}%</b></p>
+    <p>${p2('y80')} <b>${Math.round(gFY + T80)}</b>${warn ? '<br><span class="warn">' + p2('extr') + '</span>' : ''}</p><p class="note">${p2('gNote')}</p>`;
+}
+function scenHTML(key) {
+  const P = SCEN[key], st = P.structure, ic = Object.values(st.intercepts).reduce((a, c) => a + c, 0) / Object.keys(st.intercepts).length;
+  if (sSEV === null) sSEV = P.severity.typical.medium;
+  const s = sSEV, mean = Math.max(0, Math.min(1.2, ic + st.slope * s)), lo = Math.max(0, mean - 1.645 * st.resid_sd), hi = Math.min(1.2, mean + 1.645 * st.resid_sd);
+  const c = P.greenness.coef, g1 = c.g1[0] + c.g1[1] * s, g3 = c.g3[0] + c.g3[1] * s, g5 = c.g5[0] + c.g5[1] * s, r = (g5 - g3) / (g3 - g1), ok = r > 0 && r < 1;
+  const ginf = ok ? g1 + (g3 - g1) / (1 - r) : g5, tau = ok ? -2 / Math.log(r) : 1, g = t => ginf - (ginf - g1) * Math.exp(-(t - 1) / tau);
+  const ts = Array.from({ length: 15 }, (_, i) => i + 1), obs = ts.filter(t => t <= 5), ext = ts.filter(t => t >= 5);
+  const chart = svgChart(300, 150, [1, 15], [0, 1.2], [{ d: line(obs, obs.map(g)), color: '#f4a63c' }, { d: line(ext, ext.map(g)), color: '#f4a63c', dash: true }], (X, Y) =>
+    `<rect x="34" y="${Y(hi)}" width="${290 - 34}" height="${Y(lo) - Y(hi)}" fill="#35e8ff" opacity=".13"/><line x1="34" x2="290" y1="${Y(mean)}" y2="${Y(mean)}" stroke="#35e8ff" stroke-width="2"/>` +
+    [1, 5, 10, 15].map(t => `<text x="${X(t)}" y="144" text-anchor="middle" font-size="9" fill="currentColor" opacity=".6">${t}</text>`).join(''));
+  return `<h4>${p2('sTitle')}</h4>
+    <label class="f2">${p2('sev')}: <b id="ssv">${s.toFixed(2)}</b> <input id="ssev" type="range" min="0" max="1" step="0.01" value="${s}"></label>${chart}
+    <p class="lg"><i style="background:#35e8ff"></i>${p2('lvl')}: <b>${Math.round(mean * 100)}%</b> (${Math.round(lo * 100)}-${Math.round(hi * 100)}%) &nbsp; <i style="background:#f4a63c"></i>${p2('grn')}: <b>${Math.round(g(10) * 100)}%</b> (10)</p>
+    <p class="big">${p2('gap')} <b>${Math.max(0, Math.round((g(10) - mean) * 100))}</b> ${lang === 'uk' ? 'п. п.' : 'pp'} ${p2('ofnb')}</p>
+    <p class="note">${p2('sNote')} ${p2('n')} ${P.data.n_fires} ${lang === 'uk' ? 'пожеж' : 'fires'}, ${lang === 'uk' ? 'вік' : 'age'} ${P.data.age_range[0].toFixed(0)}-${P.data.age_range[1].toFixed(0)}.</p>`;
+}
+function firesNote() {
+  const names = [...polyOn].map(i => F[i][lang] + ' ' + F[i].fireYear);
+  if (names.length) return `<p>${lang === 'uk' ? 'У полігоні пожеж' : 'Fires in the polygon'}: <b>${names.length}</b> (${names.join(', ')}). ${lang === 'uk' ? 'Їхній ріст показано на глобусі; час рухає повзунок.' : 'Their growth is shown on the globe; the slider moves time.'}</p>`;
+  return `<p class="note">${lang === 'uk' ? 'У полігоні немає наших пожеж. Ріст показується для пожеж, центр яких потрапляє всередину, або після кліку на мітку.' : 'No fires of ours in the polygon. Growth is shown for fires whose centre falls inside, or after clicking a marker.'}</p>`;
+}
+function renderPoly() {
+  const el = document.getElementById('poly'), db = document.getElementById('draw');
+  db.textContent = drawing ? p2('drawing') : p2('draw');
+  if (!drawing && !verts.length) { el.hidden = true; refreshLegend(); return; }
+  el.hidden = false; refreshLegend();
+  let h = `<div class="ph"><b>${p2('area')} ${lastPoly ? Math.round(lastPoly.area).toLocaleString() + ' ' + p2('km2') : verts.length + ' ' + p2('pts')}</b>` +
+    `<span>${drawing ? `<button id="pdone" type="button">${p2('done')}</button>` : ''}<button id="pclear" type="button">${p2('clear')}</button></span></div>`;
+  if (drawing) h += `<p class="note">${p2('hint')}</p>`;
+  if (lastPoly) {
+    const L = lastPoly;
+    h += firesNote();
+    if (!L.best || L.bestFrac < .8) h += `<p class="bad">${p2('outside')}</p>`;
+    else {
+      const r = REGION_NAME(L.feat), rel = L.feat.properties.rel;
+      h += `<p>${p2('inside').replace('{r}', r).replace('{p}', Math.round(L.bestFrac * 100))} ${p2('rel')}: <b>${p2('relv')[rel]}</b>.</p>`;
+      if (L.tierB > .5) h += `<p class="warn">${p2('tierB')}</p>`;
+      if (L.gz >= .8 && SCEN) h += growthHTML();
+      else if (L.best === 'mediterranean' && SCEN) h += scenHTML('med');
+      else if (L.uz >= .8 && SCEN) h += scenHTML('ua');
+      else if (L.best === 'savanna') h += `<p class="note">${p2('noS')}</p>`;
+      else h += `<p class="note">${p2('noC')}</p>`;
+    }
+  }
+  el.innerHTML = h;
+  const q = id => document.getElementById(id);
+  if (q('pdone')) q('pdone').onclick = finishPoly;
+  q('pclear').onclick = clearPoly;
+  if (q('gfy')) q('gfy').oninput = e => { gFY = Math.max(1985, Math.min(NOW - 1, +e.target.value || 2005)); renderPoly(); q('gfy').focus(); };
+  if (q('ghz')) q('ghz').oninput = e => { gHZ = +e.target.value; renderPoly(); q('ghz').focus(); };
+  if (q('ssev')) q('ssev').oninput = e => { sSEV = +e.target.value; renderPoly(); q('ssev').focus(); };
+}
+if (!ZONES && !SCEN) { document.getElementById('draw').hidden = true; } else { document.getElementById('draw').hidden = false; }
+document.getElementById('draw').addEventListener('click', () => setDrawing(!drawing));
+
+/* ---------------- camera flights ---------------- */
+let fly = null;
+const globeCam = ll(-88, 40, 330);
+const FOCUS_CAM = new THREE.Vector3(0, 100, 140), ZERO = new THREE.Vector3();
+function snapshot() { return { q: world.quaternion.clone(), pos: world.position.clone(), sc: world.scale.x, cam: camera.position.clone(), tgt: controls.target.clone() }; }
+function startFly(to, ms = 2200) {
+  controls.minDistance = 4; controls.maxDistance = 9000; controls.maxPolarAngle = Math.PI;
+  fly = { from: snapshot(), to, s: performance.now(), ms };
+}
+function select(i) {
+  selected = i; controls.autoRotate = false; applyFires();
+  rows.forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
+  const f = F[i], q = f.qB.clone().invert();
+  startFly({ q, pos: f.pos.clone().applyQuaternion(q).multiplyScalar(-f.k), sc: f.k, cam: FOCUS_CAM.clone(), tgt: ZERO.clone(), focus: true });
+  dirty = true; render();
+}
+function showWorld() {
+  selected = -1; applyFires(); rows.forEach(b => b.setAttribute('aria-pressed', 'false'));
+  startFly({ q: new THREE.Quaternion(), pos: new THREE.Vector3(), sc: 1, cam: globeCam.clone(), tgt: ZERO.clone(), focus: false });
+  dirty = true; render();
+}
+camera.position.copy(globeCam); controls.target.set(0, 0, 0);
+document.getElementById('africa').addEventListener('click', () => {
+  selected = -1; applyFires(); rows.forEach(b => b.setAttribute('aria-pressed', 'false')); controls.autoRotate = false;
+  startFly({ q: new THREE.Quaternion(), pos: new THREE.Vector3(), sc: 1, cam: ll(30, -8, 260), tgt: ZERO.clone(), focus: false }); dirty = true; render();
+});
+
+/* pointer picking on pins */
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(); let down = null;
+renderer.domElement.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (drawing || !down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
+  mouse.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(mouse, camera);
+  const h = ray.intersectObjects(pins)[0];
+  if (h) select(h.object.userData.idx);
+});
+
+/* controls wiring */
+const slider = $('slider');
+slider.addEventListener('input', () => { year = +slider.value; playing = false; applyLang(); dirty = true; });
+$('play').addEventListener('click', () => { if (year >= 2099.5) year = 1986; playing = !playing; applyLang(); });
+$('today').addEventListener('click', () => { year = NOW; slider.value = NOW; playing = false; applyLang(); dirty = true; });
+$('world').addEventListener('click', showWorld);
+$('optics').addEventListener('change', e => { optT = e.target.checked ? 1 : 0; });
+$('gedi').addEventListener('change', () => { F.forEach(f => { f.gedi3.visible = showGedi(); }); });
+$('lang').addEventListener('click', () => { lang = lang === 'uk' ? 'en' : 'uk'; try { localStorage.setItem('lang', lang); } catch (e) {} applyLang(); });
+
+/* ---------------- map kit ---------------- */
+function mapkit() {
+  const el = $('mapkit'), on = selected >= 0 && !fly;
+  el.hidden = !on; if (!on) return;
+  const f = F[selected];
+  right.setFromMatrixColumn(camera.matrixWorld, 0);
+  const perKm = (1 / (f.cellKm || 0.36)) * f.S * world.scale.x;                 // world units per real kilometre inside the fire (cell = 360 m)
+  const p0 = controls.target.clone().project(camera);
+  let km = 1, px = 0;
+  for (const c of [1, 2, 5, 10, 20, 50, 100]) {
+    const p1 = controls.target.clone().addScaledVector(right, c * perKm).project(camera);
+    px = Math.abs(p1.x - p0.x) * innerWidth / 2; km = c; if (px >= 64) break;
+  }
+  $('scalebar').style.width = Math.round(px) + 'px';
+  $('scaletxt').textContent = km + ' ' + (lang === 'uk' ? '\u043a\u043c' : 'km');
+  $('needle').style.transform = 'rotate(' + (controls.getAzimuthalAngle() * 180 / Math.PI) + 'deg)';
+  $('coords').textContent = Math.abs(f.lat).toFixed(2) + '\u00b0' + (f.lat >= 0 ? 'N' : 'S') + ' ' + Math.abs(f.lon).toFixed(2) + '\u00b0' + (f.lon >= 0 ? 'E' : 'W');
+}
+addEventListener('keydown', e => { if (e.key === 'Escape') showWorld(); });
+
+/* ---------------- loop ---------------- */
+const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const wp = new THREE.Vector3(), right = new THREE.Vector3();
+function loop() {
+  requestAnimationFrame(loop);
+  if (playing) { year = Math.min(year + .09, 2100); slider.value = year; dirty = true; if (year >= 2100) { playing = false; } }
+  if (Math.abs(opt - optT) > .004) { opt += (optT - opt) * .15; dirty = true; }
+  if (dirty) { F.forEach((f, i) => updateFire(f, yearFor(i))); render(); if (!playing) $('play').textContent = t('play'); dirty = false; }
+  if (fly) {
+    const k = Math.min((performance.now() - fly.s) / fly.ms, 1), e = ease(k), a = fly.from, b = fly.to;
+    world.quaternion.slerpQuaternions(a.q, b.q, e); world.position.lerpVectors(a.pos, b.pos, e);
+    world.scale.setScalar(a.sc + (b.sc - a.sc) * e);
+    camera.position.lerpVectors(a.cam, b.cam, e); controls.target.lerpVectors(a.tgt, b.tgt, e);
+    if (k >= 1) {
+      controls.minDistance = b.focus ? 12 : 130; controls.maxDistance = b.focus ? 520 : 520; controls.maxPolarAngle = b.focus ? 1.45 : Math.PI;
+      fly = null;
+    }
+  }
+  controls.update();
+  renderer.render(scene, camera);
+  const ws = world.scale.x;
+  F.forEach((f, i) => {   // pin size follows distance, hidden for the fire in focus; labels follow the pins
+    f.pin.getWorldPosition(wp);
+    f.pin.scale.setScalar(Math.min(Math.max(camera.position.distanceTo(wp) / (230 * ws), .12), 1));
+    f.pin.visible = f.stick.visible = f.hit.visible = selected !== i;
+    const nW = f.nrm.clone().applyQuaternion(world.quaternion);
+    const facing = nW.dot(wp.clone().sub(camera.position).normalize()) < -0.05;
+    wp.project(camera);
+    const show = facing && wp.z < 1 && selected !== i;
+    f.lbl.style.display = show ? 'block' : 'none';
+    if (show) { f.lbl.style.left = ((wp.x + 1) / 2 * innerWidth) + 'px'; f.lbl.style.top = ((1 - wp.y) / 2 * innerHeight) + 'px'; }
+  });
+  mapkit();
+}
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+F.forEach((f, i) => updateFire(f, yearFor(i))); applyLang(); loop();
+</script>

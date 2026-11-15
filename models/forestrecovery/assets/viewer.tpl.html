@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Пожежі: перегляд набору файлів</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+html,body{margin:0;height:100%;font:14px/1.4 system-ui,sans-serif;background:#10161c;color:#e8edf1}
+#map{position:absolute;inset:0}
+#panel{position:absolute;top:10px;left:10px;width:310px;max-height:calc(100% - 20px);overflow:auto;background:#10161ce8;border:1px solid #2c3a46;border-radius:10px;padding:12px;z-index:2}
+#panel h1{font-size:15px;margin:0 0 8px}
+label{display:block;margin:8px 0 2px;color:#9fb0bd;font-size:12px}
+select,input[type=range]{width:100%}select{background:#18222b;color:inherit;border:1px solid #2c3a46;border-radius:6px;padding:5px}
+.row{display:flex;gap:4px 10px;align-items:center;flex-wrap:wrap}.row label{margin:0;display:flex;gap:4px;align-items:center;color:#e8edf1}
+#info{margin-top:10px;font-size:13px}#info b{color:#fff}.note{color:#9fb0bd;font-size:12px;margin-top:8px}
+#legend{height:10px;border-radius:5px;background:linear-gradient(90deg,#d73027,#fee08b,#1a9850);margin-top:6px}
+</style></head><body>
+<div id="map"></div>
+<div id="panel">
+  <h1>Набір файлів пожежі</h1>
+  <label for="fire">Пожежа</label><select id="fire"></select>
+  <label for="by">Колір клітинок</label>
+  <select id="by"><option value="recovery">відновлення зараз (частка висоти сусіднього лісу)</option><option value="p_forest_gt5">модель 1: оцінка «ліс &gt; 5 м»</option><option value="height_m">модельна висота, м</option><option value="ndvi">NDVI</option></select>
+  <div id="legend"></div>
+  <div class="row" style="margin-top:8px"><label><input type="checkbox" id="tRgb" checked> фото</label><label><input type="checkbox" id="tCells" checked> клітинки</label><label><input type="checkbox" id="tGedi" checked> GEDI</label><label><input type="checkbox" id="tPoly" checked> контур</label><label><input type="checkbox" id="tZones"> зони</label></div>
+  <label for="op">Прозорість клітинок</label><input type="range" id="op" min="0" max="100" value="70">
+  <div id="yearBox"><label for="yr">Рік: <b id="yrv"></b></label><input type="range" id="yr"></div>
+  <div id="info"></div>
+  <div class="note">Оцінка моделі 1 — для ранжування, а не калібрована ймовірність. Висота модельна, не виміряна. Детальніше: BUNDLE_FORMAT.md.</div>
+</div>
+<script>
+const $ = id => document.getElementById(id), EMPTY = {type: 'FeatureCollection', features: []};
+const RANGES = {recovery: [0, 1], p_forest_gt5: [0, 1], height_m: [0, 15], ndvi: [0, .9]};
+let IDX, cur = null, map;
+const get = (path) => fetch(path).then(r => r.ok ? r.json() : null).catch(() => null);
+const ramp = f => { const [a, b] = RANGES[f]; return ['interpolate', ['linear'], ['coalesce', ['get', f === 'recovery' ? 'rec_view' : f], a], a, '#d73027', (a + b) / 2, '#fee08b', b, '#1a9850']; };
+function setVis(layer, on) { if (map.getLayer(layer)) map.setLayoutProperty(layer, 'visibility', on ? 'visible' : 'none'); }
+
+async function load(f) {
+  const base = f.dir + '/';
+  const has = n => f.files.includes(n) ? get(base + n) : Promise.resolve(null);   // читаємо лише файли, які є за index.json / manifest.json
+  const [res, poly, cells, gedi, tl] = await Promise.all([has('result.json'), has('polygon.geojson'), has('cells.geojson'), has('gedi.geojson'), has('timeline.json')]);
+  cur = {f, res, cells, tl, base};
+  ['rgb', 'cells', 'gedi', 'poly'].forEach(n => { if (map.getLayer(n)) map.removeLayer(n); });
+  ['rgb', 'cells', 'gedi', 'poly'].forEach(n => { if (map.getSource(n)) map.removeSource(n); });
+  if (res && res.image && res.image.corners_lonlat && f.files.includes('rgb.png'))
+    map.addSource('rgb', {type: 'image', url: base + 'rgb.png', coordinates: res.image.corners_lonlat});
+  map.addSource('cells', {type: 'geojson', data: cells || EMPTY});
+  map.addSource('gedi', {type: 'geojson', data: gedi || EMPTY});
+  map.addSource('poly', {type: 'geojson', data: poly || EMPTY});
+  if (map.getSource('rgb')) map.addLayer({id: 'rgb', type: 'raster', source: 'rgb', paint: {'raster-opacity': 1}});
+  map.addLayer({id: 'cells', type: 'fill', source: 'cells', paint: {'fill-color': ramp($('by').value), 'fill-opacity': $('op').value / 100}});
+  map.addLayer({id: 'poly', type: 'line', source: 'poly', paint: {'line-color': '#fff', 'line-width': 1}});
+  map.addLayer({id: 'gedi', type: 'circle', source: 'gedi', paint: {'circle-radius': 5, 'circle-color': '#35e8ff', 'circle-stroke-color': '#fff', 'circle-stroke-width': 1}});
+  const c = res.fire.centroid; map.flyTo({center: c, zoom: 10.5});
+  const box = $('yearBox'), yr = $('yr');
+  if (tl) { box.style.display = ''; yr.min = tl.years[0]; yr.max = tl.years[tl.years.length - 1]; yr.value = res.period.summer; showYear(+yr.value); } else { box.style.display = 'none'; showYear(null); }
+  info(); toggles();
+}
+function showYear(y) {   // рік із timeline.json: відновлення клітинок цього року; без timeline показуємо стан зараз
+  if (!cur || !cur.cells) return;
+  const tl = cur.tl, feats = cur.cells.features;
+  const k = tl && y != null ? tl.years.indexOf(y) : -1;
+  feats.forEach((ft, i) => { ft.properties.rec_view = k >= 0 && tl.recovery_pct[k][i] != null ? tl.recovery_pct[k][i] / 100 : ft.properties.recovery; });
+  map.getSource('cells').setData(cur.cells);
+  if (y != null) $('yrv').textContent = y;
+}
+function info() {
+  const r = cur.res, m1 = r.model1, m2 = r.model2, f = r.fire;
+  let h = `<b>${f.id}</b><br>пожежа ${f.year}, ${Math.round(f.area_ha)} га, регіон моделі: ${f.model_region || '—'} (${f.reliability_of_region || '—'})<br>`;
+  if (m1) h += `модель 1: середня оцінка <b>${m1.mean}</b>, частка клітинок > 0,5: <b>${m1.share_gt_0_5}</b>${m1.excluded_share != null ? `, виключено з цифр ${Math.round(m1.excluded_share * 100)}% згарища` : ''}<br>`;
+  if (m2.forecast === 'growth') h += `модель 2: відновлено зараз <b>${Math.round(m2.now_recovery * 100)}%</b>${m2.interval_80 ? ` (80% інтервал ${Math.round(m2.interval_80[0] * 100)}–${Math.round(m2.interval_80[1] * 100)}%)` : ''}, 80% близько <b>${m2.year_80pct}</b> року`;
+  else h += `прогнозу в роках немає: ${m2.reason || ''}`;
+  if (r.reference) h += `<br><span class="note">еталонна висота ${r.reference.height_m} м: ${r.reference.source}</span>`;
+  $('info').innerHTML = h;
+}
+function toggles() { setVis('zones', $('tZones').checked); setVis('zones2', $('tZones').checked); setVis('rgb', $('tRgb').checked); setVis('cells', $('tCells').checked); setVis('gedi', $('tGedi').checked); setVis('poly', $('tPoly').checked); }
+
+map = new maplibregl.Map({container: 'map', center: [0, 20], zoom: 2,
+  style: {version: 8, sources: {osm: {type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© OpenStreetMap'}}, layers: [{id: 'osm', type: 'raster', source: 'osm'}]}});
+map.on('load', async () => {
+  const zones = await get('confidence_zones.geojson');   // зони впевненості: model1_region (tier 1 перевірено, tier 2 поширено), model2_growth (контур прогнозу росту)
+  if (zones) {
+    map.addSource('zones', {type: 'geojson', data: zones});
+    map.addLayer({id: 'zones', type: 'fill', source: 'zones', filter: ['==', ['get', 'layer'], 'model1_region'], layout: {visibility: 'none'}, paint: {'fill-color': ['get', 'color'], 'fill-opacity': ['get', 'opacity']}});
+    map.addLayer({id: 'zones2', type: 'line', source: 'zones', filter: ['==', ['get', 'layer'], 'model2_growth'], layout: {visibility: 'none'}, paint: {'line-color': '#fff', 'line-width': 1.5, 'line-dasharray': [3, 2]}});
+  }
+  IDX = await get('index.json');
+  const sel = $('fire');
+  IDX.fires.forEach((f, i) => { const o = document.createElement('option'); o.value = i; o.textContent = `${f.id}${f.files.includes('cells.json') ? '' : '  (без карти)'}`; sel.appendChild(o); });
+  sel.onchange = () => load(IDX.fires[+sel.value]);
+  const first = IDX.fires.findIndex(f => f.id === 'quebec_1995_1218'); sel.value = first >= 0 ? first : 0; sel.onchange();
+});
+$('by').onchange = () => { if (map.getLayer('cells')) map.setPaintProperty('cells', 'fill-color', ramp($('by').value)); };
+$('op').oninput = () => { if (map.getLayer('cells')) map.setPaintProperty('cells', 'fill-opacity', $('op').value / 100); };
+['tRgb', 'tCells', 'tGedi', 'tPoly', 'tZones'].forEach(i => $(i).onchange = toggles);
+let tm; $('yr').oninput = e => { clearTimeout(tm); $('yrv').textContent = e.target.value; tm = setTimeout(() => showYear(+e.target.value), 60); };
+</script></body></html>

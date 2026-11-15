@@ -1,0 +1,106 @@
+"""A whole pipeline run on a real grid and the real model library, with every download replaced by synthetic maps."""
+import json
+from datetime import date
+
+import numpy as np
+import pytest
+from shapely.geometry import box, mapping
+
+pytest.importorskip("forestrecovery")
+
+from pipeline import model, run as pipeline_run  # noqa: E402
+from pipeline.contract import NDVI, NISAR_HH, NISAR_HV, S1_VH, S1_VV
+from pipeline.gee import client, gedi, layers
+from pipeline.nisar import NisarLayers, UsedGranule
+
+PERIMETER = box(-120.24, 51.12, -120.16, 51.17)  # about 5.6 x 5.6 km near Kamloops, British Columbia
+ALPS = box(14.26, 47.28, 14.34, 47.33)           # Austria: same forest type, not in training, no forecast
+SIBERIA = box(90.0, 60.0, 90.08, 60.05)          # outside every regional model
+
+
+def fire(perimeter=PERIMETER):
+    return pipeline_run.Fire(id="bc_test_1", name={"en": "Test fire"}, year=2003, perimeter=mapping(perimeter), area_ha=3100)
+
+
+@pytest.fixture
+def offline(monkeypatch):
+    """Every download returns plain maps on the grid it is asked for."""
+    def full(grid, value):
+        return np.full(grid.shape, value, dtype=np.float32)
+
+    def nisar(grid, summer):
+        hv = full(grid, -11.0)
+        hv[: grid.height // 2] = -18.0  # northern half: young forest, southern half: tall forest
+        return NisarLayers(
+            {NISAR_HH: full(grid, -5.0), NISAR_HV: hv},
+            [UsedGranule("g", date(2026, 7, 18), grid.width * grid.height)],
+            below_floor=np.zeros(grid.shape, dtype=bool),
+        )
+
+    monkeypatch.setattr(client, "session", lambda: None)
+    monkeypatch.setattr(pipeline_run, "nisar_layers", nisar)
+    monkeypatch.setattr(layers, "sentinel1", lambda grid, summer: {S1_VH: full(grid, -15.0), S1_VV: full(grid, -9.6)})
+    monkeypatch.setattr(layers, "ndvi", lambda grid, summer: {NDVI: full(grid, 0.77)})
+    monkeypatch.setattr(layers, "masks", lambda grid, summer: {
+        layers.WORLDCOVER: full(grid, 10.0), layers.FOREST_LOSS: full(grid, 0.0), layers.BURNED: full(grid, 0.0),
+    })
+    monkeypatch.setattr(layers, "satellite_images", lambda grid, summer: {
+        "sentinel1": {"from": "2026-07-10", "to": "2026-07-24", "scenes": 3},
+        "sentinel2": {"from": "2026-07-01", "to": "2026-08-14", "scenes": 10},
+    })
+    monkeypatch.setattr(gedi, "reference_height", lambda polygon, grid, zones: {"height_m": 19.1, "source": "gedi", "shots": 500})
+
+
+def test_run_writes_a_complete_result(offline, tmp_path):
+    steps = []
+    folder = pipeline_run.run(fire(), 2026, tmp_path, on_step=steps.append)
+
+    assert steps == list(pipeline_run.STEPS)
+    result = json.loads((folder / "result.json").read_text(encoding="utf-8"))
+    cells = json.loads((folder / "cells.json").read_text(encoding="utf-8"))
+
+    assert result["fire"]["id"] == "bc_test_1"
+    assert result["model_result"]["model_version"] == model.MODEL_VERSION
+    assert result["model_result"]["region"] == "continental"
+    assert result["model_result"]["error_vs_lidar_pct"] == pytest.approx(11.7)
+    assert 0 < result["model_result"]["recovery_today_avg"] < 1.5
+    assert result["satellite_images"]["nisar"] == {"date": "2026-07-18", "fire_covered": 1.0}
+    assert result["satellite_images"]["sentinel1"]["scenes"] == 3
+    assert result["neighbour_forest"] == {"height_m": 19.1, "source": "gedi"}
+    assert sum(result["model_result"]["stage_share"]) == pytest.approx(1.0, abs=1e-3)
+    assert result["comparison"]["optics"] == pytest.approx(1.0)  # same NDVI in the burn and around it
+    assert result["comparison"]["model"] == result["model_result"]["recovery_today_avg"]
+    growth = result["growth_forecast"]
+    assert growth["year_80pct"] > 2003 and len(growth["interval_80_now"]) == 2
+    assert len(growth["series"]["years"]) == len(growth["series"]["recovery"])
+    assert "MISSING_COVARIATES_USING_AVERAGES" in result["warnings"]  # no slope, soil or dNBR layers yet
+
+    n = result["map_grid"]["columns"] * result["map_grid"]["rows"]
+    assert set(cells) == {"model", "map", "optics"}
+    assert all(len(values) == n for group in cells.values() for values in group.values())
+    assert {v for v in cells["map"]["zone"] if v is not None} == {0, 1}
+
+    index = json.loads((tmp_path / "index.json").read_text(encoding="utf-8"))
+    assert [e["id"] for e in index] == ["bc_test_1"]
+
+
+def test_no_forecast_outside_canada(offline, tmp_path):
+    folder = pipeline_run.run(fire(ALPS), 2026, tmp_path)
+    result = json.loads((folder / "result.json").read_text(encoding="utf-8"))
+    assert result["growth_forecast"] is None
+    assert result["model_result"]["stage_share"] is not None
+    assert "REGION_EXTRAPOLATED" in result["warnings"]
+
+
+def test_place_without_a_model_fails_before_any_download(offline, tmp_path, monkeypatch):
+    monkeypatch.setattr(pipeline_run, "_fetch_data", lambda *a: pytest.fail("nothing should be downloaded"))
+    with pytest.raises(model.OutOfDomainError):
+        pipeline_run.run(fire(SIBERIA), 2026, tmp_path)
+
+
+def test_fire_from_geojson_computes_the_area(tmp_path):
+    path = tmp_path / "fire.geojson"
+    path.write_text(json.dumps({"type": "Feature", "properties": {"id": "x_2003_1", "year": 2003}, "geometry": mapping(PERIMETER)}))
+    f = pipeline_run.fire_from_geojson(path)
+    assert f.name == {"en": "Fire 2003"}
+    assert f.area_ha == pytest.approx(3100, rel=0.05)

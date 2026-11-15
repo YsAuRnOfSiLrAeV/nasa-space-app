@@ -2,8 +2,8 @@
 import numpy as np
 import pytest
 
-from pipeline.contract import FEATURE_COLUMNS, NDVI, NISAR_HV, S1_VH, S1_VV
-from pipeline.cell_features import FEATURES, build_table, input_report
+from pipeline.contract import FEATURE_COLUMNS, NDVI, S1_VV
+from pipeline.cell_features import FEATURES, build_table
 
 SHAPE = (4, 5)
 
@@ -61,12 +61,3 @@ def test_missing_or_misaligned_layers_are_reported():
     broken[S1_VV] = np.zeros((2, 2))
     with pytest.raises(ValueError, match="s1_VV"):
         build_table(broken)
-
-
-def test_input_report_counts_values_outside_training_range():
-    table = build_table(layers())
-    report = input_report(table, {NISAR_HV: (0.0, 0.5), NDVI: (0.0, 10.0)})
-    assert report[NISAR_HV]["outside_share"] == 1.0
-    assert report[NDVI]["outside_share"] == 0.0
-    assert report[S1_VH]["outside_share"] is None
-    assert report[S1_VH]["median"] == 3.0
