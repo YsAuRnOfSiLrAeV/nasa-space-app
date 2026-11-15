@@ -25,6 +25,7 @@ MIN_SENSITIVITY = 0.95
 MAX_RH98_M = 35  # taller returns are treated as noise, as in data collection
 GEDI_DATES = ("2019-04-01", "2023-03-17")  # filterDate excludes its end: last day 2023-03-16
 GEDI_MONTHS = (6, 9)  # June to September: leaf-on, no snow
+FIRST_GEDI_YEAR = 2019
 
 RH98 = "rh98"
 ETH_HEIGHT = "eth_height"
@@ -33,6 +34,21 @@ ETH_HEIGHT = "eth_height"
 def shot_heights(polygon, grid: Grid) -> np.ndarray | None:
     """rh98 (m) of good GEDI shots on the grid, NaN between shots. None north of GEDI coverage."""
     return _gedi_rh98(grid) if _latitude(polygon) <= GEDI_MAX_LAT else None
+
+
+def shots_after_fire(polygon, grid: Grid, fire_year: int, all_shots: np.ndarray | None) -> np.ndarray | None:
+    """The shots taken in the years after the fire, for the lidar comparison inside the burn.
+
+    GEDI flew 2019-2023, so for a fire in those years part of the shots show the forest before
+    it burned. Shots of the fire year itself are dropped too, as the fire date is not known.
+    ``all_shots`` (from shot_heights) is returned as is when every shot is after the fire.
+    """
+    if all_shots is None or fire_year < FIRST_GEDI_YEAR:
+        return all_shots
+    start = f"{fire_year + 1}-01-01"
+    if start >= GEDI_DATES[1]:
+        return np.full(grid.shape, np.nan, dtype=np.float32)
+    return _gedi_rh98(grid, start)
 
 
 def reference_height(polygon, grid: Grid, zones: np.ndarray, heights: np.ndarray | None = None) -> dict:
@@ -57,7 +73,7 @@ def reference_height(polygon, grid: Grid, zones: np.ndarray, heights: np.ndarray
     return {"height_m": _median(eth), "source": "eth", "shots": shots.size}
 
 
-def _gedi_rh98(grid: Grid) -> np.ndarray:
+def _gedi_rh98(grid: Grid, start: str = GEDI_DATES[0]) -> np.ndarray:
     """Canopy top height (m) of good-quality GEDI L2A shots on `grid`, NaN between shots."""
     ee = client.session()
 
@@ -75,7 +91,7 @@ def _gedi_rh98(grid: Grid) -> np.ndarray:
     image = (
         ee.ImageCollection("LARSE/GEDI/GEDI02_A_002_MONTHLY")
         .filterBounds(client.region(grid))
-        .filterDate(*GEDI_DATES)
+        .filterDate(start, GEDI_DATES[1])
         .filter(ee.Filter.calendarRange(*GEDI_MONTHS, "month"))
         .map(good_shots)
         .mosaic()

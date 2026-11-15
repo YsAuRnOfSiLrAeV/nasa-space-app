@@ -226,3 +226,14 @@ def test_reference_height_uses_given_shots_without_downloading(grid, zones, monk
     heights = np.where(zones == REFERENCE, 20.0, np.nan)
     assert gedi.reference_height(FIRE, grid, zones, heights=heights)["height_m"] == 20.0
 
+
+
+def test_shots_after_fire(grid, monkeypatch):
+    starts = []
+    monkeypatch.setattr(gedi, "_gedi_rh98", lambda g, start: starts.append(start) or np.zeros(g.shape))
+    every = np.ones(grid.shape)
+    assert gedi.shots_after_fire(FIRE, grid, 2010, every) is every       # all shots already after the fire
+    assert gedi.shots_after_fire(FIRE, grid, 2010, None) is None          # north of GEDI coverage
+    gedi.shots_after_fire(FIRE, grid, 2020, every)
+    assert starts == ["2021-01-01"]
+    assert np.isnan(gedi.shots_after_fire(FIRE, grid, 2023, every)).all()  # GEDI ended in March 2023

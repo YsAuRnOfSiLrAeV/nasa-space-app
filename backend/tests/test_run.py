@@ -156,3 +156,19 @@ def test_failed_optical_picture_does_not_stop_the_run(offline, tmp_path, monkeyp
     folder = pipeline_run.run(fire(), 2026, tmp_path)
     result = json.loads((folder / "result.json").read_text(encoding="utf-8"))
     assert result["files"]["optical_image"] is None and not (folder / "optical.png").exists()
+
+
+def test_young_fire_compares_lidar_after_the_fire_and_is_flagged(offline, tmp_path, monkeypatch):
+    asked = []
+
+    def after_fire(polygon, grid, fire_year, all_shots):
+        asked.append(fire_year)
+        return None  # no shot after the fire
+
+    monkeypatch.setattr(gedi, "shots_after_fire", after_fire)
+    young = pipeline_run.Fire(id="ua_test_1", name={"en": "Young fire"}, year=2021, perimeter=mapping(ALPS), area_ha=3100)
+    result = json.loads((pipeline_run.run(young, 2026, tmp_path) / "result.json").read_text(encoding="utf-8"))
+
+    assert asked == [2021]
+    assert result["comparison"]["lidar"] is None and result["lidar_points"] == []
+    assert "AGE_BELOW_VALIDATED" in result["warnings"]
