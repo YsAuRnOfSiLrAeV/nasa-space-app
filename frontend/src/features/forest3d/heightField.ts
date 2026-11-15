@@ -26,6 +26,11 @@ export interface HeightFieldOptions {
   seed?: number;
   /** Peak relief, scene units. */
   relief?: number;
+  /**
+   * 0..1: turns the stream and the ridge into another landscape. Omitted, the original
+   * block is produced exactly.
+   */
+  variant?: number;
 }
 
 /** Deterministic hash → [0, 1). */
@@ -78,11 +83,16 @@ export function createHeightField({
   res = 161,
   seed = 11,
   relief = 15,
+  variant,
 }: HeightFieldOptions = {}): HeightField {
   const half = size / 2;
   // The stream: a gentle S-curve crossing the block diagonally.
+  const bend = variant === undefined ? 0 : variant - 0.5;
+  const phase = 0.7 + bend * 5;
+  const tilt = 0.25 + bend * 0.4;
+  const ridgeSlope = 0.6 + bend * 1.6;
   const streamX = (z: number) =>
-    -size * 0.12 + Math.sin((z / size) * Math.PI * 1.6 + 0.7) * size * 0.14 + z * 0.25;
+    -size * 0.12 + Math.sin((z / size) * Math.PI * 1.6 + phase) * size * 0.14 + z * tilt;
   const streamDistance = (x: number, z: number) => Math.abs(x - streamX(z)) * 0.92;
 
   const raw = (x: number, z: number) => {
@@ -90,7 +100,7 @@ export function createHeightField({
     const v = z / size;
     const base = fbm(u * 3.1 + 7, v * 3.1 + 3, seed);
     // A broad ridge rising toward the far corner.
-    const ridge = 0.55 * Math.max(0, 0.5 + 0.9 * (v - u * 0.6));
+    const ridge = 0.55 * Math.max(0, 0.5 + 0.9 * (v - u * ridgeSlope));
     const fine = 0.12 * fbm(u * 14, v * 14, seed + 97, 3);
     // Valley carved along the stream, widening with depth.
     const d = streamDistance(x, z);

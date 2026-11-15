@@ -24,6 +24,7 @@
  *
  * No value here is a measurement, and the picture is not a picture of any fire.
  */
+import type { BurnShape } from './burn';
 
 /** Inputs for one year of one fire. */
 export interface ForestStandInput {
@@ -52,6 +53,10 @@ export interface StandParams {
   mix: { spruce: number; fir: number; pine: number; broadleaf: number; snag: number };
   /** Shrubs per 100 square units of open ground. */
   shrubDensity: number;
+  /** Landscape character: peak relief (scene units) and 0..1 variant of the stream and ridge. */
+  terrain?: { relief: number; variant: number };
+  /** The real burn perimeter as a shape on the block; without it the whole block is the burn. */
+  burn?: BurnShape;
 }
 
 /** How the stand looks in one year. Every plant keeps its position; only this changes. */

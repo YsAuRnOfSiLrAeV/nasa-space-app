@@ -109,8 +109,12 @@ export class ForestScene {
     });
 
     // Model. The stand is scattered once; growth only rescales it.
-    const field = createHeightField({ size: BLOCK_SIZE, seed: stand.seed % 1000 });
-    const block = buildTerrainBlock(field);
+    const field = createHeightField({
+      size: BLOCK_SIZE,
+      seed: stand.seed % 1000,
+      ...(stand.terrain && { relief: stand.terrain.relief, variant: stand.terrain.variant }),
+    });
+    const block = buildTerrainBlock(field, stand.burn);
     this.plants = scatterPlants(field, stand).filter((p) => p.y > block.waterLevel + 0.05);
     this.vegetation = buildVegetation(this.plants);
     this.heights = growHeights(this.plants, growth);

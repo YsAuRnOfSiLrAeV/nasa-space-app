@@ -6,9 +6,9 @@ import { useFireData } from '@/hooks/useFireData';
 import { usePrefersReducedMotion } from '@/hooks/useMediaQuery';
 import {
   ForestViewer,
-  GROWTH_STAND,
   REFERENCE_GROWTH,
   growthFromRecovery,
+  standForFire,
   type GrowthParams,
 } from '@/features/forest3d';
 import styles from './forestGrowth.module.css';
@@ -114,6 +114,20 @@ function GrowthPlayer({ bundle }: { bundle: GrowthFire }) {
   const after = useMemo(() => yearOf(bundle, year), [bundle, year]);
   const fireState = useMemo(() => yearOf(bundle, years[0]!), [bundle, years]);
   const position = years.indexOf(year);
+  // One landscape per fire, built once: the same block in both panes and in every year.
+  const stand = useMemo(
+    () =>
+      standForFire({
+        id: bundle.metadata.id,
+        region: /^([a-z]+)_/.exec(bundle.metadata.id)?.[1] ?? null,
+        referenceHeightM: bundle.reference?.height_m ?? null,
+        perimeter: bundle.perimeter,
+      }),
+    [bundle],
+  );
+  const burnKm = stand.burn
+    ? `${Math.round(stand.burn.widthKm * 10) / 10} × ${Math.round(stand.burn.heightKm * 10) / 10} km`
+    : null;
 
   useEffect(() => {
     if (!playing) return;
@@ -148,7 +162,7 @@ function GrowthPlayer({ bundle }: { bundle: GrowthFire }) {
       ? {
           growth: REFERENCE_GROWTH,
           title: 'Before the fire · the reference forest',
-          note: `What 100% means: the neighbouring forest${bundle.reference?.height_m ? `, ${bundle.reference.height_m} m` : ''}.`,
+          note: `What 100% means: the neighbouring forest${bundle.reference?.height_m ? `, ${bundle.reference.height_m} m` : ''}. Outline: this fire’s real perimeter.`,
         }
       : compare === 'fire'
         ? {
@@ -243,7 +257,7 @@ function GrowthPlayer({ bundle }: { bundle: GrowthFire }) {
       <div className={before ? styles.pair : undefined}>
         {before && (
           <ForestViewer
-            stand={GROWTH_STAND}
+            stand={stand}
             growth={before.growth}
             compact
             label={{ index: 'BEFORE · ILLUSTRATIVE', title: before.title, note: before.note }}
@@ -251,13 +265,13 @@ function GrowthPlayer({ bundle }: { bundle: GrowthFire }) {
           />
         )}
         <ForestViewer
-          stand={GROWTH_STAND}
+          stand={stand}
           growth={after.growth}
           compact={Boolean(before)}
           label={{
             index: `${year} · ILLUSTRATIVE · NOT MEASURED`,
             title: `${bundle.metadata.id} · ${year}`,
-            note: `Tree heights = modeled recovery ${pct(after.recovery)}${after.cells ? `, spread like ${after.cells} modeled cells` : ''}.`,
+            note: `Tree heights = modeled recovery ${pct(after.recovery)}${after.cells ? `, spread like ${after.cells} modeled cells` : ''}. Inside the outline: the burn${burnKm ? ` (${burnKm}, shape to scale)` : ''}; outside: unburned forest.`,
           }}
           fallback={readout}
         />
@@ -310,15 +324,36 @@ function GrowthPlayer({ bundle }: { bundle: GrowthFire }) {
               <td>Illustrative assumption</td>
             </tr>
             <tr>
+              <th scope="row">Burn outline and ground tone</th>
+              <td>
+                The fire’s real perimeter (result.json), drawn north-up and scaled to fit the block:
+                the shape is real, the size is not. Inside it the forest regrows; outside it stands
+                unburned.
+              </td>
+              <td>Data (shape), illustrative (scale)</td>
+            </tr>
+            <tr>
+              <th scope="row">Tallest trees</th>
+              <td>
+                The neighbouring forest’s height for this fire (GEDI lidar median), relative to an
+                18 m stand.
+              </td>
+              <td>Data</td>
+            </tr>
+            <tr>
               <th scope="row">Terrain, species, positions</th>
-              <td>A synthetic block, the same for every fire.</td>
+              <td>
+                A synthetic landscape, different for each fire. Relief and species mix are typical
+                of the region (mountain west, shield, eastern boreal), not measured at this site.
+              </td>
               <td>Illustrative</td>
             </tr>
           </tbody>
         </table>
         <p>
-          The picture is not a picture of {bundle.metadata.id}: it shows how a stand would look at
-          the modeled recovery. Measured heights exist only at GEDI points, on the map.
+          The terrain and trees are not a picture of {bundle.metadata.id}: they show how a stand
+          would look at the modeled recovery, inside the fire’s real outline. Measured heights exist
+          only at GEDI points, on the map.
         </p>
       </details>
     </div>

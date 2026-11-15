@@ -4,6 +4,7 @@
  * steep slopes and stays out of the stream; species follow elevation (conifers
  * higher, broadleaf lower, toward the water). Pure and DOM-free.
  */
+import { createBurnMask } from './burn';
 import { fbm, hash2, rng, slopeAt, type HeightField } from './heightField';
 import type { StandParams } from './recoveryAdapter';
 
@@ -27,6 +28,11 @@ export interface Plant {
   rank: number;
   /** Fixed 0..1 position in the year's height distribution (tall trees high). */
   heightRank: number;
+  /**
+   * Inside the burn (grows back from the fire) or outside it (unburned forest, always at
+   * its mature height). Every plant is inside when the stand has no burn shape.
+   */
+  burned: boolean;
 }
 
 const KINDS = ['spruce', 'fir', 'pine', 'broadleaf', 'snag'] as const;
@@ -47,10 +53,12 @@ export function scatterPlants(field: HeightField, stand: StandParams): Plant[] {
   const inset = 1.6;
   const plants: Plant[] = [];
   const range = field.max - field.min || 1;
+  const inBurn = stand.burn ? createBurnMask(stand.burn) : null;
 
   const openness = (x: number, z: number) => fbm(x / 26 + 40, z / 26 + 9, stand.seed % 997, 3);
 
   const place = (kind: PlantKind, x: number, z: number, scale = 1) => {
+    const burned = inBurn ? inBurn(x, z) : true;
     const [lo, hi] = HEIGHT[kind];
     // Shrubs and fire-killed snags keep their height whatever the stand's scale.
     const h =
@@ -69,6 +77,7 @@ export function scatterPlants(field: HeightField, stand: StandParams): Plant[] {
       lean: kind === 'snag' ? (random() - 0.5) * 0.18 : (random() - 0.5) * 0.05,
       rank: hash2(ix, iz, stand.seed),
       heightRank: hash2(iz, ix, stand.seed + 7),
+      burned,
     });
   };
 
@@ -86,7 +95,9 @@ export function scatterPlants(field: HeightField, stand: StandParams): Plant[] {
         Math.min(1, Math.max(0, (stand.cover - open) * 3.2)) * (1 - Math.min(0.7, slope * 0.55));
       if (random() > density) continue;
       const e = (field.sample(px, pz) - field.min) / range;
-      place(pickKind(stand, e, random()), px, pz);
+      // Unburned forest has no fire-killed trunks.
+      const burned = inBurn ? inBurn(px, pz) : true;
+      place(pickKind(burned ? stand : withoutSnags(stand), e, random()), px, pz);
     }
   }
 
@@ -123,3 +134,8 @@ function pickKind(stand: StandParams, e: number, r: number): PlantKind {
   }
   return 'spruce';
 }
+
+const withoutSnags = (stand: StandParams): StandParams => ({
+  ...stand,
+  mix: { ...stand.mix, snag: 0 },
+});

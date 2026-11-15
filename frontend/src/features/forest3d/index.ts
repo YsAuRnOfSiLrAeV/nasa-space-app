@@ -13,3 +13,5 @@ export {
   standFromInput,
 } from './recoveryAdapter';
 export type { ForestStandInput, GrowthParams, StandParams } from './recoveryAdapter';
+export { standForFire, type FireSceneInput } from './fireStand';
+export type { BurnShape } from './burn';

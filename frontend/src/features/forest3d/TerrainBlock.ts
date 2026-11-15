@@ -5,10 +5,12 @@
  * on the block edges. Grayscale, matte, no glow.
  */
 import * as THREE from 'three';
+import { createBurnMask, outlineRings, type BurnShape } from './burn';
 import { contourSegments, type HeightField } from './heightField';
 
 export const BLOCK_TONES = {
   surface: '#efefed',
+  scorched: '#d6d4cf',
   wall: '#dcdcd9',
   base: '#9c9c9a',
   water: '#a7a9ab',
@@ -29,7 +31,7 @@ export interface TerrainBlock {
 const line = (color: string, opacity = 1) =>
   new THREE.LineBasicMaterial({ color, transparent: opacity < 1, opacity });
 
-export function buildTerrainBlock(field: HeightField): TerrainBlock {
+export function buildTerrainBlock(field: HeightField, burn?: BurnShape | null): TerrainBlock {
   const { size, res, heights } = field;
   const half = size / 2;
   const base = -9;
@@ -50,9 +52,22 @@ export function buildTerrainBlock(field: HeightField): TerrainBlock {
     sp.setY(k, heights[j * res + i]!);
   }
   surface.computeVertexNormals();
+  // Ground inside the burn is a little darker, so the burn reads even where no tree stands.
+  const mask = burn ? createBurnMask(burn) : null;
+  if (mask) {
+    const base = new THREE.Color(BLOCK_TONES.surface);
+    const scorched = new THREE.Color(BLOCK_TONES.scorched);
+    const colors = new Float32Array(sp.count * 3);
+    for (let k = 0; k < sp.count; k++) {
+      const c = mask(sp.getX(k), sp.getZ(k)) ? scorched : base;
+      colors.set([c.r, c.g, c.b], k * 3);
+    }
+    surface.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  }
   const surfaceMat = keep(
     new THREE.MeshStandardMaterial({
-      color: BLOCK_TONES.surface,
+      color: mask ? '#ffffff' : BLOCK_TONES.surface,
+      vertexColors: Boolean(mask),
       roughness: 1,
       metalness: 0,
       polygonOffset: true,
@@ -128,6 +143,29 @@ export function buildTerrainBlock(field: HeightField): TerrainBlock {
   );
   waterMesh.receiveShadow = true;
   group.add(waterMesh);
+
+  // The burn's outline, draped on the ground.
+  if (burn) {
+    const outline = keep(new THREE.BufferGeometry());
+    const pos: number[] = [];
+    for (const ring of outlineRings(burn))
+      for (let k = 0; k < ring.length - 1; k++) {
+        const [x0, z0] = ring[k]!;
+        const [x1, z1] = ring[k + 1]!;
+        const parts = Math.max(1, Math.ceil(Math.hypot(x1 - x0, z1 - z0) / 1.2));
+        for (let p = 0; p < parts; p++) {
+          const a = p / parts;
+          const b = (p + 1) / parts;
+          const xa = x0 + (x1 - x0) * a;
+          const za = z0 + (z1 - z0) * a;
+          const xb = x0 + (x1 - x0) * b;
+          const zb = z0 + (z1 - z0) * b;
+          pos.push(xa, field.sample(xa, za) + 0.12, za, xb, field.sample(xb, zb) + 0.12, zb);
+        }
+      }
+    outline.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    group.add(new THREE.LineSegments(outline, keep(line(BLOCK_TONES.ink, 0.9))));
+  }
 
   // Contours on the surface, lifted a hair to sit on top.
   const interval = (field.max - field.min) / 24;

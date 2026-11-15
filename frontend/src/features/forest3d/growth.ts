@@ -18,7 +18,15 @@ export function quantileAt(quantiles: readonly number[], t: number): number {
   return quantiles[lo]! + (quantiles[hi]! - quantiles[lo]!) * (position - lo);
 }
 
+/** Unburned forest next to the fire: mature living trees, a little understorey, no snags. */
+const UNBURNED_SHRUB_SHARE = 0.25;
+
 export function plantHeight(plant: Plant, growth: GrowthParams): number {
+  if (!plant.burned) {
+    if (plant.kind === 'snag') return 0;
+    if (plant.kind === 'shrub') return plant.rank < UNBURNED_SHRUB_SHARE ? plant.height : 0;
+    return plant.height;
+  }
   switch (plant.kind) {
     case 'snag':
       // Fire-killed trunks keep their height until they fall.
