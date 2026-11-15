@@ -205,6 +205,15 @@
 .atlas progress {
   width: 100%;
 }
+.search fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: baseline;
+}
+.search fieldset p {
+  flex-basis: 100%;
+}
 .search :focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;

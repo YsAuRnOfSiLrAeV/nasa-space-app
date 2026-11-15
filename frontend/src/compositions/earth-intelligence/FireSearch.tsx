@@ -220,7 +220,7 @@ export function FireSearch({
   useEffect(
     () =>
       drawing && mapView
-        ? mapView.onDrawPoint((point) => setPoints((previous) => [...previous, point]))
+        ? mapView.onDrawPoint((point) => setPoints((previous) => addVertex(previous, point)))
         : undefined,
     [drawing, mapView],
   );
@@ -453,6 +453,15 @@ export function FireSearch({
               Finish polygon
             </button>
             <button
+              disabled={!points.length}
+              onClick={() => {
+                setPoints((previous) => previous.slice(0, -1));
+                setError('');
+              }}
+            >
+              Undo last vertex
+            </button>
+            <button
               onClick={() => {
                 setDrawing(false);
                 setPoints([]);
@@ -463,6 +472,7 @@ export function FireSearch({
           </>
         )}
         {polygon && <button onClick={() => setPolygon(null)}>Clear polygon</button>}
+        {drawing && error && <p role="alert">{error} Undo the last vertex or cancel and redraw.</p>}
       </fieldset>
       {drawing ? (
         <p role="status">Finish or cancel drawing to evaluate this boundary.</p>
@@ -586,9 +596,17 @@ export function FireSearch({
           </>
         )}
       </div>
-      {error && <p role="alert">{error}</p>}
+      {!drawing && error && <p role="alert">{error}</p>}
     </section>
   );
+}
+
+/** A double click reports the same spot twice; a repeated vertex would make the boundary touch itself. */
+function addVertex(points: [number, number][], point: [number, number]) {
+  const last = points.at(-1);
+  const repeated =
+    last && Math.abs(last[0] - point[0]) < 1e-6 && Math.abs(last[1] - point[1]) < 1e-6;
+  return repeated ? points : [...points, point];
 }
 
 function chosenSummerKey(summer: string) {
